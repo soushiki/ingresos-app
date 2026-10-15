@@ -1,0 +1,642 @@
+[
+ {
+  "codigo": "11050501",
+  "nombre": "Efectivo",
+  "clase": "ACTIVO",
+  "mayor": "1105",
+  "usos_jun_sep": 202,
+  "nombre_diario": "Efectivo"
+ },
+ {
+  "codigo": "11200501",
+  "nombre": "Cuenta Ahorros Bancolombia No. 1298126961",
+  "clase": "ACTIVO",
+  "mayor": "1120",
+  "usos_jun_sep": 682,
+  "nombre_diario": "Cta. Ahorros Bancolombia"
+ },
+ {
+  "codigo": "11200502",
+  "nombre": "(solo en movimientos)",
+  "clase": "ACTIVO",
+  "mayor": "1120",
+  "usos_jun_sep": 129,
+  "nombre_diario": "Cta. Ahorros Bancolombia"
+ },
+ {
+  "codigo": "11200503",
+  "nombre": "(solo en movimientos)",
+  "clase": "ACTIVO",
+  "mayor": "1120",
+  "usos_jun_sep": 3,
+  "nombre_diario": "Cta. Ahorros Bancolombia"
+ },
+ {
+  "codigo": "11200504",
+  "nombre": "(solo en movimientos)",
+  "clase": "ACTIVO",
+  "mayor": "1120",
+  "usos_jun_sep": 7,
+  "nombre_diario": "Cta. Ahorros Bancolombia"
+ },
+ {
+  "codigo": "13050501",
+  "nombre": "Cuenta por cobrar clientes",
+  "clase": "ACTIVO",
+  "mayor": "1305",
+  "usos_jun_sep": 11,
+  "nombre_diario": "Cuenta por cobrar clientes"
+ },
+ {
+  "codigo": "13300501",
+  "nombre": "A proveedores",
+  "clase": "ACTIVO",
+  "mayor": "1330",
+  "usos_jun_sep": 0,
+  "nombre_diario": "A proveedores"
+ },
+ {
+  "codigo": "13301501",
+  "nombre": "A trabajadores",
+  "clase": "ACTIVO",
+  "mayor": "1330",
+  "usos_jun_sep": 5,
+  "nombre_diario": "A trabajadores"
+ },
+ {
+  "codigo": "13452501",
+  "nombre": "Ingresos por cobrar",
+  "clase": "ACTIVO",
+  "mayor": "1345",
+  "usos_jun_sep": 91,
+  "nombre_diario": "Ingresos por cobrar"
+ },
+ {
+  "codigo": "13459504",
+  "nombre": "Cuota Extraordinaria",
+  "clase": "ACTIVO",
+  "mayor": "1345",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Cuota Extraordinaria"
+ },
+ {
+  "codigo": "14050501",
+  "nombre": "Insumos cocina",
+  "clase": "ACTIVO",
+  "mayor": "1405",
+  "usos_jun_sep": 153,
+  "nombre_diario": "Insumos cocina"
+ },
+ {
+  "codigo": "14050502",
+  "nombre": "Insumos barra",
+  "clase": "ACTIVO",
+  "mayor": "1405",
+  "usos_jun_sep": 25,
+  "nombre_diario": "Insumos barra"
+ },
+ {
+  "codigo": "14050503",
+  "nombre": "Empaques y desechables",
+  "clase": "ACTIVO",
+  "mayor": "1405",
+  "usos_jun_sep": 2,
+  "nombre_diario": "Empaques y desechables"
+ },
+ {
+  "codigo": "15080501",
+  "nombre": "Capex",
+  "clase": "ACTIVO",
+  "mayor": "1508",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Capex"
+ },
+ {
+  "codigo": "15240501",
+  "nombre": "(solo en movimientos)",
+  "clase": "ACTIVO",
+  "mayor": "1524",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Muebles y enseres"
+ },
+ {
+  "codigo": "17052001",
+  "nombre": "Seguros y Fianzas",
+  "clase": "ACTIVO",
+  "mayor": "1705",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Seguros y Fianzas"
+ },
+ {
+  "codigo": "21950501",
+  "nombre": "Obligaciones con particulares",
+  "clase": "PASIVO",
+  "mayor": "2195",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Obligaciones con particulares"
+ },
+ {
+  "codigo": "23352501",
+  "nombre": "Honorarios",
+  "clase": "PASIVO",
+  "mayor": "2335",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Honorarios"
+ },
+ {
+  "codigo": "23355501",
+  "nombre": "Seguros",
+  "clase": "PASIVO",
+  "mayor": "2335",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Seguros"
+ },
+ {
+  "codigo": "23357501",
+  "nombre": "Aseo y Vigilancia",
+  "clase": "PASIVO",
+  "mayor": "2335",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Aseo y Vigilancia"
+ },
+ {
+  "codigo": "23359501",
+  "nombre": "Otros",
+  "clase": "PASIVO",
+  "mayor": "2335",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Otros"
+ },
+ {
+  "codigo": "23550501",
+  "nombre": "Préstamo accionistas",
+  "clase": "PASIVO",
+  "mayor": "2355",
+  "usos_jun_sep": 3,
+  "nombre_diario": "Préstamo accionistas"
+ },
+ {
+  "codigo": "28150501",
+  "nombre": "Domicilios",
+  "clase": "PASIVO",
+  "mayor": "2815",
+  "usos_jun_sep": 94,
+  "nombre_diario": "Domicilios"
+ },
+ {
+  "codigo": "28150502",
+  "nombre": "Propinas",
+  "clase": "PASIVO",
+  "mayor": "2815",
+  "usos_jun_sep": 21,
+  "nombre_diario": "Propinas"
+ },
+ {
+  "codigo": "31050501",
+  "nombre": "Capital pagado",
+  "clase": "PATRIMONIO",
+  "mayor": "3105",
+  "usos_jun_sep": 4,
+  "nombre_diario": "Capital pagado"
+ },
+ {
+  "codigo": "33050501",
+  "nombre": "Fondo de Imprevistos",
+  "clase": "PATRIMONIO",
+  "mayor": "3305",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Fondo de Imprevistos"
+ },
+ {
+  "codigo": "36050501",
+  "nombre": "Excedente del Ejercicio",
+  "clase": "PATRIMONIO",
+  "mayor": "3605",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Excedente del Ejercicio"
+ },
+ {
+  "codigo": "37050501",
+  "nombre": "Excedentes acumulados",
+  "clase": "PATRIMONIO",
+  "mayor": "3705",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Excedentes acumulados"
+ },
+ {
+  "codigo": "41401501",
+  "nombre": "Restaurante",
+  "clase": "INGRESOS",
+  "mayor": "4140",
+  "usos_jun_sep": 288,
+  "nombre_diario": "Restaurante"
+ },
+ {
+  "codigo": "41700502",
+  "nombre": "Cuota Extraordinaria",
+  "clase": "INGRESOS",
+  "mayor": "4170",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Cuota Extraordinaria"
+ },
+ {
+  "codigo": "41750501",
+  "nombre": "Devoluciones",
+  "clase": "INGRESOS",
+  "mayor": "4175",
+  "usos_jun_sep": 4,
+  "nombre_diario": "Devoluciones"
+ },
+ {
+  "codigo": "42100505",
+  "nombre": "Rendimientos Financieros",
+  "clase": "INGRESOS",
+  "mayor": "4210",
+  "usos_jun_sep": 30,
+  "nombre_diario": "Rendimientos Financieros"
+ },
+ {
+  "codigo": "42100510",
+  "nombre": "Intereses de Mora",
+  "clase": "INGRESOS",
+  "mayor": "4210",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Intereses de Mora"
+ },
+ {
+  "codigo": "42100515",
+  "nombre": "Extemporaneidad",
+  "clase": "INGRESOS",
+  "mayor": "4210",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Extemporaneidad"
+ },
+ {
+  "codigo": "42100520",
+  "nombre": "Sanciones",
+  "clase": "INGRESOS",
+  "mayor": "4210",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Sanciones"
+ },
+ {
+  "codigo": "51050601",
+  "nombre": "Sueldo",
+  "clase": "GASTOS",
+  "mayor": "5105",
+  "usos_jun_sep": 116,
+  "nombre_diario": "Sueldos"
+ },
+ {
+  "codigo": "51055101",
+  "nombre": "Dotación y Suministro a Trabajadores",
+  "clase": "GASTOS",
+  "mayor": "5105",
+  "usos_jun_sep": 5,
+  "nombre_diario": "Dotación y Suministro a Trabajadores"
+ },
+ {
+  "codigo": "51059501",
+  "nombre": "Gastos de personal",
+  "clase": "GASTOS",
+  "mayor": "5105",
+  "usos_jun_sep": 3,
+  "nombre_diario": "Gastos de personal"
+ },
+ {
+  "codigo": "51104001",
+  "nombre": "Administrador",
+  "clase": "GASTOS",
+  "mayor": "5110",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Administrador"
+ },
+ {
+  "codigo": "51104002",
+  "nombre": "Contador",
+  "clase": "GASTOS",
+  "mayor": "5110",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Contador"
+ },
+ {
+  "codigo": "51150501",
+  "nombre": "Industria y Comercio",
+  "clase": "GASTOS",
+  "mayor": "5115",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Industria y Comercio"
+ },
+ {
+  "codigo": "51157501",
+  "nombre": "Gravamen Movimientos Financieros",
+  "clase": "GASTOS",
+  "mayor": "5115",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Gravamen Movimientos Financieros"
+ },
+ {
+  "codigo": "51201001",
+  "nombre": "Construcciones y edificaciones",
+  "clase": "GASTOS",
+  "mayor": "5120",
+  "usos_jun_sep": 2,
+  "nombre_diario": "Construcciones y edificaciones"
+ },
+ {
+  "codigo": "51306001",
+  "nombre": "Responsabilidad civil y extracontractual",
+  "clase": "GASTOS",
+  "mayor": "5130",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Responsabilidad civil y extracontractual"
+ },
+ {
+  "codigo": "51350501",
+  "nombre": "Servicios - Aseo y vigilancia",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Servicios - Aseo y vigilancia"
+ },
+ {
+  "codigo": "51350598",
+  "nombre": "IVA 19% Aseo y vigilancia",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 0,
+  "nombre_diario": "IVA 19% Aseo y vigilancia"
+ },
+ {
+  "codigo": "51352501",
+  "nombre": "Acueducto y alcantarillado",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 6,
+  "nombre_diario": "Acueducto y alcantarillado"
+ },
+ {
+  "codigo": "51353001",
+  "nombre": "Servicios públicos - Energía eléctrica",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 3,
+  "nombre_diario": "Servicios públicos - Energía eléctrica"
+ },
+ {
+  "codigo": "51353002",
+  "nombre": "Servicios públicos - Gas",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 5,
+  "nombre_diario": "Servicios públicos - Gas"
+ },
+ {
+  "codigo": "51353003",
+  "nombre": "Servicios públicos - Internet",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Servicios públicos - Internet"
+ },
+ {
+  "codigo": "51353004",
+  "nombre": "Servicios públicos - telefóno",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 3,
+  "nombre_diario": "Servicios públicos - telefóno"
+ },
+ {
+  "codigo": "51355001",
+  "nombre": "Transporte fletes y acarreos",
+  "clase": "GASTOS",
+  "mayor": "5135",
+  "usos_jun_sep": 35,
+  "nombre_diario": "Transporte fletes y acarreos"
+ },
+ {
+  "codigo": "51401501",
+  "nombre": "Trámites y licencias",
+  "clase": "GASTOS",
+  "mayor": "5140",
+  "usos_jun_sep": 4,
+  "nombre_diario": "Trámites y licencias"
+ },
+ {
+  "codigo": "51451001",
+  "nombre": "Mantenimientos - Construcciones y edificaciones",
+  "clase": "GASTOS",
+  "mayor": "5145",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Mantenimientos - Construcciones y edificaciones"
+ },
+ {
+  "codigo": "51451098",
+  "nombre": "IVA 19% Construcciones y edificaciones",
+  "clase": "GASTOS",
+  "mayor": "5145",
+  "usos_jun_sep": 0,
+  "nombre_diario": "IVA 19% Construcciones y edificaciones"
+ },
+ {
+  "codigo": "51451501",
+  "nombre": "Motobombas",
+  "clase": "GASTOS",
+  "mayor": "5145",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Motobombas"
+ },
+ {
+  "codigo": "51451502",
+  "nombre": "Citofonia",
+  "clase": "GASTOS",
+  "mayor": "5145",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Citofonia"
+ },
+ {
+  "codigo": "51451503",
+  "nombre": "Cámaras de Vigilancia",
+  "clase": "GASTOS",
+  "mayor": "5145",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Cámaras de Vigilancia"
+ },
+ {
+  "codigo": "51451504",
+  "nombre": "Extintores y recargas",
+  "clase": "GASTOS",
+  "mayor": "5145",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Extintores y recargas"
+ },
+ {
+  "codigo": "51451598",
+  "nombre": "IVA 19% Maquinaria y Equipo",
+  "clase": "GASTOS",
+  "mayor": "5145",
+  "usos_jun_sep": 0,
+  "nombre_diario": "IVA 19% Maquinaria y Equipo"
+ },
+ {
+  "codigo": "51500501",
+  "nombre": "Instalaciones eléctricas",
+  "clase": "GASTOS",
+  "mayor": "5150",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Instalaciones eléctricas"
+ },
+ {
+  "codigo": "51500502",
+  "nombre": "Portón parqueadero",
+  "clase": "GASTOS",
+  "mayor": "5150",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Portón parqueadero"
+ },
+ {
+  "codigo": "51501001",
+  "nombre": "Arreglos ornamentales",
+  "clase": "GASTOS",
+  "mayor": "5150",
+  "usos_jun_sep": 4,
+  "nombre_diario": "Arreglos ornamentales"
+ },
+ {
+  "codigo": "51501098",
+  "nombre": "IVA 19% Arreglos ornamentales",
+  "clase": "GASTOS",
+  "mayor": "5150",
+  "usos_jun_sep": 0,
+  "nombre_diario": "IVA 19% Arreglos ornamentales"
+ },
+ {
+  "codigo": "51501501",
+  "nombre": "Reparaciones locativas",
+  "clase": "GASTOS",
+  "mayor": "5150",
+  "usos_jun_sep": 14,
+  "nombre_diario": "Reparaciones locativas"
+ },
+ {
+  "codigo": "51651001",
+  "nombre": "Intangibles",
+  "clase": "GASTOS",
+  "mayor": "5165",
+  "usos_jun_sep": 3,
+  "nombre_diario": "Intangibles"
+ },
+ {
+  "codigo": "51952501",
+  "nombre": "Elementos de aseo y cafetería",
+  "clase": "GASTOS",
+  "mayor": "5195",
+  "usos_jun_sep": 39,
+  "nombre_diario": "Elementos de aseo y cafetería"
+ },
+ {
+  "codigo": "51952598",
+  "nombre": "IVA 19% Elementos de aseo y cafeteria",
+  "clase": "GASTOS",
+  "mayor": "5195",
+  "usos_jun_sep": 0,
+  "nombre_diario": "IVA 19% Elementos de aseo y cafeteria"
+ },
+ {
+  "codigo": "51953001",
+  "nombre": "Útilesde oficina, papelería y fotocopias",
+  "clase": "GASTOS",
+  "mayor": "5195",
+  "usos_jun_sep": 5,
+  "nombre_diario": "Útiles papelería y fotocopias"
+ },
+ {
+  "codigo": "51953501",
+  "nombre": "(solo en movimientos)",
+  "clase": "GASTOS",
+  "mayor": "5195",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Combustibles y otros"
+ },
+ {
+  "codigo": "51957001",
+  "nombre": "Celebraciones y eventos",
+  "clase": "GASTOS",
+  "mayor": "5195",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Celebraciones y eventos"
+ },
+ {
+  "codigo": "51957098",
+  "nombre": "IVA 19% celebraciones y eventos",
+  "clase": "GASTOS",
+  "mayor": "5195",
+  "usos_jun_sep": 0,
+  "nombre_diario": "IVA 19% celebraciones y eventos"
+ },
+ {
+  "codigo": "51957501",
+  "nombre": "Herramientas y equipo menor",
+  "clase": "GASTOS",
+  "mayor": "5195",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Herramientas y equipo menor"
+ },
+ {
+  "codigo": "52202501",
+  "nombre": "(solo en movimientos)",
+  "clase": "GASTOS",
+  "mayor": "5220",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Equipo de compuatción y comunicación"
+ },
+ {
+  "codigo": "52356001",
+  "nombre": "Publicidad, propaganda y Promoción",
+  "clase": "GASTOS",
+  "mayor": "5235",
+  "usos_jun_sep": 17,
+  "nombre_diario": "Publicidad, propaganda y Promoción"
+ },
+ {
+  "codigo": "52950501",
+  "nombre": "Comisión",
+  "clase": "GASTOS",
+  "mayor": "5295",
+  "usos_jun_sep": 1,
+  "nombre_diario": "Comisión"
+ },
+ {
+  "codigo": "53050502",
+  "nombre": "Gastos Bancarios",
+  "clase": "GASTOS",
+  "mayor": "5305",
+  "usos_jun_sep": 2,
+  "nombre_diario": "Gastos Bancarios"
+ },
+ {
+  "codigo": "53053501",
+  "nombre": "Descuentos comerciales condicionados",
+  "clase": "GASTOS",
+  "mayor": "5305",
+  "usos_jun_sep": 78,
+  "nombre_diario": "Descuentos comerciales condicionados"
+ },
+ {
+  "codigo": "53151501",
+  "nombre": "Costos y gastos de ejercicios anteriores",
+  "clase": "GASTOS",
+  "mayor": "5315",
+  "usos_jun_sep": 0,
+  "nombre_diario": "Costos y gastos de ejercicios anteriores"
+ },
+ {
+  "codigo": "53152001",
+  "nombre": "Gravamen Movimientos Financieros",
+  "clase": "GASTOS",
+  "mayor": "5315",
+  "usos_jun_sep": 41,
+  "nombre_diario": "Gravamen Movimientos Financieros"
+ }
+]

@@ -1,0 +1,6 @@
+requests>=2.31
+Pillow>=10.0
+python-dotenv>=1.0
+pillow-heif>=0.16   # opcional: fotos .heic de iPhone
+pytesseract>=0.3    # opcional: solo para --engine tesseract
+google-genai>=1.0   # opcional: solo para --engine gemini

@@ -1,0 +1,8 @@
+Efectivo | Nequi | Rappi | Domicilio
+820.000 | 280.000 | 75.000 | 105.000
+Total: 1.280.000
+Ordenes 57
+Anuladas 1
+Propinas: $ 38.000
+Base $100.000
+Cortesías 12.000

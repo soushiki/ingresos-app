@@ -1,0 +1,33 @@
+{
+ "reporta": {
+  "sergio": "Sergio",
+  "yorli": "Yorly",
+  "yorly": "Yorly",
+  "fabian": "Fabián"
+ },
+ "medio_de_pago": {
+  "efectivo": "Efectivo",
+  "qr": "QR",
+  "bre-b": "Bre-B",
+  "llave": "Bre-B",
+  "transf.nequi": "Nequi",
+  "transf. nequi": "Nequi",
+  "trnsf nequi": "Nequi",
+  "transf suc virt": "Transferencia sucursal virtual",
+  "transf.suc.virt": "Transferencia sucursal virtual",
+  "transf.suc.virtual": "Transferencia sucursal virtual",
+  "transferencia": "Transferencia",
+  "transferencias": "Transferencia",
+  "pse": "PSE",
+  "debito": "Débito",
+  "datafono": "Datáfono",
+  "rappi": "Rappi",
+  "app": "App"
+ },
+ "ignorar_medio": [
+  "extractos jun-ago*",
+  "extracto",
+  "excel extracto",
+  "arch trans-efe-pagos"
+ ]
+}

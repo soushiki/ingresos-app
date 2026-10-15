@@ -1,0 +1,9 @@
+flask>=3.0
+openpyxl>=3.1
+requests>=2.31
+Pillow>=10.0
+python-dotenv>=1.0
+pymupdf>=1.24   # leer PDF
+pillow-heif>=0.16   # opcional: fotos .heic
+pytesseract>=0.3    # opcional: motor tesseract
+numpy

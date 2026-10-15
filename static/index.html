@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingresos Diarios</title>
+<style>
+:root{--bg:#eaf4fd;--card:#fff;--ink:#12324f;--mut:#5b7a96;--pri:#2b8ae0;--pri2:#1a6fc0;--line:#cfe3f6;--soft:#f3f9ff;--head:#d9ecfc;
+--ok:#1f9d6b;--bad:#d6453d;--warn:#fff3cd;--warnb:#f0b429}
+html{color-scheme:light}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 18px;background:linear-gradient(90deg,#4aa3ef,#7cc0f7);color:#fff}
+header h1{font-size:19px;margin:0;margin-right:auto}header h1 small{display:block;font-size:12px;font-weight:400;opacity:.9}
+select,input[type=date]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
+button{font:inherit;border:0;border-radius:9px;padding:8px 14px;cursor:pointer;background:var(--pri);color:#fff;font-weight:600}
+button:hover:not(:disabled){background:var(--pri2)}button:disabled{opacity:.45;cursor:default}
+button.g{background:#fff;color:var(--pri2);border:1px solid var(--line)}button.g:hover:not(:disabled){background:var(--soft)}
+header button{background:#fff;color:var(--pri2);border:0}.chip{padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;background:#fff}
+.chip.ok{color:var(--ok)}.chip.bad{color:var(--bad)}
+main{flex:1;display:flex;gap:12px;padding:12px 14px;min-height:0}
+#left{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+#drop{border:2px dashed #8fc4f2;background:var(--soft);border-radius:14px;padding:14px;text-align:center;color:var(--mut);cursor:pointer}
+#drop.over{background:#dbeeff;border-color:var(--pri)}#drop b{color:var(--pri2)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{flex:1}#msg{color:var(--mut);font-size:13px}
+.wrap{flex:1;min-height:0;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;min-width:1500px;width:100%}
+th{position:sticky;top:0;z-index:2;background:var(--head);color:#17466f;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:9px 6px;text-align:left}
+td{padding:3px 4px;border-top:1px solid var(--line)}tr.sel td{background:#f0f8ff}tr.sel td:first-child{box-shadow:inset 3px 0 var(--pri)}
+td input[type=text],td input[type=date]{width:100%;min-width:82px;border:1px solid transparent;background:transparent;padding:6px;border-radius:6px;font:inherit;color:inherit;text-align:right}
+td input.fx{text-align:left;min-width:110px;width:calc(100% - 26px)}td input.n{font-variant-numeric:tabular-nums}
+td input:hover,td input:focus{border-color:var(--line);background:#fff;outline:0}td input:focus{border-color:var(--pri)}
+td input.revisar{background:var(--warn);border-color:var(--warnb)}td input.faltante{background:repeating-linear-gradient(45deg,#f4f8fc,#f4f8fc 4px,#fff 4px,#fff 8px)}
+td input.sinfecha,td input.dupe{border-color:var(--bad);background:#fdeceb}
+td.f{white-space:nowrap;cursor:pointer;font-size:12px;max-width:170px;overflow:hidden;text-overflow:ellipsis}td.f img{width:34px;height:34px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px}
+td.st{font-size:12px;white-space:nowrap}.st.ok{color:var(--ok)}.st.w{color:#b7791f}.st.e{color:var(--bad)}.st.m{color:var(--mut)}
+td.x button{background:none;color:var(--bad);padding:3px 8px}td.x button:hover{background:#fdeceb}
+tfoot td{position:sticky;bottom:0;background:#eef6fe;font-weight:700;padding:8px 10px;text-align:right}tfoot td:first-child{text-align:left}
+.empty{padding:34px;text-align:center;color:var(--mut)}
+#panel{width:380px;flex:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;display:none}
+#panel.on{display:block}#panel h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#17466f}
+#imgbox{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}#imgbox img{width:100%;cursor:zoom-in;display:block}#imgbox.z img{width:220%;cursor:zoom-out}
+pre{white-space:pre-wrap;margin:0 0 10px;padding:8px;background:var(--soft);border-radius:8px;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:220px;overflow:auto}
+.iss{font-size:12.5px;margin:0 0 10px;padding:0;list-style:none}.iss li{padding:4px 6px;border-radius:6px;background:var(--warn);margin-bottom:3px}.iss li.f{background:#eef3f8;color:var(--mut)}
+.unk{display:flex;gap:6px;align-items:center;margin-bottom:6px;font-size:13px}.unk select{flex:1}
+dialog{border:0;border-radius:14px;padding:18px;max-width:900px;width:92vw;box-shadow:0 20px 60px #12324f55}dialog::backdrop{background:#12324f66}
+dialog table{min-width:0}#ct input[type=text]{text-align:left;width:100%}#ct td{vertical-align:middle}#ct .mv{padding:2px 7px;background:#fff;color:var(--pri2);border:1px solid var(--line)}dialog h2{margin:0 0 10px;font-size:17px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#12324f;color:#fff;padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;z-index:9}#toast.on{opacity:1}
+@media(max-width:1000px){main{flex-direction:column}#panel{width:auto}}
+
+td.calc{text-align:right;white-space:nowrap;padding:3px 10px;min-width:118px}.cv{font-weight:700;font-variant-numeric:tabular-nums}.cv.pos{color:var(--ok)}.cv.neg{color:var(--bad)}.cs{display:block;font-size:10px;color:var(--mut);line-height:1}
+td input.ctrl{box-shadow:inset 0 0 0 2px #ff9f43}
+#resumen:empty{display:none}#resumen .rs{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin-bottom:6px}
+#resumen .pos{color:var(--ok);font-weight:600}#resumen .neg{color:var(--bad);font-weight:600}#resumen .net{margin-left:auto;font-size:16px;font-weight:800}#resumen small{font-weight:400;color:var(--mut)}
+dialog code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
+
+main[hidden]{display:none!important}
+#tabs{display:flex;gap:6px;padding:8px 14px 0;background:var(--bg)}
+#tabs button{background:#fff;color:var(--pri2);border:1px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0;padding:8px 18px}
+#tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}#tabs .bd{background:#fff;color:var(--pri2);border-radius:99px;padding:0 8px;margin-left:6px;font-size:12px}
+#tabs .bd:empty{display:none}
+#dias{align-items:center}.dchip{background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 8px 5px 12px;cursor:pointer;font-size:13px;display:inline-flex;gap:6px;align-items:center}
+.dchip.on{background:var(--pri);color:#fff;border-color:var(--pri)}.dchip small{opacity:.85}.dchip .x{background:none;color:inherit;padding:0 5px;font-size:12px}
+#cardDia{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;flex:none}
+#cardDia label{font-size:13px;color:var(--mut)}#cardDia .wrap{flex:none;max-height:150px;margin-top:6px}
+#cardDia td input.man{box-shadow:inset 0 0 0 2px var(--pri)}
+.rs{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin:6px 0}
+.rs .pos{color:var(--ok);font-weight:600}.rs .neg{color:var(--bad);font-weight:600}.rs .net{margin-left:auto;font-size:16px;font-weight:800}.rs small{font-weight:400;color:var(--mut)}
+#resumen2:empty{display:none}#left2{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+td.nv{text-align:right;font-variant-numeric:tabular-nums;padding:6px 10px;white-space:nowrap}td.nv.pos{color:var(--ok);font-weight:700}td.nv.neg{color:var(--bad);font-weight:700}
+td.fe{font-weight:600;padding:6px 10px;white-space:nowrap}td.nt{font-size:12px;color:var(--mut);max-width:240px}
+.fw{display:inline-flex;align-items:center;gap:2px;white-space:nowrap;position:relative}
+input.fx{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink);width:116px}
+td input.fx{border-color:transparent;background:transparent;border-radius:6px;padding:6px}td input.fx:hover,td input.fx:focus{border-color:var(--line);background:#fff;outline:0}
+input.fx.bad,td input.fx.bad,td input.fx.sinfecha,td input.fx.dupe{border-color:var(--bad)!important;background:#fdeceb!important}
+button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px;border-radius:6px}button.fp:hover:not(:disabled){background:var(--soft)}
+.fh{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+</style></head><body>
+<header>
+<h1>📒 Ingresos Diarios<small>Facturas del día → análisis y verificación → tabla → Excel</small></h1>
+<span id="chip" class="chip bad">Ollama…</span>
+<select id="motor" title="Motor de lectura"><option value="local">IA local (Ollama)</option><option value="tesseract">Tesseract (solo impreso)</option></select>
+<select id="modelo" title="Modelo"></select>
+<button id="fs">⛶ Pantalla completa</button>
+</header>
+<nav id="tabs"><button class="on" data-tab="1">① Análisis del día<span class="bd" id="b1"></span></button><button data-tab="2">② Tabla de días<span class="bd" id="b2"></span></button></nav>
+<main id="m1">
+<section id="left">
+<div id="dias" class="bar"></div>
+<div id="drop"><b>Toca o arrastra las fotos de las facturas de este día</b> · una o varias imágenes<input id="file" type="file" accept="image/*" multiple hidden></div>
+<div class="bar">
+<button id="scan" disabled>▶ Escanear pendientes</button><button id="stop" class="g" disabled>Detener</button>
+<button id="cols" class="g">⚙ Columnas (<span id="ncols">0</span>)</button><button id="add" class="g">+ Factura manual</button><button id="clear" class="g">Vaciar este día</button>
+<span id="msg"></span><span class="sp"></span>
+</div>
+<div class="wrap"><table><thead><tr id="hd"></tr></thead><tbody id="tb"></tbody><tfoot id="tf"></tfoot></table>
+<div id="emp" class="empty">Agrega las facturas (fotos) de este día. Si una factura es muy larga y salió en varias imágenes, súbelas todas aquí:<br>se combinan en un solo día. Revisa el resultado del día y, cuando todo cuadre, pásalo a la tabla.</div></div>
+<div id="cardDia"></div>
+</section>
+<aside id="panel"></aside>
+</main>
+<main id="m2" hidden>
+<section id="left2">
+<div class="bar"><b style="font-size:16px">Tabla de días confirmados</b><span style="color:var(--mut);font-size:13px">Solo entran días ya verificados. Para corregir uno, reábrelo.</span><span class="sp"></span>Desde <span class="fw"><input type="text" class="fx" id="f1" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1" title="Elegir en el calendario">📅</button><input type="date" class="fh" tabindex="-1"></span> hasta <span class="fw"><input type="text" class="fx" id="f2" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1" title="Elegir en el calendario">📅</button><input type="date" class="fh" tabindex="-1"></span><button class="g" id="fclr">Todo</button><button id="xl2">⬇ Excel</button></div>
+<div id="resumen2"></div>
+<div class="wrap"><table><thead><tr id="hd2"></tr></thead><tbody id="tb2"></tbody><tfoot id="tf2"></tfoot></table>
+<div id="emp2" class="empty">Todavía no hay días en la tabla. Confirma un día en «① Análisis del día».</div></div>
+</section>
+</main>
+<dialog id="dlgc" style="max-width:1100px"><h2>⚙ Columnas de la tabla</h2>
+<div class="bar" style="margin-bottom:8px"><select id="plant"></select><span style="color:var(--mut);font-size:13px">Carga una plantilla y ajústala, o crea la tuya.</span></div>
+<p style="color:var(--mut);margin:0 0 10px;font-size:13px"><b>Monto</b> = dinero · <b>Cantidad</b> = conteo · <b>Calculada</b> = fórmula con otras columnas entre [corchetes] (ej. <code>[Efectivo contado] - [Efectivo esperado]</code>).
+<b>Sinónimos</b>: otras formas en que aparece escrito. <b>±</b>: admite negativos (faltante). Un sinónimo con <b>+</b> delante (ej. +crédito) es una <b>parte</b>: se suma si no aparece el total. <b>Repetida</b>: si la etiqueta sale varias veces, cuál usar.</p>
+<div class="wrap" style="max-height:40vh;overflow:auto"><table id="ct" style="min-width:0"></table></div>
+<div id="bulkbox" hidden style="margin-top:8px"><textarea id="bulk" rows="4" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit" placeholder="Una columna por línea"></textarea>
+<div class="bar" style="margin-top:6px"><button id="bulkok">Agregar estas columnas</button><button class="g" id="bulkno">Cancelar</button></div></div>
+<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:var(--pri2)">Avanzado: controles, etiquetas a ignorar y opciones</summary>
+<p style="color:var(--mut);font-size:13px;margin:8px 0 4px"><b>Controles</b> (uno por línea): <code>nombre | fórmula que debe dar 0 | tolerancia</code>. Avisan cuando una cifra leída no cuadra (útil para detectar errores de lectura).</p>
+<textarea id="xctrl" rows="4" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:12.5px ui-monospace,Consolas,monospace"></textarea>
+<p style="color:var(--mut);font-size:13px;margin:8px 0 4px"><b>Etiquetas a ignorar</b> (una por línea): renglones del recibo que no son columnas.</p>
+<textarea id="xign" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:12.5px ui-monospace,Consolas,monospace"></textarea>
+<label style="display:block;margin-top:6px"><input type="checkbox" id="xvac"> Un «$» sin cifra cuenta como 0</label>
+<label style="display:block"><input type="checkbox" id="xnot"> Guardar en Notas los renglones que no son columna</label></details>
+<div class="bar" style="margin-top:10px"><button class="g" id="cadd">+ Agregar columna</button><button class="g" id="cbulk">Pegar lista…</button>
+<span class="sp"></span><span id="cerr" style="color:var(--bad);font-size:13px"></span><button class="g" id="ccancel">Cancelar</button><button id="csave">Guardar columnas</button></div></dialog>
+<div id="toast"></div>
+<script>
+const $=s=>document.getElementById(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>n==null||n===""?"":Number(n).toLocaleString("es-CO");
+let ES={columnas:[],controles:[],ignorar:[],opciones:{},plantillas:[]},C=[],INFO={},id=0,sel=null,ctl=null,dias=[],act=0,HIST=[];
+Object.defineProperty(globalThis,"rows",{get(){return dias[act]?dias[act].facturas:[]},set(v){if(dias[act])dias[act].facturas=v},configurable:true});
+function setEsquema(d){ES=d;C=d.columnas.map(c=>[c.clave,c.nombre,c.tipo]);INFO={};d.columnas.forEach(c=>INFO[c.clave]=c)}
+function toast(t,ms=3200){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),ms)}
+/* ── fórmulas (mismo lenguaje que el servidor: + - * / y paréntesis) ── */
+function evalF(f,v){const e=(f||"").replace(/\{([a-z][a-z0-9_]*)\}/g,(_,k)=>"("+(Number(v[k])||0)+")").replace(/si0\(/g,"S0(");if(!/^[0-9+\-*/(). eES,]*$/.test(e))return 0;try{const x=Function("S0",'"use strict";return ('+e+')')((a,b)=>a!==0?a:b);return isFinite(x)?x:0}catch(_){return 0}}
+function vals(r){const v={};C.forEach(([k,,t])=>{if(t!=="calculo")v[k]=r.v[k]||0});const cs=C.filter(c=>c[2]==="calculo");
+ for(let p=0;p<=cs.length;p++)cs.forEach(([k])=>{v[k]=Math.round(evalF(INFO[k].formula_k,v)*100)/100});return v}
+function ctrls(r){if(r.estado!=="listo"&&r.estado!=="manual")return[];const v=vals(r);
+ return(ES.controles||[]).map(x=>({nombre:x.nombre,tol:x.tolerancia,dif:Math.round(evalF(x.formula_k,v)*100)/100,claves:[...x.formula_k.matchAll(/\{([a-z0-9_]+)\}/g)].map(m=>m[1])})).filter(x=>Math.abs(x.dif)>x.tol)}
+/* ── filas ── */
+function row(file){const r={id:++id,file,url:file?URL.createObjectURL(file):"",nombre:file?file.name:"manual",estado:file?"pendiente":"manual",error:"",texto:"",fecha:"",notas:"",manual:{},mf:false,mn:false,desc:[],adv:[],v:{},est:{},razon:{},linea:{}};ajustar(r);return r}
+function ajustar(r){const v={},e={},z={},l={},m={};C.forEach(([k])=>{v[k]=k in r.v?r.v[k]:null;e[k]=k in r.est?r.est[k]:(r.estado==="manual"?"ok":"faltante");z[k]=r.razon[k]||[];l[k]=r.linea[k]||"";if(r.manual[k])m[k]=true});r.v=v;r.est=e;r.razon=z;r.linea=l;r.manual=m}
+const nRev=r=>C.filter(c=>c[2]!=="calculo"&&r.est[c[0]]==="revisar").length;
+function aplicar(r,cierre,texto,preservar){ajustar(r);C.forEach(([k,,t])=>{if(t==="calculo"||(preservar&&r.manual[k]))return;const c=cierre.campos[k];if(!c)return;r.v[k]=c.valor;r.est[k]=c.estado;r.razon[k]=c.razones||[];r.linea[k]=c.linea||""});
+ if(!(preservar&&r.mf))r.fecha=cierre.fecha||"";r.desc=cierre.desconocidas||[];r.adv=cierre.advertencias||[];r.texto=texto;
+ if(!(preservar&&r.mn))r.notas=[...(cierre.notas||[]),...r.desc.map(d=>`${d.etiqueta}: ${fmt(d.valor)}`)].join(" | ");r.estado="listo"}
+function dupes(){const m={};rows.forEach(r=>r.fecha&&(m[r.fecha]=(m[r.fecha]||0)+1));return m}
+function estadoHtml(r,cs){if(r.estado==="leyendo")return'<span class="m">⏳ leyendo…</span>';if(r.estado==="pendiente")return'<span class="m">en cola</span>';
+ if(r.estado==="error")return`<span class="e" title="${esc(r.error)}">✗ error</span>`;const n=nRev(r),m=cs.length;
+ if(!n&&!m)return r.estado==="manual"?'<span class="m">manual</span>':'<span class="ok">✓ listo</span>';
+ return`<span class="w">⚠ ${[n?n+" por revisar":"",m?m+(m===1?" no cuadra":" no cuadran"):""].filter(Boolean).join(" · ")}</span>`}
+/* ── tabla ── */
+let RENDER=false;
+function guardarFoco(){const a=document.activeElement;if(!a||!a.closest||!a.closest("#tb,#cardDia"))return()=>{};
+ const sel=a.id?"#"+a.id:a.dataset.dk?`#cardDia [data-dk="${a.dataset.dk}"]`:a.dataset.k?`#tb [data-k="${a.dataset.k}"][data-i="${a.dataset.i}"]`:"";if(!sel)return()=>{};
+ const v=a.value,s=a.selectionStart,e=a.selectionEnd,bad=a.classList.contains("bad");
+ return()=>{const n=document.querySelector(sel);if(!n)return;n.value=v;if(bad)n.classList.add("bad");n.focus();try{n.setSelectionRange(s,e)}catch(_){}}}
+function render(){const volver=guardarFoco();RENDER=true;
+ $("hd").innerHTML="<th>Factura</th><th>Fecha leída</th>"+C.map(c=>`<th>${esc(c[1])}${c[2]==="calculo"?" ƒ":""}</th>`).join("")+"<th>Notas</th><th>Estado</th><th></th>";
+ $("tb").innerHTML="";
+ rows.forEach(r=>{const tr=document.createElement("tr");if(r.id===sel)tr.className="sel";
+  tr.innerHTML=`<td class="f" data-sel="${r.id}">${r.url?`<img src="${r.url}">`:""}${esc(r.nombre)}</td><td>${fechaHtml(r.fecha,`data-k="fecha" data-i="${r.id}"`)}</td>`+
+  C.map(([k,,t])=>t==="calculo"?`<td class="calc" data-calc="${r.id}:${k}"></td>`:`<td><input type="text" inputmode="numeric" class="n ${r.estado==="listo"||r.estado==="manual"?r.est[k]:""}" data-k="${k}" data-i="${r.id}" value="${fmt(r.v[k])}" title="${esc([...r.razon[k],r.linea[k]?"Leído: "+r.linea[k]:""].join("\n"))}"></td>`).join("")+
+  `<td><input type="text" style="text-align:left;min-width:170px" data-k="notas" data-i="${r.id}" value="${esc(r.notas)}"></td><td class="st" data-st="${r.id}"></td><td class="x"><button data-del="${r.id}">✕</button></td>`;
+  $("tb").appendChild(tr)});
+ $("emp").style.display=rows.length?"none":"block";$("ncols").textContent=C.length;
+ document.querySelector("#left table").style.minWidth=(400+C.length*112)+"px";
+ refrescar();botones();panel();renderDia();renderDias();RENDER=false;volver()}
+function refrescar(){
+ rows.forEach(r=>{const v=vals(r);
+  C.forEach(([k,,t])=>{if(t!=="calculo")return;const e=document.querySelector(`[data-calc="${r.id}:${k}"]`);if(e)e.innerHTML=`<span class="cv" title="${esc(INFO[k].formula)}">${fmt(v[k])}</span>`});
+  const st=document.querySelector(`[data-st="${r.id}"]`);if(st)st.innerHTML=estadoHtml(r,[])});
+ marcarFechas();refrescarDia();renderDias()}
+function marcarFechas(){const df=dias[act]?.fecha;document.querySelectorAll('#tb input[data-k="fecha"]').forEach(i=>{const f=rows.find(x=>x.id==i.dataset.i)?.fecha;
+ i.classList.toggle("sinfecha",!f&&!df);i.classList.toggle("dupe",!!f&&!!df&&f!==df);i.title=!f?"Sin fecha: se queda en este día":(df&&f!==df?"La fecha es distinta a la del día":"")})}
+function totales(){$("tf").innerHTML=""}
+function botones(){const p=dias.some(d=>d.facturas.some(r=>r.file&&(r.estado==="pendiente"||r.estado==="error")));$("scan").disabled=!p||!!ctl;$("stop").disabled=!ctl}
+$("tb").addEventListener("input",e=>{const t=e.target,r=rows.find(x=>x.id==t.dataset.i);if(!r)return;const k=t.dataset.k;
+ if(k==="fecha")return;   // la fecha se confirma al salir del campo (ver «comprometerFecha»)
+ if(k==="notas"){r.notas=t.value;r.mn=true;return}
+ r.manual[k]=true;const raw=t.value.trim(),neg=INFO[k]?.negativo&&/^[-−–]/.test(raw),dg=raw.replace(/\D/g,"");r.v[k]=dg===""?null:(neg?-1:1)*parseInt(dg,10);r.est[k]="ok";t.classList.remove("revisar","faltante");refrescar()});
+$("tb").addEventListener("focusout",e=>{const t=e.target,r=rows.find(x=>x.id==t.dataset.i);if(r&&INFO[t.dataset.k]&&INFO[t.dataset.k].tipo!=="calculo")t.value=fmt(r.v[t.dataset.k])});
+$("tb").addEventListener("click",e=>{const d=e.target.dataset.del;if(d){rows=rows.filter(r=>r.id!=d);if(sel==d)sel=null;render();return}
+ const s=e.target.closest("[data-sel]");if(s){sel=+s.dataset.sel;render()}});
+/* ── panel de detalle ── */
+function ctrlHtml(r){const cs=ctrls(r);return cs.length?`<h3>Controles que no cuadran</h3><ul class="iss">${cs.map(x=>`<li><b>${esc(x.nombre)}</b><br><small>Diferencia: ${fmt(x.dif)} · revisa en la foto: ${x.claves.map(k=>esc(INFO[k]?.nombre||k)).join(", ")}</small></li>`).join("")}</ul>`:""}
+function panelCtrls(){const r=rows.find(x=>x.id===sel),e=$("pc");if(r&&e)e.innerHTML=ctrlHtml(r)}
+function panel(){const p=$("panel"),r=rows.find(x=>x.id===sel);if(!r){p.classList.remove("on");return}p.classList.add("on");
+ const iss=C.filter(c=>c[2]!=="calculo"&&r.est[c[0]]!=="ok"&&r.estado==="listo").map(c=>{const k=c[0];return r.est[k]==="faltante"?`<li class="f">${esc(c[1])}: no aparece en el texto</li>`:`<li><b>${esc(c[1])}</b>: ${esc(r.razon[k].join("; ")||"revisar")}${r.linea[k]?`<br><small>Leído: ${esc(r.linea[k])}</small>`:""}</li>`}).join("");
+ const opts=C.filter(c=>c[2]!=="calculo").map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join("");
+ p.innerHTML=`<h3>${esc(r.nombre)}</h3>${r.url?`<div id="imgbox"><img src="${r.url}"></div>`:""}
+ ${r.texto?`<h3>Texto leído</h3><pre>${esc(r.texto)}</pre>`:""}
+ ${iss?`<h3>Revisar</h3><ul class="iss">${iss}</ul><button class="g" id="okall">Marcar todo como revisado</button>`:""}
+ ${r.adv.length?`<ul class="iss">${r.adv.map(a=>`<li class="f">${esc(a)}</li>`).join("")}</ul>`:""}
+ ${r.desc.length?`<h3>Etiquetas nuevas</h3><p style="color:var(--mut);margin:0 0 6px">Enséñale al sistema a qué campo pertenecen:</p>${r.desc.map((d,i)=>`<div class="unk"><span>«${esc(d.etiqueta)}» ${fmt(d.valor)}</span><select id="u${i}"><option value="">elegir campo…</option>${opts}</select><button data-learn="${i}">Enseñar</button></div>`).join("")}`:""}
+ <div class="bar" style="margin-top:8px"><button class="g" id="cl">Cerrar panel</button></div>`;
+ const ib=$("imgbox");if(ib)ib.onclick=()=>ib.classList.toggle("z");
+ const oa=$("okall");if(oa)oa.onclick=()=>{C.forEach(([k])=>{if(r.est[k]==="revisar")r.est[k]="ok"});render()};
+ $("cl").onclick=()=>{sel=null;render()};
+ p.querySelectorAll("[data-learn]").forEach(b=>b.onclick=async()=>{const i=+b.dataset.learn,campo=$("u"+i).value;if(!campo)return toast("Elige un campo");
+  const res=await fetch("/api/aprender",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({etiqueta:r.desc[i].etiqueta,campo})});
+  if(!res.ok)return toast("No se pudo guardar");const n=await reparsear();toast(`Aprendido. ${n} ${n===1?"planilla reinterpretada":"planillas reinterpretadas"} (tus ediciones se conservan)`,3800)})}
+async function reparsear(){let n=0;for(const r of dias.flatMap(d=>d.facturas)){if(r.estado!=="listo"||!r.texto)continue;
+ const j=await (await fetch("/api/reparsear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto:r.texto})})).json();aplicar(r,j.cierre,r.texto,true);n++}render();return n}
+/* ── escaneo ── */
+function tomar(fs){const n=rows.length;[...fs].filter(f=>f.type.startsWith("image/")).forEach(f=>rows.push(row(f)));render();if(rows.length>n)procesar()}
+async function procesar(){if(ctl)return;ctl=new AbortController();botones();let n=0;const hechas=new Set();
+ const pend=()=>dias.flatMap(d=>d.facturas).filter(r=>r.file&&(r.estado==="pendiente"||r.estado==="error")&&!hechas.has(r));
+ for(;;){if(ctl.signal.aborted)break;const cola=pend();if(!cola.length)break;const r=cola[0];hechas.add(r);
+  r.estado="leyendo";$("msg").textContent=`Leyendo factura ${++n}…`;render();
+  try{const fd=new FormData();fd.append("foto",r.file);fd.append("motor",$("motor").value);fd.append("modelo",$("modelo").value);
+   const j=await (await fetch("/api/escanear",{method:"POST",body:fd,signal:ctl.signal})).json();
+   if(!j.ok){r.estado="error";r.error=j.error}else{aplicar(r,j.cierre,j.texto,false);asignarDia(r)}}
+  catch(e){r.estado=e.name==="AbortError"?"pendiente":"error";r.error=String(e)}
+  render();if(sel==null&&r.estado==="listo"&&rows.includes(r)){sel=r.id;render()}}
+ ctl=null;$("msg").textContent="Listo. Revisa el resultado del día y confírmalo para pasarlo a la tabla.";render()}
+/* ── descargar ── */
+async function descargar(res,fb){if(!res.ok)return toast("No se pudo generar el Excel");const cd=res.headers.get("Content-Disposition")||"",m=/filename\*?=(?:UTF-8'')?"?([^";]+)/.exec(cd);
+ const a=document.createElement("a");a.href=URL.createObjectURL(await res.blob());a.download=m?m[1]:fb;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+/* ══════════ MÓDULO 1 · ANÁLISIS DEL DÍA ══════════ */
+const fmtF=iso=>iso?iso.split("-").reverse().join("/"):"";
+const ISOF=/^\d{4}-\d{2}-\d{2}$/;
+/* ══════════ FECHAS dd/mm/aaaa: se escriben con máscara y se confirman al salir del campo (o con Enter) ══════════ */
+function fechaValida(iso){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||"");if(!m)return false;const y=+m[1],mo=+m[2],d=+m[3];if(y<2000||y>2100)return false;
+ const t=new Date(Date.UTC(y,mo-1,d));return t.getUTCFullYear()===y&&t.getUTCMonth()===mo-1&&t.getUTCDate()===d}
+function parseFecha(s){s=(s||"").trim();if(!s)return"";const m=/^(\d{1,2})\D+(\d{1,2})\D+(\d{4}|\d{2})$/.exec(s)||/^(\d{2})(\d{2})(\d{4})$/.exec(s);if(!m)return null;
+ const y=m[3].length===2?"20"+m[3]:m[3],iso=`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;return fechaValida(iso)?iso:null}
+const fechaHtml=(iso,attrs="")=>`<span class="fw"><input type="text" class="fx" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="${esc(fmtF(iso))}" ${attrs}><button type="button" class="fp" tabindex="-1" title="Elegir en el calendario">📅</button><input type="date" class="fh" tabindex="-1" aria-hidden="true"></span>`;
+function mascaraFecha(t){const dg=t.value.replace(/\D/g,"").slice(0,8);t.value=dg.slice(0,2)+(dg.length>2?"/":"")+dg.slice(2,4)+(dg.length>4?"/":"")+dg.slice(4)}
+function fechaFactura(r,iso){r.mf=true;if((r.fecha||"")===iso)return;r.fecha=iso;const d=dias.find(x=>x.facturas.includes(r));
+ if(!d||!iso){refrescar();return}
+ if(!d.fecha&&!dias.some(x=>x!==d&&x.fecha===iso)){d.fecha=iso;render();return}      // el día sin fecha toma la de la factura
+ if(iso!==d.fecha&&r.estado==="listo"&&confirm(`Esta factura quedó con fecha ${fmtF(iso)}, distinta a la del día (${fmtF(d.fecha)}).\n\n¿Moverla al día ${fmtF(iso)}?\n(Aceptar = moverla · Cancelar = dejarla en este día)`))asignarDia(r);
+ render()}
+function fechaDia(iso){const d=dias[act];if(!d||d.fecha===iso)return;const o=iso&&dias.find(x=>x!==d&&x.fecha===iso);
+ if(o){if(confirm(`Ya hay otro día en análisis con la fecha ${fmtF(iso)}. ¿Unir sus facturas en un solo día?`)){o.facturas.push(...d.facturas);d.facturas=[];act=dias.indexOf(o);limpiarDias();sel=null;render()}
+  else $("dfecha").value=fmtF(d.fecha);return}
+ d.fecha=iso;renderDias();refrescar()}
+function comprometerFecha(x){const iso=parseFecha(x.value);
+ if(iso===null){x.classList.add("bad");toast("Fecha no válida. Escribe día/mes/año, por ejemplo 11/08/2026 (años 2000 a 2100).",4500);return}
+ x.classList.remove("bad");x.value=fmtF(iso);
+ if(x.id==="f1"||x.id==="f2"){renderTabla();return}
+ if(x.id==="dfecha"){fechaDia(iso);return}
+ if(x.dataset.k==="fecha"){const r=rows.find(q=>q.id==x.dataset.i);if(r)fechaFactura(r,iso)}}
+document.addEventListener("input",e=>{const t=e.target;if(t.classList?.contains("fx")){mascaraFecha(t);t.classList.remove("bad")}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList?.contains("fx")){e.preventDefault();e.target.blur()}});
+document.addEventListener("focusout",e=>{if(!RENDER&&e.target.isConnected&&e.target.classList?.contains("fx"))comprometerFecha(e.target)});
+document.addEventListener("click",e=>{const b=e.target.closest?.(".fp");if(!b)return;const w=b.parentElement,h=w.querySelector(".fh");h.value=parseFecha(w.querySelector(".fx").value)||"";try{h.showPicker()}catch(_){h.focus()}});
+document.addEventListener("change",e=>{const t=e.target;if(t.classList?.contains("fh")&&t.value){const x=t.parentElement.querySelector(".fx");x.value=fmtF(t.value);comprometerFecha(x)}});
+
+function nuevoDia(fecha="",activar=true){const d={id:++id,fecha,facturas:[],modo:"unico",man:{},ok:{},notas:null,reabierto:false};dias.push(d);if(activar)act=dias.length-1;return d}
+function limpiarDias(){const cur=dias[act];dias=dias.filter(d=>d===cur||d.facturas.length);if(!dias.length)nuevoDia();act=Math.max(0,dias.indexOf(cur))}
+function ajustarTodo(){dias.forEach(d=>{d.facturas.forEach(ajustar);Object.keys(d.man).forEach(k=>{if(!INFO[k])delete d.man[k]});Object.keys(d.ok).forEach(k=>{if(!INFO[k])delete d.ok[k]})})}
+/* Una factura pasa al día que dice su fecha; sin fecha se queda donde está (suele ser la continuación de una factura larga). */
+function asignarDia(r){const d=dias.find(x=>x.facturas.includes(r));if(!d||r.estado!=="listo"||!fechaValida(r.fecha))return;
+ if(!d.fecha&&!dias.some(x=>x!==d&&x.fecha===r.fecha)){d.fecha=r.fecha;return}
+ if(r.fecha===d.fecha)return;
+ const cur=dias[act];let t=dias.find(x=>x!==d&&x.fecha===r.fecha);if(!t)t=nuevoDia(r.fecha,false);
+ d.facturas=d.facturas.filter(x=>x!==r);t.facturas.push(r);act=dias.indexOf(cur);limpiarDias();
+ toast(`Una factura pasó al día ${fmtF(r.fecha)}, que es la fecha que trae`,4200)}
+/* Combina las facturas del día en una sola cifra por columna. Lo vacío no cuenta; cifras iguales = la misma línea repetida (se cuenta una vez); distintas = se suman. */
+function consolidar(d){const fs=d.facturas.filter(r=>r.estado==="listo"||r.estado==="manual"),out={v:{},est:{},razon:{}};
+ C.forEach(([k,,t])=>{if(t==="calculo")return;
+  const ps=fs.map(r=>({v:r.v[k],e:r.est[k],z:r.razon[k]||[]})).filter(p=>p.e!=="faltante"&&p.v!=null);
+  if(!ps.length){out.v[k]=null;out.est[k]="faltante";out.razon[k]=[];return}
+  const nz=ps.filter(p=>p.v!==0),z=[];let val=0;
+  if(nz.length){const dist=[...new Set(nz.map(p=>p.v))];
+   if(d.modo==="suma"){val=nz.reduce((a,p)=>a+p.v,0);if(nz.length>1)z.push(`suma de ${nz.length} facturas: ${nz.map(p=>fmt(p.v)).join(" + ")}`)}
+   else{val=dist.reduce((a,x)=>a+x,0);dist.forEach(x=>{const c=nz.filter(p=>p.v===x).length;if(c>1)z.push(`${fmt(x)} aparece en ${c} facturas (se cuenta una vez)`)});
+    if(dist.length>1)z.push(`suma de ${dist.length} valores distintos: ${dist.map(fmt).join(" + ")}`)}}
+  out.v[k]=val;out.razon[k]=[...z,...ps.flatMap(p=>p.z)];out.est[k]=(z.length||ps.some(p=>p.e==="revisar"))?"revisar":"ok"});
+ return out}
+function calcDia(d){const c=consolidar(d),v={},est={},razon={};
+ C.forEach(([k,,t])=>{if(t==="calculo")return;const m=d.man[k];
+  if(m!==undefined){v[k]=m;est[k]="ok";razon[k]=["editado a mano (doble clic para volver al cálculo)"]}
+  else{v[k]=c.v[k];est[k]=(d.ok[k]&&c.est[k]==="revisar")?"ok":c.est[k];razon[k]=c.razon[k]}});
+ return d.cv={v,est,razon}}
+const notasDia=d=>d.notas!==null?d.notas:[...new Set(d.facturas.flatMap(r=>(r.notas||"").split(" | ").map(x=>x.trim()).filter(Boolean)))].join(" | ");
+function bloqueo(d){if(!d.facturas.length)return"Agrega al menos una factura";
+ if(d.facturas.some(r=>r.estado==="pendiente"||r.estado==="leyendo"))return"Espera a que terminen de leerse las facturas";
+ if(d.facturas.some(r=>r.estado==="error"))return"Hay facturas con error: reintenta o quítalas";
+ if(!ISOF.test(d.fecha))return"Falta la fecha del día";return""}
+function resumenHtml(all){const cols=C.filter(c=>c[2]==="calculo"&&INFO[c[0]].resultado);if(!cols.length||!all.length)return"";const dia=n=>`${n} ${n===1?"día":"días"}`;
+ return cols.map(([k,n])=>{const g=all.filter(v=>v[k]>0),p=all.filter(v=>v[k]<0),sg=g.reduce((a,v)=>a+v[k],0),sp=p.reduce((a,v)=>a+v[k],0),ne=sg+sp;
+  return`<div class="rs"><b>${esc(n)}</b><span class="pos">▲ Ganancias: +${fmt(sg)} <small>(${dia(g.length)})</small></span><span class="neg">▼ Pérdidas: ${fmt(sp)} <small>(${dia(p.length)})</small></span><span class="net ${ne>=0?"pos":"neg"}">Neto: ${ne>0?"+":""}${fmt(ne)}</span></div>`}).join("")}
+function renderDias(){const el=$("dias");if(!el)return;
+ el.innerHTML=dias.map((d,i)=>{const n=d.facturas.length;return`<span class="dchip ${i===act?"on":""}" data-d="${i}">📅 ${d.fecha?fmtF(d.fecha):"sin fecha"} <small>${n} ${n===1?"factura":"facturas"}</small>${dias.length>1||n?`<button class="x" data-dx="${i}" title="Descartar este día">✕</button>`:""}</span>`}).join("")+'<button class="g" id="dnew">+ Nuevo día</button>';
+ $("b1").textContent=dias.filter(d=>d.facturas.length).length||""}
+function renderDia(){const d=dias[act],box=$("cardDia");if(!d){box.innerHTML="";return}
+ box.innerHTML=`<div class="bar"><b style="font-size:15px">Resultado del día</b>
+  <label>Fecha ${fechaHtml(d.fecha,'id="dfecha"')}</label>
+  <label title="Si la misma cifra aparece en dos imágenes (una factura larga fotografiada en partes) se cuenta una sola vez">Cifra repetida en varias facturas <select id="dmodo"><option value="unico">contarla una vez</option><option value="suma">sumarlas</option></select></label>
+  <span class="sp"></span><span id="dest"></span><button class="g" id="dokall">Marcar todo revisado</button><button id="dconf">✔ Confirmar y pasar a la tabla</button></div>
+  <div id="dres"></div><div id="dctl"></div>
+  <div class="wrap"><table style="min-width:${380+C.length*112}px"><thead><tr>${C.map(c=>`<th>${esc(c[1])}${c[2]==="calculo"?" ƒ":""}</th>`).join("")}<th>Notas</th></tr></thead>
+  <tbody><tr>${C.map(([k,,t])=>t==="calculo"?`<td class="calc" data-dcalc="${k}"></td>`:`<td><input type="text" inputmode="numeric" class="n" data-dk="${k}"></td>`).join("")}<td><input type="text" id="dnotas" style="text-align:left;min-width:220px"></td></tr></tbody></table></div>`;
+ $("dmodo").value=d.modo;refrescarDia()}
+function refrescarDia(){const d=dias[act];if(!d||!$("dfecha"))return;const c=calcDia(d),v=vals({v:c.v}),cs=ctrls({estado:"listo",v:c.v}),mal=new Set(cs.flatMap(x=>x.claves));
+ document.querySelectorAll("#cardDia input[data-dk]").forEach(i=>{const k=i.dataset.k||i.dataset.dk;if(document.activeElement!==i)i.value=fmt(c.v[k]);
+  i.className="n "+(d.man[k]!==undefined?"man ":"")+c.est[k]+(mal.has(k)?" ctrl":"");i.title=(c.razon[k]||[]).join("\n")});
+ C.forEach(([k,,t])=>{if(t!=="calculo")return;const e=document.querySelector(`[data-dcalc="${k}"]`),x=v[k],res=INFO[k].resultado;
+  if(e)e.innerHTML=`<span class="cv ${res?(x>0?"pos":x<0?"neg":""):""}" title="${esc(INFO[k].formula)}">${res&&x>0?"+":""}${fmt(x)}</span>`+(res?`<small class="cs">${x>0?"ganancia":x<0?"pérdida":"cuadrado"}</small>`:"")});
+ if(document.activeElement!==$("dnotas"))$("dnotas").value=notasDia(d);
+ $("dres").innerHTML=C.filter(c=>c[2]==="calculo"&&INFO[c[0]].resultado).map(([k,n])=>{const x=v[k];
+  return`<div class="rs"><b>${esc(n)}</b><span class="cv ${x>0?"pos":x<0?"neg":""}" style="font-size:20px">${x>0?"+":""}${fmt(x)}</span><span class="${x>0?"pos":x<0?"neg":""}">${x>0?"▲ ganancia":x<0?"▼ pérdida":"= cuadrado"}</span></div>`}).join("");
+ $("dctl").innerHTML=cs.length?`<ul class="iss">${cs.map(x=>`<li><b>${esc(x.nombre)}</b> — diferencia ${fmt(x.dif)} <small>· revisa: ${x.claves.map(k=>esc(INFO[k]?.nombre||k)).join(", ")}</small></li>`).join("")}</ul>`:"";
+ const rev=C.filter(([k,,t])=>t!=="calculo"&&c.est[k]==="revisar").length,bq=bloqueo(d);
+ $("dest").innerHTML=bq?`<span class="st m">${esc(bq)}</span>`:(rev||cs.length)?`<span class="st w">⚠ ${rev} por revisar · ${cs.length} ${cs.length===1?"no cuadra":"no cuadran"}</span>`:'<span class="st ok">✓ todo cuadra</span>';
+ $("dconf").disabled=!!bq;$("dokall").disabled=!rev}
+const numDe=(raw,neg)=>{const dg=raw.replace(/\D/g,"");return dg===""?undefined:(neg?-1:1)*parseInt(dg,10)};
+$("cardDia").addEventListener("input",e=>{const t=e.target,d=dias[act];if(t.dataset.dk){const k=t.dataset.dk,raw=t.value.trim(),n=numDe(raw,INFO[k]?.negativo&&/^[-−–]/.test(raw));if(n===undefined)delete d.man[k];else d.man[k]=n;refrescarDia()}
+ else if(t.id==="dnotas")d.notas=t.value});
+$("cardDia").addEventListener("focusout",e=>{if(e.target.dataset.dk)refrescarDia()});
+$("cardDia").addEventListener("dblclick",e=>{const k=e.target.dataset?.dk,d=dias[act];if(k&&d.man[k]!==undefined){delete d.man[k];e.target.blur();refrescarDia()}});
+$("cardDia").addEventListener("change",e=>{const t=e.target,d=dias[act];
+ if(t.id==="dmodo"){d.modo=t.value;refrescarDia();return}
+ });
+$("cardDia").addEventListener("click",e=>{const d=dias[act];
+ if(e.target.id==="dokall"){const c=d.cv;C.forEach(([k,,t])=>{if(t!=="calculo"&&c.est[k]==="revisar")d.ok[k]=true});refrescarDia()}
+ if(e.target.id==="dconf")confirmarDia()});
+$("dias").addEventListener("click",e=>{const x=e.target.dataset.dx,i=e.target.closest("[data-d]")?.dataset.d;
+ if(e.target.id==="dnew"){nuevoDia();sel=null;render();return}
+ if(x!==undefined){const d=dias[+x];if(d.facturas.length&&!confirm("¿Descartar este día con sus "+d.facturas.length+" facturas? (No se ha guardado en la tabla)"))return;
+  d.facturas.forEach(r=>r.url&&URL.revokeObjectURL(r.url));const cur=dias[act];dias.splice(+x,1);if(!dias.length)nuevoDia();act=Math.max(0,dias.indexOf(cur));sel=null;render();return}
+ if(i!==undefined&&+i!==act){act=+i;sel=null;render()}});
+async function confirmarDia(){const d=dias[act],bq=bloqueo(d);if(bq)return toast(bq,4500);
+ const c=calcDia(d),cs=ctrls({estado:"listo",v:c.v}),rev=C.filter(([k,,t])=>t!=="calculo"&&c.est[k]==="revisar").length;
+ if((rev||cs.length)&&!confirm(`Antes de pasar el día ${fmtF(d.fecha)} a la tabla:\n• ${rev} cifras por revisar\n• ${cs.length} controles que no cuadran\n\n¿Confirmarlo de todos modos?`))return;
+ const nonc=C.filter(c=>c[2]!=="calculo").map(c=>c[0]);
+ const fila={fecha:d.fecha,notas:notasDia(d),archivo:d.facturas.map(r=>r.nombre).join(" + "),valores:Object.fromEntries(nonc.map(k=>[k,c.v[k]||0])),
+  facturas:d.facturas.map(r=>({nombre:r.nombre,notas:r.notas,valores:Object.fromEntries(nonc.map(k=>[k,r.v[k]||0]))}))};
+ const post=rep=>fetch("/api/historial",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({filas:[fila],reemplazar:rep})});
+ let res=await post(d.reabierto),j=await res.json();
+ if(res.status===409){if(!confirm(`El día ${fmtF(d.fecha)} ya está en la tabla.\n¿Reemplazarlo con este?`))return;res=await post(true);j=await res.json()}
+ if(!res.ok)return toast(j.error||"No se pudo guardar",5000);
+ d.facturas.forEach(r=>r.url&&URL.revokeObjectURL(r.url));const i=dias.indexOf(d);dias.splice(i,1);if(!dias.length)nuevoDia();act=Math.min(i,dias.length-1);sel=null;
+ await cargarHist();render();toast(`✔ El día ${fmtF(fila.fecha)} pasó a la tabla (${HIST.length} ${HIST.length===1?"día":"días"})`,4500)}
+/* ══════════ MÓDULO 2 · TABLA DE DÍAS ══════════ */
+function tab(n){$("m1").hidden=n!==1;$("m2").hidden=n!==2;document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",+b.dataset.tab===n));if(n===2)cargarHist()}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>tab(+b.dataset.tab));
+async function cargarHist(){HIST=(await (await fetch("/api/historial")).json()).filas;renderTabla()}
+const fval=id=>parseFecha($(id).value)||"";
+const filtrados=()=>{const a=fval("f1"),b=fval("f2");return HIST.filter(f=>(!a||f.fecha>=a)&&(!b||f.fecha<=b)).sort((x,y)=>x.fecha<y.fecha?1:-1)};
+function renderTabla(){const fs=filtrados(),all=fs.map(f=>vals({v:f.valores||{}}));
+ $("hd2").innerHTML="<th>Fecha</th>"+C.map(c=>`<th>${esc(c[1])}${c[2]==="calculo"?" ƒ":""}</th>`).join("")+"<th>Facturas</th><th>Notas</th><th></th>";
+ $("tb2").innerHTML=fs.map((f,i)=>{const v=all[i];return`<tr><td class="fe">${fmtF(f.fecha)}</td>`+C.map(([k,,t])=>{const x=v[k]||0,res=t==="calculo"&&INFO[k].resultado;
+  return`<td class="nv ${res?(x>0?"pos":x<0?"neg":""):(x<0?"neg":"")}">${res&&x>0?"+":""}${fmt(x)}</td>`}).join("")+
+  `<td class="nv">${f.nfacturas||1}</td><td class="nt">${esc(f.notas||"")}</td><td class="x" style="white-space:nowrap"><button class="g" data-ab="${f.fecha}">✎ Reabrir</button> <button class="g" data-bo="${f.fecha}">✕</button></td></tr>`}).join("");
+ $("tf2").innerHTML=fs.length?`<tr><td>TOTAL · ${fs.length} ${fs.length===1?"día":"días"}</td>${C.map(([k])=>`<td>${fmt(all.reduce((a,v)=>a+(v[k]||0),0))}</td>`).join("")}<td>${fs.reduce((a,f)=>a+(f.nfacturas||1),0)}</td><td></td><td></td></tr>`:"";
+ $("emp2").style.display=fs.length?"none":"block";$("resumen2").innerHTML=resumenHtml(all);$("b2").textContent=HIST.length||"";
+ document.querySelector("#left2 table").style.minWidth=(330+C.length*108)+"px"}
+$("fclr").onclick=()=>{$("f1").value=$("f2").value="";renderTabla()};
+$("xl2").onclick=async()=>descargar(await fetch(`/api/excel/historial?desde=${fval("f1")}&hasta=${fval("f2")}`),"ingresos.xlsx");
+$("tb2").addEventListener("click",async e=>{const ab=e.target.dataset.ab,bo=e.target.dataset.bo;if(ab)reabrir(ab);
+ if(bo&&confirm("¿Borrar el día "+fmtF(bo)+" de la tabla?")){await fetch("/api/historial/"+bo,{method:"DELETE"});cargarHist()}});
+function reabrir(fecha){const f=HIST.find(x=>x.fecha===fecha);if(!f)return;
+ if(dias.some(d=>d.fecha===fecha&&d.facturas.length)&&!confirm("Ya hay un día en análisis con esa fecha. ¿Reemplazarlo con el guardado?"))return;
+ dias=dias.filter(d=>d.fecha!==fecha||!d.facturas.length);if(!dias.length)dias.push({id:++id,fecha:"",facturas:[],modo:"unico",man:{},ok:{},notas:null,reabierto:false});
+ const d=nuevoDia(fecha,true);d.reabierto=true;
+ (f.facturas&&f.facturas.length?f.facturas:[{nombre:"Total guardado",valores:f.valores,notas:f.notas}]).forEach(x=>{const r=row(null);r.nombre=x.nombre||"factura";r.notas=x.notas||"";
+  C.forEach(([k,,t])=>{if(t!=="calculo"){r.v[k]=(x.valores||{})[k]??null;r.est[k]="ok"}});d.facturas.push(r)});
+ const c=consolidar(d);C.forEach(([k,,t])=>{if(t!=="calculo"&&(c.v[k]||0)!==((f.valores||{})[k]||0))d.man[k]=(f.valores||{})[k]||0});   // lo guardado manda
+ d.notas=f.notas||"";sel=null;tab(1);render();toast(`Día ${fmtF(fecha)} reabierto: corrige y vuelve a confirmarlo`,4000)}
+window.addEventListener("beforeunload",e=>{if(dias.some(d=>d.facturas.length)){e.preventDefault();e.returnValue=""}});
+$("drop").onclick=()=>$("file").click();$("file").onchange=e=>{tomar(e.target.files);e.target.value=""};
+["dragover","dragenter"].forEach(n=>$("drop").addEventListener(n,e=>{e.preventDefault();$("drop").classList.add("over")}));
+["dragleave","drop"].forEach(n=>$("drop").addEventListener(n,e=>{e.preventDefault();$("drop").classList.remove("over")}));
+$("drop").addEventListener("drop",e=>tomar(e.dataTransfer.files));
+$("scan").onclick=procesar;$("stop").onclick=()=>ctl&&ctl.abort();
+$("add").onclick=()=>{rows.push(row(null));render()};
+$("clear").onclick=()=>{const d=dias[act];if(d.facturas.length&&confirm("¿Vaciar las facturas de este día? (no se ha guardado en la tabla)")){d.facturas.forEach(r=>r.url&&URL.revokeObjectURL(r.url));d.facturas=[];d.man={};d.ok={};d.notas=null;sel=null;render()}};
+$("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
+document.addEventListener("fullscreenchange",()=>$("fs").textContent=document.fullscreenElement?"✕ Salir de pantalla completa":"⛶ Pantalla completa");
+$("motor").onchange=()=>{$("modelo").style.display=$("motor").value==="local"?"":"none"};
+async function estado(){try{const j=await (await fetch("/api/estado")).json();const c=$("chip");c.className="chip "+(j.ollama?"ok":"bad");c.textContent=j.ollama?"● Ollama conectado":"● Ollama sin conexión";
+ c.title=j.ollama?"":"Abre la aplicación Ollama (o ejecuta: ollama serve)";const m=$("modelo"),cur=m.value||j.modelo;let ms=j.modelos.length?j.modelos:[j.modelo];if(j.modelos.length&&!ms.includes(j.modelo))ms=[j.modelo,...ms];
+ m.innerHTML=ms.map(x=>`<option ${x===cur?"selected":""}>${esc(x)}</option>`).join("")}catch(e){$("chip").textContent="● Servidor sin respuesta"}}
+/* ── editor de columnas ── */
+let ed=[],edx={};
+function edDesde(d){ed=d.columnas.map(c=>({clave:c.clave,nombre:c.nombre,tipo:c.tipo,sinonimos:(c.sinonimos||[]).join(", "),formula:c.formula||"",negativo:!!c.negativo,ocurrencia:c.ocurrencia||0,resultado:!!c.resultado}));
+ edx={controles:(d.controles||[]).map(x=>`${x.nombre} | ${x.formula} | ${x.tolerancia}`).join("\n"),ignorar:(d.ignorar||[]).join("\n"),vacio:!!d.opciones?.vacio_cero,notas:d.opciones?.notas!==false};
+ $("xctrl").value=edx.controles;$("xign").value=edx.ignorar;$("xvac").checked=edx.vacio;$("xnot").checked=edx.notas}
+function edRender(){$("ct").innerHTML=`<thead><tr><th>#</th><th></th><th>Nombre de la columna</th><th>Tipo</th><th>Sinónimos / Fórmula</th><th>Opciones</th><th></th></tr></thead><tbody>`+
+ ed.map((c,i)=>{const calc=c.tipo==="calculo";return`<tr><td>${i+1}</td><td style="white-space:nowrap"><button class="mv" data-mv="${i}" data-d="-1" ${i?"":"disabled"}>▲</button> <button class="mv" data-mv="${i}" data-d="1" ${i<ed.length-1?"":"disabled"}>▼</button></td>
+ <td><input type="text" data-i="${i}" data-f="nombre" value="${esc(c.nombre)}" maxlength="40"></td>
+ <td><select data-i="${i}" data-f="tipo"><option value="monto" ${c.tipo==="monto"?"selected":""}>Monto ($)</option><option value="conteo" ${c.tipo==="conteo"?"selected":""}>Cantidad</option><option value="calculo" ${calc?"selected":""}>Calculada ƒ</option></select></td>
+ <td>${calc?`<input type="text" data-i="${i}" data-f="formula" value="${esc(c.formula)}" placeholder="[Columna A] - [Columna B]" style="font-family:ui-monospace,Consolas,monospace">`:`<input type="text" data-i="${i}" data-f="sinonimos" value="${esc(c.sinonimos)}" placeholder="ej. efec, billetes">`}</td>
+ <td style="white-space:nowrap;font-size:12.5px">${calc?`<label><input type="checkbox" data-i="${i}" data-f="resultado" ${c.resultado?"checked":""}> Ganancia/Pérdida</label>`:
+ `<label title="Admite valores negativos (faltante)"><input type="checkbox" data-i="${i}" data-f="negativo" ${c.negativo?"checked":""}> ±</label> <select data-i="${i}" data-f="ocurrencia" title="Si la etiqueta se repite, cuál usar"><option value="0" ${!c.ocurrencia?"selected":""}>etiqueta única</option><option value="1" ${c.ocurrencia==1?"selected":""}>1.ª vez</option><option value="2" ${c.ocurrencia==2?"selected":""}>2.ª vez</option><option value="3" ${c.ocurrencia==3?"selected":""}>3.ª vez</option><option value="-1" ${c.ocurrencia==-1?"selected":""}>última vez</option></select>`}</td>
+ <td><button class="g" data-rm="${i}">✕</button></td></tr>`}).join("")+"</tbody>";$("cerr").textContent=""}
+function abrirCols(){edDesde(ES);$("plant").innerHTML='<option value="">Cargar plantilla…</option>'+(ES.plantillas||[]).map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join("");$("bulkbox").hidden=true;edRender();$("dlgc").showModal()}
+$("cols").onclick=abrirCols;$("ccancel").onclick=()=>$("dlgc").close();
+$("plant").onchange=()=>{const p=(ES.plantillas||[]).find(x=>x.id===$("plant").value);if(p&&confirm("Se reemplazarán las columnas de este editor por la plantilla «"+p.nombre+"». ¿Continuar?")){edDesde(p.esquema);edRender()}$("plant").value=""};
+const edCampo=t=>{const f=t.dataset.f;if(!f)return;const c=ed[+t.dataset.i];c[f]=t.type==="checkbox"?t.checked:t.value};
+$("ct").addEventListener("input",e=>{if(e.target.type!=="checkbox"&&e.target.tagName!=="SELECT")edCampo(e.target)});
+$("ct").addEventListener("change",e=>{edCampo(e.target);if(e.target.dataset.f==="tipo")edRender()});
+$("ct").addEventListener("click",e=>{const b=e.target;if(b.dataset.rm!==undefined){ed.splice(+b.dataset.rm,1);edRender()}
+ if(b.dataset.mv!==undefined){const i=+b.dataset.mv,j=i+ +b.dataset.d;[ed[i],ed[j]]=[ed[j],ed[i]];edRender()}});
+$("cadd").onclick=()=>{ed.push({clave:"",nombre:"",tipo:"monto",sinonimos:"",formula:"",negativo:false,ocurrencia:0,resultado:false});edRender();const x=$("ct").querySelectorAll('input[data-f="nombre"]');x[x.length-1].focus()};
+$("cbulk").onclick=()=>{$("bulkbox").hidden=false;$("bulk").focus()};$("bulkno").onclick=()=>$("bulkbox").hidden=true;
+$("bulkok").onclick=()=>{$("bulk").value.split("\n").map(x=>x.trim()).filter(Boolean).forEach(n=>ed.push({clave:"",nombre:n,tipo:"monto",sinonimos:"",formula:"",negativo:false,ocurrencia:0,resultado:false}));$("bulk").value="";$("bulkbox").hidden=true;edRender()};
+function edPayload(){return{columnas:ed.map(c=>{const k=c.tipo==="calculo";return{clave:c.clave,nombre:c.nombre,tipo:c.tipo,sinonimos:k?"":c.sinonimos,formula:k?c.formula:"",negativo:!k&&c.negativo,ocurrencia:k?0:+c.ocurrencia,resultado:k&&c.resultado}}),
+ controles:$("xctrl").value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const p=l.split("|").map(x=>x.trim());return{nombre:p[0],formula:p[1]||"",tolerancia:parseFloat(p[2])||1}}),
+ ignorar:$("xign").value.split("\n").map(x=>x.trim()).filter(Boolean),opciones:{vacio_cero:$("xvac").checked,notas:$("xnot").checked}}}
+$("csave").onclick=async()=>{const keep=new Set(ed.filter(e=>e.clave).map(e=>e.clave)),quitadas=C.filter(c=>!keep.has(c[0])).map(c=>c[1]);
+ if(dias.some(d=>d.facturas.length)&&quitadas.length&&!confirm("Se quitarán estas columnas de la tabla actual: "+quitadas.join(", ")+".\n¿Continuar?"))return;
+ const res=await fetch("/api/esquema",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(edPayload())}),j=await res.json();
+ if(!res.ok){$("cerr").textContent=j.error||"No se pudo guardar";return}
+ setEsquema(j);$("dlgc").close();ajustarTodo();render();renderTabla();const n=await reparsear();toast(`Columnas guardadas (${C.length}).`+(n?` Se reinterpretaron ${n} planillas sin repetir el escaneo.`:""),4200)};
+async function cargarEsquema(){setEsquema(await (await fetch("/api/esquema")).json())}
+cargarEsquema().then(async()=>{nuevoDia();ajustarTodo();render();await cargarHist()});estado();setInterval(estado,20000);
+</script></body></html>

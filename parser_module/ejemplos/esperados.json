@@ -1,0 +1,11 @@
+{
+ "01_limpio.txt": {"fecha":"2026-09-28","valores":{"total":1250000,"ordenes":62,"anuladas":3,"propinas":45000,"base":100000,"cortesia":15000,"transf":300000,"efectivo":850000,"rappi":80000,"cajam":25000,"domicilio":120000,"descontar":10000},"todos_ok":true},
+ "02_abreviaturas.txt": {"fecha":"2026-09-29","valores":{"efectivo":910000,"rappi":95000,"transf":210000,"total":1310000,"ordenes":58,"anuladas":2,"propinas":50000,"cajam":18500,"domicilio":130000,"descontar":0,"base":100000,"cortesia":0},"desconocidas":[["gas",20000]]},
+ "03_valor_antes.txt": {"fecha":"2026-10-01","valores":{"total":1180000,"ordenes":60,"anuladas":4,"propinas":40000,"base":100000,"cortesia":0,"transf":250000,"efectivo":830000,"rappi":70000,"cajam":22000,"domicilio":110000,"descontar":15000},"todos_ok":true},
+ "04_columnas.txt": {"fecha":"2026-09-30","valores":{"total":1420000,"ordenes":71,"propinas":55000,"efectivo":900000,"transf":320000,"rappi":60000},"faltantes":["base","cortesia","cajam","domicilio","descontar","anuladas"]},
+ "05_palabras.txt": {"fecha":"2026-10-01","valores":{"total":1300000,"ordenes":65,"propinas":45000,"base":100000,"efectivo":850000,"transf":350000,"domicilio":120000}},
+ "06_errores_ocr.txt": {"fecha":"2026-10-02","valores":{"total":1250000,"ordenes":61,"propinas":45000,"efectivo":850000,"transf":300000,"rappi":null,"domicilio":120000,"base":100000},"revisar":["propinas","rappi"]},
+ "07_sumas.txt": {"fecha":"2026-09-28","valores":{"efectivo":850000,"transf":300000,"total":1300000,"propinas":45000,"base":100000},"revisar":["transf"]},
+ "08_tabla.txt": {"valores":{"efectivo":820000,"transf":280000,"rappi":75000,"domicilio":105000,"total":1280000,"ordenes":57,"anuladas":1,"propinas":38000,"base":100000,"cortesia":12000}},
+ "09_tachado_y_extras.txt": {"fecha":"2026-10-05","valores":{"total":1150000,"efectivo":700000,"propinas":42000,"ordenes":55,"base":100000,"domicilio":90000,"transf":300},"desconocidas":[["nevera",35000]],"revisar":["total","transf"]}
+}

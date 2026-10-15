@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Libro contable</title>
+<style>
+:root{--bg:#eaf4fd;--card:#fff;--ink:#12324f;--mut:#5b7a96;--pri:#2b8ae0;--pri2:#1a6fc0;--line:#cfe3f6;--soft:#f3f9ff;--head:#d9ecfc;--ok:#1f9d6b;--bad:#d6453d;--warn:#fff3cd;--warnb:#f0b429;--verde:#e2efda;--rosa:#fce4d6}
+html{color-scheme:light}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 18px;background:linear-gradient(90deg,#4aa3ef,#7cc0f7);color:#fff}
+header h1{font-size:19px;margin:0 auto 0 0}header h1 small{display:block;font-size:12px;font-weight:400;opacity:.9}header a{color:#fff;font-size:12px}
+select,input[type=text]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
+button{font:inherit;border:0;border-radius:9px;padding:8px 14px;cursor:pointer;background:var(--pri);color:#fff;font-weight:600}
+button:hover:not(:disabled){background:var(--pri2)}button:disabled{opacity:.45;cursor:default}
+button.g{background:#fff;color:var(--pri2);border:1px solid var(--line)}button.g:hover:not(:disabled){background:var(--soft)}
+header button{background:#fff;color:var(--pri2)}.chip{padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;background:#fff}.chip.ok{color:var(--ok)}.chip.bad{color:var(--bad)}
+#tabs{display:flex;gap:6px;padding:10px 14px 0}#tabs button{background:#fff;color:var(--pri2);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;padding:9px 16px}#tabs button.on{background:var(--pri);color:#fff}
+.badge{display:inline-block;min-width:18px;padding:0 6px;border-radius:99px;background:#fff;color:var(--pri2);font-size:12px;text-align:center}
+main{display:flex;gap:12px;padding:12px 14px;align-items:flex-start}main[hidden]{display:none}.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+#drop{border:2px dashed #8fc4f2;background:var(--soft);border-radius:14px;padding:14px;text-align:center;color:var(--mut);cursor:pointer}#drop.over{background:#dbeeff;border-color:var(--pri)}#drop b{color:var(--pri2)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{flex:1}.m{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}.card h2{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:#17466f}
+.wrap{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;max-height:46vh}
+table{border-collapse:collapse;width:100%}th{position:sticky;top:0;z-index:2;background:var(--head);color:#17466f;font-size:11px;text-transform:uppercase;padding:8px 6px;text-align:left}
+td{padding:3px 4px;border-top:1px solid var(--line)}td input[type=text],td select{width:100%;min-width:70px;border:1px solid transparent;background:transparent;padding:5px;border-radius:6px}
+td input[type=text]:hover,td input[type=text]:focus,td select:hover,td select:focus{border-color:var(--line);background:#fff;outline:0}td input.n{text-align:right}
+td.na input,td.na select{opacity:.35;pointer-events:none;background:repeating-linear-gradient(45deg,#f4f8fc,#f4f8fc 4px,#fff 4px,#fff 8px)}
+td select.dud,td input.dud{background:var(--warn);border-color:var(--warnb)}tr.dup td{opacity:.5;text-decoration:line-through}tr.dup td:last-child,tr.dup td:nth-last-child(2){text-decoration:none}
+tr.sel td{background:#f0f8ff}td.f{font-size:12px;white-space:nowrap;cursor:pointer;max-width:150px;overflow:hidden;text-overflow:ellipsis}td.f img{width:30px;height:30px;object-fit:cover;border-radius:5px;vertical-align:middle;margin-right:5px}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:var(--warn);color:#8a5d00;margin-left:4px}
+.fotos{display:flex;flex-wrap:wrap;gap:6px}.fo{font-size:12px;padding:3px 9px;border-radius:99px;background:#fff;border:1px solid var(--line)}.fo.e{color:var(--bad);border-color:var(--bad);cursor:pointer}
+.bank{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}.bank label{font-size:12px;color:var(--mut)}.bank input{width:100%;text-align:right}
+tr.venta td{background:var(--verde)}tr.gasto td{background:var(--rosa)}td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tot{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:8px;font-weight:700}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.av{margin:8px 0 0;padding:0;list-style:none;font-size:12.5px}.av li{padding:4px 8px;border-radius:6px;background:var(--warn);margin-bottom:3px}
+#td th:nth-child(1){min-width:130px}#td th:nth-child(2){min-width:150px}#td th:nth-child(3){min-width:80px}#td th:nth-child(4){min-width:150px}#td th:nth-child(5){min-width:220px}#td th:nth-child(12){min-width:250px}#td th:nth-child(13){min-width:120px}
+.dchip{display:inline-flex;gap:6px;align-items:center;padding:6px 12px;border-radius:99px;background:#fff;border:1px solid var(--line);cursor:pointer;font-weight:600}.dchip.on{background:var(--pri);color:#fff;border-color:var(--pri)}.dchip small{font-weight:400;opacity:.85}.dchip b{opacity:.7;padding:0 2px}.dchip b:hover{opacity:1}
+.zonas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.zona{border:2px dashed #8fc4f2;background:var(--soft);border-radius:12px;padding:10px;text-align:center;cursor:pointer;color:var(--mut);font-size:13px}.zona.over{background:#dbeeff;border-color:var(--pri)}.zona b{display:block;color:var(--pri2);font-size:14px}.zona i{font-style:normal;font-weight:700;color:var(--ink)}
+tr.gh td{background:#eef6fe;font-weight:700;color:#17466f;border-top:2px solid var(--line);padding:6px 10px}
+.cie{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.cie label{font-size:12px;color:var(--mut);display:block}.cie input{width:100%;text-align:right}
+td.ok{color:var(--ok);font-weight:700}td.mal{color:var(--bad);font-weight:700}
+#panel{width:340px;flex:none;display:none}#panel.on{display:block}#imgbox{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}#imgbox img{width:100%;display:block}
+pre{white-space:pre-wrap;margin:0;padding:8px;background:var(--soft);border-radius:8px;font:12px/1.5 ui-monospace,Consolas,monospace;max-height:240px;overflow:auto}
+.dia td{background:#eef6fe;font-weight:700;border-top:2px solid var(--line)}
+.fw{display:inline-flex;align-items:center;gap:2px;position:relative}input.fx{width:116px}input.fx.bad{border-color:var(--bad);background:#fdeceb}
+button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#12324f;color:#fff;padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;z-index:9}#toast.on{opacity:1}
+@media(max-width:1000px){main{flex-direction:column}#panel{width:auto}}
+</style></head><body>
+<header>
+<h1>📒 Libro contable<small>Papeles del día → asientos verificados → tabla → Excel</small></h1>
+<a href="/simple">Versión simple (ganancias y pérdidas)</a>
+<span id="chip" class="chip bad">Ollama…</span>
+<select id="motor"><option value="local">IA local (Ollama)</option><option value="tesseract">Tesseract (solo impreso)</option></select><select id="modelo"></select>
+<button id="fs">⛶ Pantalla completa</button>
+</header>
+<div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button></div>
+
+<main id="m1">
+<section class="col">
+ <div class="bar" id="dchips"></div>
+ <div class="card"><div class="bar"><b>Día</b><span id="fwd"></span><span class="m">Cada día tiene tres grupos: <b>cierre</b> (del POS), <b>comandas</b> (recibos de venta) y <b>gastos</b>. Sube fotos o PDF.</span></div></div>
+ <div class="zonas" id="zonas">
+  <div class="zona" data-cat=""><b>📥 Automático</b>detecta el tipo de papel</div>
+  <div class="zona" data-cat="cierre"><b>📋 Cierre</b>del POS · <i data-n="cierre">0</i></div>
+  <div class="zona" data-cat="comandas"><b>🧾 Comandas</b>recibos de venta · <i data-n="comandas">0</i></div>
+  <div class="zona" data-cat="gastos"><b>💸 Gastos</b>caja menor y facturas · <i data-n="gastos">0</i></div>
+ </div><input id="file" type="file" accept="image/*,application/pdf" multiple hidden><input id="carpeta" type="file" webkitdirectory multiple hidden>
+ <div class="bar"><button id="carp" class="g" title="Elige la carpeta del día: las subcarpetas CIERRE, COMANDAS y GASTOS fijan el grupo de cada archivo">📁 Subir carpeta</button><button id="scan" class="g" disabled>▶ Leer pendientes</button><button id="stop" class="g" disabled>Detener</button>
+  <select id="nuevo"><option value="">+ Papel manual…</option><option value="venta">Comanda (recibo de venta)</option><option value="gasto_caja">Gasto de caja</option><option value="factura">Factura de proveedor</option></select>
+  <label class="m"><input type="checkbox" id="pdfimg"> PDF como imagen</label>
+  <button id="vaciar" class="g">Vaciar día</button><span id="msg" class="m"></span></div>
+ <div class="fotos" id="fotos"></div>
+ <div class="wrap"><table id="td" style="min-width:1750px"><thead><tr><th>Papel</th><th>Tipo</th><th>Nº</th><th>Tercero</th><th>Detalle</th><th>Consumo</th><th>Propina</th><th>Domicilio</th><th>Efectivo</th><th>Tarjeta</th><th>Transf. / app</th><th>Fiado</th><th>Valor</th><th>Cuenta contable</th><th>Medio</th><th>Contar</th><th></th></tr></thead><tbody id="tbd"></tbody></table>
+  <div id="vacio" class="m" style="padding:26px;text-align:center">Sube el cierre, las comandas y los gastos del día (fotos o PDF). Cada papel aparece como una fila que puedes corregir.</div></div>
+ <div class="card" id="cardCierre" style="display:none"><h2>Cierre del POS <span class="m" style="text-transform:none;letter-spacing:0">(lo leído del cierre; puedes corregirlo) y cruce con tus papeles</span></h2><div class="cie" id="cie"></div>
+  <div class="wrap" style="max-height:none;margin-top:8px"><table><thead><tr><th>Concepto</th><th>Cierre</th><th>Tus papeles</th><th>Diferencia</th><th></th></tr></thead><tbody id="cru"></tbody></table></div></div>
+ <div class="card"><h2>Recaudos del banco <span class="m" style="text-transform:none;letter-spacing:0">(de tu extracto; si las dejas vacías se usan las comandas pagadas con tarjeta, transferencia o app)</span></h2>
+  <div class="bank"><div><label>Bre-B / LLAVE</label><input type="text" class="n bk" data-b="llave" inputmode="numeric"></div><div><label>Tarjetas</label><input type="text" class="n bk" data-b="tarjetas" inputmode="numeric"></div><div><label>QR</label><input type="text" class="n bk" data-b="qr" inputmode="numeric"></div><div><label>Nequi</label><input type="text" class="n bk" data-b="nequi" inputmode="numeric"></div><div><label>Transferencias</label><input type="text" class="n bk" data-b="transferencias" inputmode="numeric"></div><div><label>PSE</label><input type="text" class="n bk" data-b="pse" inputmode="numeric"></div><div><label>Pago de Rappi</label><input type="text" class="n bk" data-b="rappi" inputmode="numeric"></div></div><p class="m" id="hintb" style="margin:6px 0 0;font-size:12px"></p></div>
+ <div class="card"><h2>Asientos del día</h2>
+  <div class="wrap" style="max-height:34vh"><table><thead><tr><th>Código</th><th>Cuenta</th><th>Tercero</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Reporta</th><th>Medio</th></tr></thead><tbody id="tba"></tbody></table></div>
+  <div class="tot" id="tot"></div><ul class="av" id="av"></ul>
+  <div class="bar" style="margin-top:8px"><button id="conf" disabled>✔ Confirmar y pasar al libro</button><span class="m">Se verifica que el débito sea igual al crédito antes de pasarlo.</span></div></div>
+</section>
+<aside id="panel" class="card"></aside>
+</main>
+
+<main id="m2" hidden><section class="col">
+ <div class="bar"><b style="font-size:16px">Libro contable</b><span class="m">Solo entran días confirmados. Para corregir uno, reábrelo.</span><span class="sp"></span>
+  Desde <span class="fw"><input type="text" class="fx" id="f1" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1">📅</button><input type="date" class="fh" tabindex="-1"></span>
+  hasta <span class="fw"><input type="text" class="fx" id="f2" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1">📅</button><input type="date" class="fh" tabindex="-1"></span>
+  <button class="g" id="fclr">Todo</button><button id="xl2" disabled>⬇ Excel (MOVIMIENTOS)</button></div>
+ <div class="card" id="res2"></div>
+ <div class="wrap" style="max-height:62vh"><table style="min-width:1100px"><thead><tr><th>Fecha</th><th>Código</th><th>Cuenta</th><th>Tercero</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Reporta</th><th>Medio</th></tr></thead><tbody id="tbl"></tbody></table>
+  <div id="vacio2" class="m" style="padding:30px;text-align:center">Aún no hay días en el libro.</div></div>
+</section></main>
+<div id="toast"></div>
+<script>
+const $=s=>document.getElementById(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>Number(n||0).toLocaleString("es-CO"),fmtF=iso=>iso?iso.split("-").reverse().join("/"):"";
+const TIPOS={cierre:"Cierre de caja (POS)",venta:"Comanda (recibo de venta)",gasto_caja:"Gasto de caja",caja_menor_manuscrito:"Recibo manuscrito",factura:"Factura proveedor",otro:"Otro (ignorar)"};
+const GRUPOS=[["cierre","📋 Cierre"],["comandas","🧾 Comandas"],["gastos","💸 Gastos"],["otros","❔ Sin clasificar"]];
+const grupoDe=d=>({cierre:"cierre",venta:"comandas",gasto_caja:"gastos",caja_menor_manuscrito:"gastos",factura:"gastos"})[d.tipo]||"otros";
+const BANCO0={llave:0,tarjetas:0,qr:0,nequi:0,transferencias:0,pse:0,rappi:0};
+const MEDIOS=["Efectivo","Transferencia","Nequi","Daviplata","QR","Bre-B","Tarjeta","PSE","Rappi","Crédito personal"],GASTOS=["gasto_caja","caja_menor_manuscrito","factura"];
+const CIE=[["venta_efectivo","Venta en efectivo"],["tarjetas_sin_prop","Tarjetas (sin propina)"],["tarjetas_con_prop","Tarjetas (con propina)"],["transferencias","Transferencias / App"],["propinas_total","Total propinas"],["gastos_caja","Gastos de caja"],["base_caja","Base de caja"],["efectivo_esperado","Efectivo esperado"],["efectivo_contado","Efectivo contado"],["faltante_impreso","Faltante / sobrante"]];
+let CUENTAS=[],ctl=null,LIBRO=[],nid=0,tmr=null,sel=null,catSel="";const FOTOS={};
+const nuevoDiaObj=f=>({id:"y"+(++nid),fecha:f||"",fotos:[],docs:[],banco:{...BANCO0},cierre:{},res:null});
+let dias=[nuevoDiaObj()],act=0;const dia=()=>dias[act];
+for(const k of ["fotos","docs","banco","fecha","cierre","res"])Object.defineProperty(globalThis,k,{get:()=>dia()[k],set:v=>{dia()[k]=v},configurable:true});
+function toast(t,ms=3500){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),ms)}
+/* ══════ fechas dd/mm/aaaa (se confirman al salir del campo, nunca mientras se escribe) ══════ */
+function fechaValida(iso){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||"");if(!m)return false;const y=+m[1],mo=+m[2],d=+m[3];if(y<2000||y>2100)return false;const t=new Date(Date.UTC(y,mo-1,d));return t.getUTCFullYear()===y&&t.getUTCMonth()===mo-1&&t.getUTCDate()===d}
+function parseFecha(s){s=(s||"").trim();if(!s)return"";const m=/^(\d{1,2})\D+(\d{1,2})\D+(\d{4}|\d{2})$/.exec(s)||/^(\d{2})(\d{2})(\d{4})$/.exec(s);if(!m)return null;const y=m[3].length===2?"20"+m[3]:m[3],iso=`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;return fechaValida(iso)?iso:null}
+const fechaHtml=(iso,attrs="")=>`<span class="fw"><input type="text" class="fx" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="${esc(fmtF(iso))}" ${attrs}><button type="button" class="fp" tabindex="-1" title="Calendario">📅</button><input type="date" class="fh" tabindex="-1"></span>`;
+function comprometerFecha(x){const iso=parseFecha(x.value);if(iso===null){x.classList.add("bad");toast("Fecha no válida. Escribe día/mes/año, por ejemplo 12/09/2026.",4000);return}
+ x.classList.remove("bad");x.value=fmtF(iso);if(x.id==="f1"||x.id==="f2"){renderLibro();return}
+ if(x.id==="dfecha"){const o=iso&&dias.find((d,i)=>i!==act&&d.fecha===iso);
+  if(o&&confirm(`Ya hay otro día en análisis con la fecha ${fmtF(iso)}. ¿Unir sus papeles en un solo día?`)){o.fotos.push(...fotos.splice(0));o.docs.push(...docs.splice(0));dias.splice(act,1);act=dias.indexOf(o);irDia(act);return}
+  if(o){x.value=fmtF(fecha);return}fecha=iso;renderChips();recalcular();botones()}}
+document.addEventListener("input",e=>{const t=e.target;if(t.classList?.contains("fx")){const dg=t.value.replace(/\D/g,"").slice(0,8);t.value=dg.slice(0,2)+(dg.length>2?"/":"")+dg.slice(2,4)+(dg.length>4?"/":"")+dg.slice(4);t.classList.remove("bad")}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList?.contains("fx")){e.preventDefault();e.target.blur()}});
+document.addEventListener("focusout",e=>{if(e.target.isConnected&&e.target.classList?.contains("fx"))comprometerFecha(e.target)});
+document.addEventListener("click",e=>{const b=e.target.closest?.(".fp");if(!b)return;const w=b.parentElement,h=w.querySelector(".fh");h.value=parseFecha(w.querySelector(".fx").value)||"";try{h.showPicker()}catch(_){h.focus()}});
+document.addEventListener("change",e=>{const t=e.target;if(t.classList?.contains("fh")&&t.value){const x=t.parentElement.querySelector(".fx");x.value=fmtF(t.value);comprometerFecha(x)}});
+$("fwd").innerHTML=fechaHtml("",'id="dfecha"');
+/* ══════ días en análisis ══════ */
+function renderChips(){$("dchips").innerHTML=dias.map((d,i)=>`<span class="dchip ${i===act?"on":""}" data-d="${i}">📅 ${d.fecha?fmtF(d.fecha):"Sin fecha"} <small>${d.docs.filter(x=>x.contar||x.tipo==="cierre").length} papeles</small>${d.res&&d.res.filas.length?(d.res.diferencia===0?"✓":"⚠"):""}${dias.length>1?`<b data-x="${i}" title="Quitar este día">✕</b>`:""}</span>`).join("")+`<button class="g" id="dnew">+ Nuevo día</button>`;$("b1").textContent=dias.reduce((s,d)=>s+d.docs.filter(x=>x.contar||x.tipo==="cierre").length,0)}
+$("dchips").addEventListener("click",e=>{const x=e.target.dataset.x;if(x!==undefined){const d=dias[+x];if((d.docs.length||d.fotos.length)&&!confirm(`¿Quitar el día ${d.fecha?fmtF(d.fecha):"sin fecha"} con sus ${d.docs.length} papeles?`))return;dias.splice(+x,1);act=Math.min(act,dias.length-1);irDia(act);return}
+ if(e.target.id==="dnew"){dias.push(nuevoDiaObj());irDia(dias.length-1);return}const c=e.target.closest("[data-d]");if(c)irDia(+c.dataset.d)});
+function irDia(i){act=i;sel=null;syncUI()}
+function syncUI(){$("dfecha").value=fmtF(fecha);document.querySelectorAll(".bk").forEach(i=>i.value=banco[i.dataset.b]?fmt(banco[i.dataset.b]):"");renderChips();renderFotos();renderDocs();renderAsientos();renderCierre();botones();if(dia().docs.length&&!dia().res)recalcular()}
+/* ══════ módulo ①: papeles del día (fotos y PDF) ══════ */
+const nuevoDoc=(tipo,o={})=>({id:"d"+(++nid),tipo,numero:"",fecha:"",tercero:tipo==="venta"?"Consumidor Final":tipo==="gasto_caja"?"Cuantías menores":"",detalle:"",valor:0,consumo:0,propina:0,domicilio:0,efectivo:0,tarjeta:0,transf:0,credito:0,medio_transf:"",cliente:"",medio:"Efectivo",cuenta:"",conf:0,motivo:"",contar:true,dup_de:"",avisos:[],texto:"",origen:"manual",foto:null,...o});
+const CATS={cierre:"cierre",cierres:"cierre",comanda:"comandas",comandas:"comandas",gasto:"gastos",gastos:"gastos"};
+const catDeRuta=r=>{const ps=(r||"").split(/[\\/]/).reverse();for(const p of ps){const b=p.toLowerCase().replace(/\.[a-z0-9]+$/,"");for(const k in CATS)if(b===k||new RegExp("^"+k+"(?![a-z])").test(b))return CATS[k]}return""};
+const unidad=(f,url,p,n,cat,diaId,pdf)=>{const u={id:"f"+(++nid),file:f,ruta:f.webkitRelativePath||f.name,giro:"auto",url,nombre:f.name+(pdf&&n>1?` · p${p}/${n}`:""),pagina:p,pdf,cat,dia:diaId,estado:"pendiente",error:""};FOTOS[u.id]=u;return u};
+async function tomar(fs,cat0=""){const d=dia();let n=0;
+ for(const f of [...fs]){const esPdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name);const url=URL.createObjectURL(f);const cat=cat0||catDeRuta(f.webkitRelativePath||f.name);
+  if(esPdf){const fd=new FormData();fd.append("pdf",f);let j;try{j=await (await fetch("/api/contable/pdf_info",{method:"POST",body:fd})).json()}catch(e){j={error:String(e)}}
+   if(j.error){toast(`${f.name}: ${j.error}`,5000);continue}for(let p=1;p<=j.paginas;p++){d.fotos.push(unidad(f,url,p,j.paginas,cat,d.id,true));n++}}
+  else if(f.type.startsWith("image/")){d.fotos.push(unidad(f,url,0,1,cat,d.id,false));n++}}
+ if(!n)return;renderFotos();botones();procesar()}
+async function procesar(){if(ctl)return;ctl=new AbortController();botones();const cola=dias.flatMap(d=>d.fotos).filter(f=>f.estado==="pendiente"||f.estado==="error");let n=0;
+ for(const f of cola){if(ctl.signal.aborted)break;f.estado="leyendo";f.error="";$("msg").textContent=`Leyendo ${++n} de ${cola.length}…`;renderFotos();
+  try{const fd=new FormData();fd.append("foto",f.file);fd.append("pagina",f.pagina||1);fd.append("categoria",f.cat||"");fd.append("ruta",f.ruta||"");fd.append("giro",f.giro||"auto");fd.append("como_imagen",$("pdfimg").checked?"1":"");fd.append("motor",$("motor").value);fd.append("modelo",$("modelo").value);
+   const j=await (await fetch("/api/contable/escanear",{method:"POST",body:fd,signal:ctl.signal})).json();
+   if(!j.ok){f.estado="error";f.error=j.error}else{f.estado="listo";f.fuente=j.fuente;f.texto=j.texto;repartir(f,j.documentos)}}
+  catch(e){f.estado=e.name==="AbortError"?"pendiente":"error";f.error=String(e)}
+  renderFotos();renderDocs();renderChips();recalcular()}
+ ctl=null;$("msg").textContent="Listo. Revisa los papeles (amarillo = dudoso), el cruce con el cierre y los asientos.";botones()}
+function repartir(f,nuevos){const origen=dias.find(d=>d.id===f.dia)||dia(),c={};nuevos.forEach(d=>d.fecha&&(c[d.fecha]=(c[d.fecha]||0)+1));
+ if(!origen.fecha){const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];if(top)origen.fecha=top[0]}let movidos={};
+ nuevos.forEach(d=>{const x={...nuevoDoc(d.tipo),...d,foto:f.id};let dest=origen;
+  if(d.fecha&&origen.fecha&&d.fecha!==origen.fecha){dest=dias.find(y=>y.fecha===d.fecha);if(!dest){dest=nuevoDiaObj(d.fecha);dias.push(dest)}movidos[d.fecha]=(movidos[d.fecha]||0)+1}dest.docs.push(x)});
+ if(origen===dia())$("dfecha").value=fmtF(origen.fecha);
+ const m=Object.entries(movidos);if(m.length)toast("Algunos papeles pasaron al día que traen escrito: "+m.map(([k,v])=>`${fmtF(k)} (${v})`).join(", "),5500)}
+function renderFotos(){$("fotos").innerHTML=fotos.map(f=>`<span class="fo ${f.estado==="error"?"e":""}" ${f.estado==="error"?`data-retry="${f.id}" title="${esc(f.error)} — clic para reintentar"`:`title="${f.fuente==="texto"?"leído del texto del PDF":f.fuente==="ocr"?"leído con el OCR":""}"`}>${f.pdf?"📄":"📷"} ${esc(f.nombre)} ${f.estado==="leyendo"?"⏳":f.estado==="listo"?"✓":f.estado==="error"?"✗ reintentar":"· en cola"}${f.estado==="listo"&&!f.pdf?` <b data-rot="${f.id}" title="Girar 90° y volver a leer" style="cursor:pointer">↻</b>`:""}</span>`).join("")}
+$("fotos").onclick=e=>{const r=e.target.dataset.rot;if(r){const f=FOTOS[r];dias.forEach(d=>d.docs=d.docs.filter(x=>x.foto!==r));f.giro=((f.giro==="auto"?0:+f.giro)+90)%360;f.estado="pendiente";renderFotos();renderDocs();procesar();return}const id=e.target.dataset.retry;if(id){FOTOS[id].estado="pendiente";renderFotos();procesar()}};
+const campoN=(d,f,na)=>`<td class="${na?"na":""}"><input type="text" class="n" inputmode="numeric" data-id="${d.id}" data-f="${f}" value="${d[f]?fmt(d[f]):""}"></td>`;
+const campoT=(d,f)=>`<td><input type="text" data-id="${d.id}" data-f="${f}" value="${esc(d[f])}"></td>`;
+function filaDoc(d){const v=d.tipo==="venta",g=GASTOS.includes(d.tipo),c=d.tipo==="cierre",fo=FOTOS[d.foto];const dud=g&&d.contar&&(!d.cuenta||(d.conf<0.75&&!d.cuenta_manual));
+ return `<tr class="${d.contar||c?"":"dup"} ${sel===d.id?"sel":""}"><td class="f" data-sel="${d.id}" title="${esc((d.avisos||[]).join("\n"))}">${fo?(fo.pdf?"📄 ":`<img src="${fo.url}">`):""}${esc(d.origen==="manual"?"manual":(d.origen||"").slice(0,16))}${d.dup_de?'<span class="tag">duplicado</span>':""}${(d.avisos||[]).length&&(d.contar||c)?'<span class="tag">⚠</span>':""}</td>
+  <td><select data-id="${d.id}" data-f="tipo">${Object.entries(TIPOS).map(([k,t])=>`<option value="${k}" ${k===d.tipo?"selected":""}>${t}</option>`).join("")}</select></td>
+  ${campoT(d,"numero")}${campoT(d,"tercero")}${campoT(d,"detalle")}${campoN(d,"consumo",!v)}${campoN(d,"propina",!v)}${campoN(d,"domicilio",!v)}${campoN(d,"efectivo",!v)}${campoN(d,"tarjeta",!v)}${campoN(d,"transf",!v)}${campoN(d,"credito",!v)}${campoN(d,"valor",v||c)}
+  <td class="${g?"":"na"}"><select class="${dud?"dud":""}" data-id="${d.id}" data-f="cuenta" title="${esc(d.motivo||"")}"><option value="">— elegir —</option>${CUENTAS.map(k=>`<option value="${k.codigo}" ${k.codigo===d.cuenta?"selected":""}>${k.codigo} · ${esc(k.nombre)}</option>`).join("")}</select></td>
+  <td class="${v||c?"na":""}"><select data-id="${d.id}" data-f="medio"><option ${d.medio===""?"selected":""} value=""></option>${MEDIOS.concat(d.medio==="Mixto"?["Mixto"]:[]).map(m=>`<option ${m===d.medio?"selected":""}>${m}</option>`).join("")}</select></td>
+  <td style="text-align:center">${c?"":`<input type="checkbox" data-id="${d.id}" data-f="contar" ${d.contar?"checked":""}>`}</td><td><button class="g" data-del="${d.id}">✕</button></td></tr>`}
+function renderDocs(){const volver=guardarFoco();let h="";
+ for(const [g,tit] of GRUPOS){const L=docs.filter(d=>grupoDe(d)===g);if(L.length)h+=`<tr class="gh"><td colspan="17">${tit} · ${L.length}</td></tr>`+L.map(filaDoc).join("")}
+ $("tbd").innerHTML=h;$("vacio").style.display=docs.length?"none":"block";
+ document.querySelectorAll("#zonas i").forEach(i=>i.textContent=docs.filter(d=>grupoDe(d)===i.dataset.n).length);renderChips();botones();panel();volver()}
+function guardarFoco(){const a=document.activeElement;if(!a||!a.closest||!a.closest("#tbd")||!a.dataset.id)return()=>{};const s=`#tbd [data-id="${a.dataset.id}"][data-f="${a.dataset.f}"]`,v=a.value,p=a.selectionStart;return()=>{const n=document.querySelector(s);if(n){n.value=v;n.focus();try{n.setSelectionRange(p,p)}catch(_){}}}}
+$("tbd").addEventListener("input",e=>{const t=e.target,d=docs.find(x=>x.id===t.dataset.id);if(!d||t.tagName==="SELECT"||t.type==="checkbox")return;const f=t.dataset.f;
+ if(["consumo","propina","domicilio","efectivo","tarjeta","transf","credito","valor"].includes(f))d[f]=parseInt(t.value.replace(/\D/g,""),10)||0;else d[f]=t.value;recalcular()});
+$("tbd").addEventListener("focusout",e=>{const t=e.target,d=docs.find(x=>x.id===t.dataset.id);if(d&&t.classList.contains("n"))t.value=d[t.dataset.f]?fmt(d[t.dataset.f]):""});
+$("tbd").addEventListener("change",async e=>{const t=e.target,d=docs.find(x=>x.id===t.dataset.id);if(!d)return;const f=t.dataset.f;
+ if(f==="contar"){d.contar=t.checked;d.manual_contar=true;recalcular();renderDocs();return}
+ if(f==="tipo"){if(d.texto){const j=await (await fetch("/api/contable/releer",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tipo:t.value,texto:d.texto})})).json();
+   if(j.documento)Object.assign(d,j.documento,{id:d.id,foto:d.foto,origen:d.origen,manual_contar:false,cuenta_manual:false,contar:j.documento.contar})}
+  else{d.tipo=t.value;d.cuenta=d.cuenta_manual?d.cuenta:"";d.tercero=d.tipo==="venta"?"Consumidor Final":(d.tercero==="Consumidor Final"?"Cuantías menores":d.tercero)}
+  d.manual_contar=false;renderDocs();recalcular();return}
+ if(f==="cuenta"){d.cuenta=t.value;d.cuenta_manual=!!t.value;d.conf=t.value?1:0;renderDocs();recalcular();return}
+ if(f==="medio"){d.medio=t.value;recalcular()}});
+$("tbd").addEventListener("click",e=>{const x=e.target.dataset.del;if(x){docs=docs.filter(d=>d.id!==x);if(sel===x)sel=null;renderDocs();recalcular();return}const s=e.target.closest("[data-sel]");if(s){sel=s.dataset.sel;renderDocs()}});
+function panel(){const p=$("panel"),d=docs.find(x=>x.id===sel);if(!d){p.classList.remove("on");return}p.classList.add("on");const fo=FOTOS[d.foto];
+ p.innerHTML=`<h2>${esc(TIPOS[d.tipo])} ${esc(d.numero)}</h2>${fo?(fo.pdf?`<iframe src="${fo.url}#page=${fo.pagina}" style="width:100%;height:300px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px"></iframe>`:`<div id="imgbox"><img src="${fo.url}"></div>`):""}<h2>Texto leído</h2><pre>${esc(d.texto||"(papel manual)")}</pre>
+ ${(d.avisos||[]).length?`<ul class="av">${d.avisos.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:""}${d.motivo?`<p class="m">Cuenta propuesta: ${esc(d.motivo)}</p>`:""}<div class="bar"><button class="g" id="cp">Cerrar</button></div>`;$("cp").onclick=()=>{sel=null;renderDocs()}}
+document.querySelectorAll(".bk").forEach(i=>{i.addEventListener("input",()=>{banco[i.dataset.b]=parseInt(i.value.replace(/\D/g,""),10)||0;recalcular()});i.addEventListener("focusout",()=>i.value=banco[i.dataset.b]?fmt(banco[i.dataset.b]):"")});
+/* ── cálculo de asientos y cruces (en el servidor) ── */
+function recalcular(){clearTimeout(tmr);tmr=setTimeout(()=>dias.filter(d=>d.docs.length||Object.values(d.banco||{}).some(Boolean)).forEach(recalcDia),160)}
+async function recalcDia(d){const body={fecha:d.fecha,banco:d.banco,cierre:d.cierre,documentos:d.docs.map(x=>({...x,texto:(x.texto||"").slice(0,1500)}))};let r;
+ try{r=await (await fetch("/api/contable/asientos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json()}catch(e){return}
+ d.res=r;let cambio=false;r.documentos.forEach((x,i)=>{const o=d.docs[i];if(!o)return;for(const k of ["cuenta","conf","motivo","contar","dup_de"])if(o[k]!==x[k]){o[k]=x[k];cambio=true}});
+ renderChips();if(d===dia()){renderAsientos();renderCierre();if(cambio)renderDocs();botones()}}
+function renderAsientos(){const r=res;if(!r){$("tba").innerHTML="";$("tot").innerHTML="";$("av").innerHTML="";return}
+ $("tba").innerHTML=r.filas.map(f=>`<tr class="${f.grupo==="venta"?"venta":"gasto"}"><td>${esc(f.codigo)}</td><td>${esc(f.nombre)}</td><td>${esc(f.tercero)}</td><td>${esc(f.descripcion)}</td><td class="num">${f.debito?fmt(f.debito):""}</td><td class="num">${f.credito?fmt(f.credito):""}</td><td>${esc(f.reporta)}</td><td>${esc(f.medio)}</td></tr>`).join("");
+ $("tot").innerHTML=r.filas.length?`<span>Débito ${fmt(r.debito)}</span><span>Crédito ${fmt(r.credito)}</span>${r.diferencia===0?'<span class="ok">✓ El día cuadra</span>':`<span class="bad">⚠ No cuadra: diferencia ${fmt(r.diferencia)}</span>`}`:"";
+ $("av").innerHTML=r.avisos.map(a=>`<li>${esc(a)}</li>`).join("")}
+function renderCierre(){const r=res,c=(r&&r.cierre)||{},hay=docs.some(d=>d.tipo==="cierre")||Object.keys(cierre).length;$("cardCierre").style.display=hay?"":"none";if(!hay)return;
+ if(!document.activeElement?.classList?.contains("ci"))$("cie").innerHTML=CIE.map(([k,t])=>`<div><label>${t}</label><input type="text" class="n ci" data-c="${k}" inputmode="numeric" value="${c[k]?fmt(c[k]):""}"></div>`).join("");
+ $("cru").innerHTML=(r&&r.cruces||[]).map(x=>`<tr><td>${esc(x.concepto)}</td><td class="num">${fmt(x.cierre)}</td><td class="num">${fmt(x.papeles)}</td><td class="num">${x.diferencia?fmt(x.diferencia):""}</td><td class="${x.ok?"ok":"mal"}">${x.ok?"✓ coincide":"⚠ "+esc(x.nota||"revisa: ¿falta un papel o se leyó mal?")}</td></tr>`).join("")||`<tr><td colspan="5" class="m">Sube comandas o gastos para compararlos con el cierre.</td></tr>`;
+ $("hintb").textContent=c.tarjetas_con_prop||c.transferencias?`Del cierre del POS: tarjetas con propina ${fmt(c.tarjetas_con_prop)} · transferencias/app ${fmt(c.transferencias)} (pueden ayudarte a comparar con tu extracto).`:""}
+$("cie").addEventListener("input",e=>{const k=e.target.dataset.c;if(!k)return;cierre[k]=parseInt(e.target.value.replace(/[^\d-]/g,""),10)||0;recalcular()});
+$("cie").addEventListener("focusout",e=>{const k=e.target.dataset.c;if(k&&cierre[k]!==undefined)e.target.value=cierre[k]?fmt(cierre[k]):""});
+const dudosos=()=>docs.filter(d=>d.contar&&GASTOS.includes(d.tipo)&&(!d.cuenta||(d.conf<0.75&&!d.cuenta_manual)));
+function botones(){const busy=dias.flatMap(d=>d.fotos).some(f=>f.estado==="leyendo"||f.estado==="pendiente");$("scan").disabled=!dias.flatMap(d=>d.fotos).some(f=>f.estado==="pendiente"||f.estado==="error")||!!ctl;$("stop").disabled=!ctl;
+ $("conf").disabled=!(fechaValida(fecha)&&res&&res.filas.length&&!busy)}
+$("scan").onclick=procesar;$("stop").onclick=()=>ctl&&ctl.abort();
+$("nuevo").onchange=e=>{if(!e.target.value)return;docs.push(nuevoDoc(e.target.value));e.target.value="";renderDocs();recalcular()};
+$("vaciar").onclick=()=>{if((docs.length||fotos.length)&&!confirm("¿Vaciar los papeles de este día? (lo ya confirmado en el libro no se borra)"))return;dias[act]=nuevoDiaObj();$("msg").textContent="";syncUI()};
+document.querySelectorAll(".zona").forEach(z=>{z.onclick=()=>{catSel=z.dataset.cat;$("file").click()};
+ ["dragover","dragenter"].forEach(n=>z.addEventListener(n,e=>{e.preventDefault();z.classList.add("over")}));["dragleave","drop"].forEach(n=>z.addEventListener(n,e=>{e.preventDefault();z.classList.remove("over")}));
+ z.addEventListener("drop",e=>tomar(e.dataTransfer.files,z.dataset.cat))});
+$("carp").onclick=()=>$("carpeta").click();
+$("carpeta").onchange=e=>{tomar([...e.target.files].filter(f=>/\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name)),"");e.target.value=""};
+$("file").onchange=e=>{tomar(e.target.files,catSel);e.target.value=""};
+$("conf").onclick=async()=>{const dd=dudosos();
+ if(res.diferencia!==0&&!confirm(`El día NO cuadra: débito ${fmt(res.debito)} · crédito ${fmt(res.credito)} (diferencia ${fmt(res.diferencia)}).\n\n¿Pasarlo al libro de todas formas?`))return;
+ const cr=(res.cruces||[]).filter(x=>!x.ok);if(cr.length&&!confirm(`El cierre del POS no coincide con tus papeles en: ${cr.map(x=>x.concepto).join(", ")}.\n\n¿Pasarlo al libro de todas formas?`))return;
+ if(dd.length&&!confirm(`${dd.length} gasto(s) tienen la cuenta sin confirmar (amarillo).\n\n¿Pasarlos así?`))return;
+ for(const d of docs)if(d.cuenta_manual&&d.contar)await fetch("/api/contable/aprender",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cuenta:d.cuenta,tercero:d.tipo==="factura"?d.tercero:"",detalle:d.detalle})});
+ const post=rep=>fetch("/api/contable/libro",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fecha,banco,cierre,documentos:docs.map(d=>({...d,texto:(d.texto||"").slice(0,1500)})),reemplazar:rep})});
+ let r=await post(false);if(r.status===409){if(!confirm(`Ya hay un día confirmado con la fecha ${fmtF(fecha)}.\n¿Reemplazarlo por este?`))return;r=await post(true)}
+ const j=await r.json();if(!r.ok)return toast(j.error||"No se pudo confirmar");toast(`✔ El día ${fmtF(fecha)} pasó al libro (${j.dias} ${j.dias===1?"día":"días"})`,4500);
+ dias.splice(act,1);if(!dias.length)dias.push(nuevoDiaObj());act=Math.min(act,dias.length-1);$("msg").textContent="";syncUI();await cargarLibro()};
+/* ══════ módulo ②: libro ══════ */
+async function cargarLibro(){LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length;renderLibro()}
+const fval=id=>parseFecha($(id).value)||"";
+function renderLibro(){const a=fval("f1"),b=fval("f2"),L=LIBRO.filter(d=>(!a||d.fecha>=a)&&(!b||d.fecha<=b));$("vacio2").style.display=L.length?"none":"block";$("xl2").disabled=!L.length;
+ $("tbl").innerHTML=L.map(d=>`<tr class="dia"><td colspan="5">📅 ${fmtF(d.fecha)} · ${d.filas.length} filas · ${d.documentos.filter(x=>x.contar).length} papeles${(d.cruces||[]).some(x=>!x.ok)?' · <span class="bad">⚠ cierre ≠ papeles</span>':""}</td><td class="num">${fmt(d.debito)}</td><td class="num">${fmt(d.credito)}</td><td colspan="2">${d.diferencia===0?'<span class="ok">✓ cuadra</span>':`<span class="bad">⚠ dif. ${fmt(d.diferencia)}</span>`} <button class="g" data-ab="${d.fecha}">✎ Reabrir</button> <button class="g" data-bo="${d.fecha}">✕</button></td></tr>`+
+  d.filas.map(f=>`<tr class="${f.grupo==="venta"?"venta":"gasto"}"><td>${fmtF(f.fecha)}</td><td>${esc(f.codigo)}</td><td>${esc(f.nombre)}</td><td>${esc(f.tercero)}</td><td>${esc(f.descripcion)}</td><td class="num">${f.debito?fmt(f.debito):""}</td><td class="num">${f.credito?fmt(f.credito):""}</td><td>${esc(f.reporta)}</td><td>${esc(f.medio)}</td></tr>`).join("")).join("");
+ const filas=L.flatMap(d=>d.filas),deb=filas.reduce((s,f)=>s+f.debito,0),cre=filas.reduce((s,f)=>s+f.credito,0),ing=filas.filter(f=>f.codigo[0]==="4").reduce((s,f)=>s+f.credito-f.debito,0),gas=filas.filter(f=>f.codigo&&f.codigo[0]==="5").reduce((s,f)=>s+f.debito-f.credito,0),r=ing-gas;
+ $("res2").innerHTML=L.length?`<div class="tot" style="margin:0"><span>${L.length} ${L.length===1?"día":"días"}</span><span>Débito ${fmt(deb)}</span><span>Crédito ${fmt(cre)}</span>${deb===cre?'<span class="ok">✓ cuadra</span>':`<span class="bad">⚠ dif. ${fmt(deb-cre)}</span>`}<span class="sp"></span><span>Ingresos ${fmt(ing)}</span><span>Gastos ${fmt(gas)}</span><span class="${r>=0?"ok":"bad"}">${r>=0?"▲ Ganancia":"▼ Pérdida"} ${fmt(Math.abs(r))}</span></div><p class="m" style="margin:6px 0 0;font-size:12px">El resultado no descuenta el costo de los insumos consumidos (quedan como activo): falta el inventario final del mes.</p>`:"<span class='m'>Sin datos en este rango.</span>"}
+$("tbl").addEventListener("click",async e=>{const ab=e.target.dataset.ab,bo=e.target.dataset.bo;
+ if(bo&&confirm(`¿Borrar el día ${fmtF(bo)} del libro?`)){await fetch("/api/contable/libro/"+bo,{method:"DELETE"});await cargarLibro()}
+ if(ab){const d=LIBRO.find(x=>x.fecha===ab);if(dias.some(x=>x.fecha===ab)&&!confirm(`El día ${fmtF(ab)} ya está en análisis. ¿Reemplazarlo por el del libro?`))return;
+  const n=nuevoDiaObj(d.fecha);n.docs=d.documentos.map(x=>({...x,foto:null,origen:x.origen||"libro",manual_contar:true}));n.banco={...BANCO0,...d.banco};n.cierre=d.cierre||{};
+  const i=dias.findIndex(x=>x.fecha===ab);if(i>=0)dias[i]=n;else if(dias.length===1&&!dias[0].docs.length&&!dias[0].fotos.length)dias[0]=n;else dias.push(n);act=dias.indexOf(n);irTab(1);syncUI();recalcular();toast("Día reabierto: corrígelo y vuelve a confirmarlo")}});
+$("fclr").onclick=()=>{$("f1").value="";$("f2").value="";renderLibro()};
+$("xl2").onclick=async()=>{const r=await fetch(`/api/contable/excel?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudo generar el Excel");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"reporte_contable.xlsx";a.click()};
+function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;if(n==2)cargarLibro()}
+$("tabs").onclick=e=>{const t=e.target.closest("button");if(t)irTab(t.dataset.tab)};
+$("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
+document.addEventListener("fullscreenchange",()=>$("fs").textContent=document.fullscreenElement?"✕ Salir de pantalla completa":"⛶ Pantalla completa");
+$("motor").onchange=()=>$("modelo").style.display=$("motor").value==="local"?"":"none";
+window.addEventListener("beforeunload",e=>{if(dias.some(d=>d.docs.length)){e.preventDefault();e.returnValue=""}});
+async function estado(){try{const j=await (await fetch("/api/estado")).json(),c=$("chip");c.className="chip "+(j.ollama?"ok":"bad");c.textContent=j.ollama?"● Ollama conectado":"● Ollama sin conexión";const m=$("modelo"),cur=m.value||j.modelo;let ms=j.modelos.length?j.modelos:[j.modelo];if(j.modelos.length&&!ms.includes(j.modelo))ms=[j.modelo,...ms];m.innerHTML=ms.map(x=>`<option ${x===cur?"selected":""}>${esc(x)}</option>`).join("")}catch(e){$("chip").textContent="● Servidor sin respuesta"}}
+(async()=>{CUENTAS=(await (await fetch("/api/contable/catalogo")).json()).cuentas.filter(c=>c.clase!=="PATRIMONIO");syncUI();await cargarLibro();estado();setInterval(estado,20000)})();
+</script></body></html>

@@ -1,0 +1,13 @@
+Fecha: 28/09/2026
+Total vendido: 1.250.000
+Numero de ordenes: 62
+Facturas anuladas: 3
+Propinas: 45.000
+Base: 100.000
+Cortesia: 15.000
+Transferencias: 300.000
+Efectivo: 850.000
+Rappi: 80.000
+Caja menor: 25.000
+Domicilio: 120.000
+Descontar: 10.000
