@@ -138,6 +138,54 @@ def marcar_duplicados(docs: list) -> list:
     return docs
 
 
+COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id"]
+
+
+def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
+    """Hoja DATOS OCR (R9, ADR-002): una fila por papel y medio de pago, también los que no cuentan (duplicados, cierre)
+    o van a puente, para que se vea qué se leyó y de dónde sale cada cifra. `todos` ya pasó por marcar_duplicados.
+    estado: ok (suma) · no cuenta · en extracto (lo cubre el extracto bancario) · pendiente (sin valor leído).
+    bloque: venta · caja · factura · extracto · rappi, el asiento al que va la fila."""
+    datos = []
+    def dato(d=None, **k):
+        r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="")
+        if d: r.update(archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
+        r.update(k); datos.append(r)
+    for k, desc, medio in RECAUDOS_BANCO:
+        if int(banco.get(k) or 0): dato(tipo="extracto", archivo="extracto bancario", detalle=desc, valor=int(banco[k]), medio=medio, cuenta=BANCO, bloque="extracto")
+    if int(banco.get("rappi") or 0): dato(tipo="extracto", archivo="extracto bancario", detalle="Pagos interbancarios Rappi", valor=int(banco["rappi"]), medio="Transferencia", cuenta=BANCO, bloque="rappi")
+    en_ext = any(int(banco.get(k) or 0) for k, _, _ in RECAUDOS_BANCO)
+    for d in todos:
+        if not d.get("contar") or d["tipo"] == "cierre":
+            dato(d, valor=d.get("valor") or d.get("consumo") or 0, estado="no cuenta",
+                 aviso=f"duplicado de {d['dup_de']}" if d.get("dup_de") else ("cierre de caja (se usa para cruzar)" if d["tipo"] == "cierre" else (d.get("motivo") or "desmarcado")))
+        elif d["tipo"] == "venta":
+            n0 = len(datos); r = repartir(d); tot = d.get("tarjeta", 0) + d.get("transf", 0) + d.get("credito", 0)
+            if d["efectivo"] or r["cash_tip"] or r["cash_dom"]:   # con valor 0 si solo la propina se dio en efectivo, para que el tope del efectivo se vea
+                dato(d, tercero="Consumidor Final", valor=d["efectivo"], medio="Efectivo", cuenta=EFECTIVO, propina=r["cash_tip"], domicilio=r["cash_dom"], bloque="venta")
+            partes = []
+            if d.get("tarjeta"): partes.append((BANCO, "Consumidor Final", "Tarjeta", d["tarjeta"], en_ext))
+            if d.get("transf"):
+                m = d.get("medio_transf") or "Transferencia"
+                partes.append((POR_COBRAR, "Rappi", "App", d["transf"], False) if m == "Rappi" else (BANCO, "Consumidor Final", m, d["transf"], en_ext))
+            if d.get("credito"): partes.append((CXC_CLIENTES, d.get("cliente") or "Cliente (crédito personal)", "Crédito personal", d["credito"], False))
+            for cod, ter, medio, v, ext in partes:   # la propina y el domicilio no pagados en efectivo se reparten según lo que puso cada medio (como en construir)
+                dato(d, tercero=ter, valor=v, medio=medio, cuenta=cod, estado="en extracto" if ext else "ok", aviso="lo cubre el extracto bancario" if ext else "",
+                     propina=round(r["tip_e"] * v / tot), domicilio=round(r["dom_e"] * v / tot), bloque="venta")
+            if d.get("consumo") and not d.get("cortesia") and not tot + d["efectivo"]:
+                dato(d, tercero="Consumidor Final", valor=d["consumo"], medio="(sin medio)", cuenta=cfg["puente_ingreso"], aviso="no se leyó con qué se pagó; corrige el medio", bloque="venta")
+            if len(datos) == n0:   # no se leyó ninguna cifra: no tiene asiento, pero el papel se ve para corregirlo
+                dato(d, estado="no cuenta" if d.get("cortesia") else "pendiente", aviso="cortesía" if d.get("cortesia") else "no se leyó el valor de la venta", bloque="venta")
+        elif d["tipo"] in ("gasto_caja", "caja_menor_manuscrito") and d["medio"] in ("", "Efectivo"):
+            dato(d, valor=d["valor"], medio="Efectivo", cuenta=d.get("cuenta") or cfg["puente_gasto"], aviso="" if d.get("cuenta") else "falta la cuenta", bloque="caja")
+        elif d["tipo"] in ("factura", "gasto_caja", "caja_menor_manuscrito"):
+            dato(d, valor=d["valor"], medio=d["medio"], cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
+                 aviso="; ".join(a for a in ("" if d["valor"] else "sin valor leído", "" if d["cuenta"] else "falta la cuenta") if a), bloque="factura")
+        else:
+            dato(d, valor=d.get("valor") or 0, estado="no cuenta", aviso="tipo de papel sin asiento")
+    return datos
+
+
 def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None) -> dict:
     cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; banco = banco or {}; filas, avisos, pendientes = [], [], []
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
@@ -252,4 +300,4 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     if any(not x["ok"] for x in cruces): avisos.append(f"El cierre del POS no coincide con tus papeles en {sum(not x['ok'] for x in cruces)} concepto(s): ¿falta alguna comanda o se leyó mal?")
     deb, cre = sum(f["debito"] for f in filas), sum(f["credito"] for f in filas)
     if deb != cre: avisos.insert(0, f"El día no cuadra: débito {deb:,} · crédito {cre:,} (diferencia {deb - cre:,})".replace(",", "."))
-    return dict(filas=filas, debito=deb, credito=cre, diferencia=deb - cre, avisos=avisos, pendientes=pendientes, documentos=todos, cierre=cie, cruces=cruces, faltan=faltan)
+    return dict(filas=filas, datos=datos_ocr(fecha, todos, banco, cfg), debito=deb, credito=cre, diferencia=deb - cre, avisos=avisos, pendientes=pendientes, documentos=todos, cierre=cie, cruces=cruces, faltan=faltan)

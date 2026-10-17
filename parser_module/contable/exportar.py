@@ -14,9 +14,30 @@ _f = lambda c: PatternFill("solid", fgColor=c)
 FINO = Border(bottom=Side(style="hair", color="BFBFBF"))
 
 
-def libro_a_excel(dias: dict, negocio: str = "", nit: str = "") -> bytes:
-    """dias: {'2026-09-12': [fila, …]} con filas de asientos.construir()."""
+DATOS_HEAD = {"fecha": "Fecha", "archivo": "Archivo de origen", "tipo": "Tipo", "numero": "Número", "tercero": "Tercero", "detalle": "Detalle", "valor": "Valor",
+              "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id"}
+AMARILLO = "FFF2CC"
+
+
+def hoja_datos(wb, datos: dict):
+    """DATOS OCR (R9, ADR-002), primera hoja: una fila por papel y medio de pago. Lo que no está «ok» o trae aviso va en amarillo."""
+    ws = wb.create_sheet("DATOS OCR"); ws.append(list(DATOS_HEAD.values()))
+    for c in ws[1]: c.font = Font(bold=True); c.fill = _f(AZUL); c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    for f in sorted(datos):
+        for r in datos[f]:
+            ws.append([date.fromisoformat(r["fecha"]) if k == "fecha" else (int(r[k]) if k == "cuenta" and str(r[k]).isdigit() else (r[k] if r[k] != "" else None)) for k in DATOS_HEAD])
+            k = ws.max_row; ws.cell(k, 1).number_format = "dd/mm/yyyy"
+            for i in (7, 12, 13): ws.cell(k, i).number_format = '$ #,##0;-$ #,##0;"$ -"'
+            if r["estado"] != "ok" or r["aviso"]:
+                for c in ws[k]: c.fill = _f(AMARILLO)
+    for i, w in enumerate([12, 40, 14, 10, 26, 30, 14, 16, 11, 12, 36, 12, 12, 10, 10], 1): ws.column_dimensions[L(i)].width = w
+    ws.freeze_panes = "A2"; ws.auto_filter.ref = f"A1:{L(len(DATOS_HEAD))}{max(ws.max_row, 2)}"
+
+
+def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | None = None) -> bytes:
+    """dias: {'2026-09-12': [fila, …]} con filas de asientos.construir(); datos: {'2026-09-12': construir()['datos']} para la hoja DATOS OCR."""
     wb = Workbook(); wb.remove(wb.active)
+    if datos: hoja_datos(wb, datos)
     por_mes, avisos = defaultdict(list), []
     for f in sorted(dias):
         for x in dias[f]:   # R10: una fila sin código de cuenta no entra a MOVIMIENTOS; se avisa

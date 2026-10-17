@@ -339,9 +339,10 @@ def cont_borrar(fecha):
 @app.get("/api/contable/excel")
 def cont_excel():
     d, h = request.args.get("desde", ""), request.args.get("hasta", "")
-    dias = {k: v["filas"] for k, v in _leer_libro().items() if (not d or k >= d) and (not h or k <= h)}
-    c = _cont_cfg()
-    return send_file(io.BytesIO(libro_a_excel(dias, c.get("negocio", ""), c.get("nit", ""))), mimetype=XLSX, as_attachment=True,
+    lib = {k: v for k, v in _leer_libro().items() if (not d or k >= d) and (not h or k <= h)}
+    c = _cont_cfg(); dias = {k: v["filas"] for k, v in lib.items()}
+    datos = {k: construir_asientos(k, v.get("documentos", []), v.get("banco", {}), c, v.get("cierre"))["datos"] for k, v in lib.items()}   # DATOS OCR (R9): desde los papeles guardados
+    return send_file(io.BytesIO(libro_a_excel(dias, c.get("negocio", ""), c.get("nit", ""), datos)), mimetype=XLSX, as_attachment=True,
                      download_name=f"reporte_contable_{datetime.now():%Y%m%d}.xlsx")
 
 
