@@ -68,6 +68,25 @@ chk(abreviar_recibos(["85531", "85533", "85534", "85540"]) == "85531, 533, 534, 
 d_mal = leer_texto(GASTO.format(n=300, v="5,000", d="algo raro"))
 r3 = construir("2026-09-13", d_mal)
 chk(any("sin cuenta" in a for a in r3["avisos"]) and r3["diferencia"] == 0, "un gasto sin cuenta se avisa (no se inventa una)")
+# cuentas puente (R10): nada se descarta en silencio y ninguna fila queda sin código
+from parser_module.contable.asientos import CFG as CFG_A
+PI, PG = CFG_A["puente_ingreso"], CFG_A["puente_gasto"]
+chk(r3["filas"] and all(x["codigo"] for x in r3["filas"]) and r3["filas"][0]["codigo"] == PG, f"gasto de caja sin cuenta → {PG} (puente_gasto), ninguna fila sin código")
+vs = dict(v, id="sinmedio", numero="85600", efectivo=0, tarjeta=0, transf=0, credito=0, avisos=[])
+r6 = construir("2026-09-12", [vs])
+p6 = [(x["codigo"], x["debito"], x["credito"]) for x in r6["filas"]]
+chk(p6 == [(PI, 178000, 0), ("41401501", 0, 178000)] and r6["diferencia"] == 0 and any("puente" in a for a in r6["avisos"]),
+    f"venta sin medio de pago → débito {PI} (puente_ingreso) contra Restaurante y aviso: {p6}")
+fs = dict(f, id="sinvalor", valor=0, avisos=[])
+fc = dict(f, id="sincuenta", numero="POS1", cuenta="", avisos=[])
+r7 = construir("2026-09-12", [fs, fc])
+chk([(p["id"], p["valor"]) for p in r7["pendientes"]] == [("sinvalor", 0)] and any("pendiente" in a for a in r7["avisos"]) and r7["diferencia"] == 0,
+    "factura sin valor → queda en pendientes con valor 0 y aviso (no se inventa un asiento)")
+chk([x["codigo"] for x in r7["filas"]] == [PG, "11200501"], "factura sin cuenta → puente_gasto contra Bancos")
+dias = [r, r3, r4, r5, r6, r7]
+contados = [d["id"] for x in dias for d in x["documentos"] if d.get("contar") and d["tipo"] != "cierre"]
+en_libro = {p["id"] for x in dias for p in x["pendientes"]} | {i for x in dias for f_ in x["filas"] for i in f_["docs"]}
+chk(set(contados) <= en_libro, f"ningún papel desaparece de construir: {sorted(set(contados) - en_libro) or 'todos están'}")
 # Excel
 x = libro_a_excel({"2026-09-12": r["filas"] + r2["filas"]}, "Mi restaurante", "900.000.000-1")
 import tempfile, os; open(os.path.join(tempfile.gettempdir(), "libro_prueba.xlsx"), "wb").write(x)

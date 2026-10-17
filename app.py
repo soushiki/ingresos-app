@@ -184,8 +184,9 @@ CLASIF = Clasificador(str(DATOS / "clasificacion.json"))
 
 
 def _cont_cfg() -> dict:
-    try: return json.loads(RUTA_CONT.read_text(encoding="utf8"))
-    except (FileNotFoundError, json.JSONDecodeError): return {}
+    try: c = json.loads(RUTA_CONT.read_text(encoding="utf8"))
+    except (FileNotFoundError, json.JSONDecodeError): c = {}
+    return {"puente_ingreso": CFG_ASIENTOS["puente_ingreso"], "puente_gasto": CFG_ASIENTOS["puente_gasto"], **c}
 
 
 def _leer_libro() -> dict:

@@ -14,11 +14,14 @@ RECAUDOS_BANCO = [("llave", "Recaudos a través de LLAVE", "Bre-B"), ("tarjetas"
                   ("pse", "Recaudos por PSE", "PSE")]
 RECAUDO_DESC = {m: d for _, d, m in RECAUDOS_BANCO} | {"App": "Ventas por Rappi", "Crédito personal": "Venta a crédito personal",
                                                        "Daviplata": "Recaudos a través de Daviplata"}
-CFG = {"reporta_efectivo": "Yorly", "reporta_banco": "Sergio", "cuenta_recaudo": ""}
+# puente_*: adonde va lo que no se pudo leer (venta sin medio, gasto sin cuenta), para que nada se descarte en silencio (R10).
+# Códigos PUC 138095 «Deudores varios – otros» y 519595 «Gastos diversos – otros»; cámbialos en contable.json si tu contador usa otros.
+CFG = {"reporta_efectivo": "Yorly", "reporta_banco": "Sergio", "cuenta_recaudo": "", "puente_ingreso": "13809501", "puente_gasto": "51959501"}
+PUENTES = {"13809501": "Puente ingreso: venta sin medio de pago", "51959501": "Puente gasto: gasto sin cuenta"}
 
 
 def nombre(cod: str) -> str:
-    return CATALOGO.get(cod, {}).get("nombre_diario") or ("SIN CLASIFICAR" if not cod else cod)
+    return CATALOGO.get(cod, {}).get("nombre_diario") or PUENTES.get(cod) or ("SIN CLASIFICAR" if not cod else cod)
 
 
 def abreviar_recibos(nums) -> str:
@@ -136,12 +139,13 @@ def marcar_duplicados(docs: list) -> list:
 
 
 def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None) -> dict:
-    cfg = {**CFG, **(cfg or {})}; banco = banco or {}; filas, avisos = [], []
+    cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; banco = banco or {}; filas, avisos, pendientes = [], [], []
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
     docs = [d for d in todos if d.get("contar") and d["tipo"] != "cierre"]
 
-    def fila(cod, tercero, desc, deb=0, cre=0, reporta="", medio="", grupo=""):
-        filas.append(dict(fecha=fecha, codigo=cod, nombre=nombre(cod), tercero=tercero, descripcion=desc, debito=int(deb), credito=int(cre), reporta=reporta, medio=medio, grupo=grupo))
+    def fila(cod, tercero, desc, deb=0, cre=0, reporta="", medio="", grupo="", docs=()):   # docs: ids de los papeles que originan la fila (N2)
+        filas.append(dict(fecha=fecha, codigo=cod, nombre=nombre(cod), tercero=tercero, descripcion=desc, debito=int(deb), credito=int(cre), reporta=reporta, medio=medio, grupo=grupo,
+                          docs=[i for i in docs if i]))
 
     # 1) recaudos del banco (de tu extracto). Si escribiste alguno, el extracto manda sobre lo que dicen las comandas pagadas al banco.
     total_b = 0
@@ -167,7 +171,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             if pro + dom > efe:   # el efectivo leído no alcanza (comanda mal leída): no se acredita más de lo que entró, para que el día cuadre
                 avisos.append("El efectivo no alcanza para cubrir propinas y domicilios")
                 pro = min(pro, efe); dom = min(dom, efe - pro)
-            fila(EFECTIVO, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if d["efectivo"]), deb=efe, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
+            fila(EFECTIVO, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if d["efectivo"]), deb=efe, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta", docs=[d["id"] for d in ventas if d["efectivo"]])
             if pro: fila(PROPINAS, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if R[d["id"]]["cash_tip"]), cre=pro, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
             if dom: fila(DOMICILIOS, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if R[d["id"]]["cash_dom"]), cre=dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
             fila(RESTAURANTE, "Consumidor Final", "Recaudos en efectivo", cre=efe - pro - dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
@@ -186,6 +190,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             if d.get("credito"): partes.append((CXC_CLIENTES, d.get("cliente") or "Cliente (crédito personal)", "Crédito personal", d, d["credito"]))
         if total_b:
             al_banco = sum(d.get("tarjeta", 0) + (d.get("transf", 0) if (d.get("medio_transf") or "") != "Rappi" else 0) for d in ventas)
+            filas[0]["docs"] = [d["id"] for d in ventas if d.get("tarjeta") or (d.get("transf") and (d.get("medio_transf") or "") != "Rappi")]
             if al_banco and al_banco != total_b:
                 avisos.append(f"Recaudos del extracto ({total_b:,}) ≠ comandas pagadas con tarjeta/transferencia ({al_banco:,}); se usó el extracto".replace(",", "."))
         grupos = defaultdict(list)
@@ -194,7 +199,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         for (cod, ter, medio), ps in grupos.items():
             ords = "Ordenes: " + abreviar_recibos(p[3]["numero"] for p in ps if p[3]["numero"])
             desc = RECAUDO_DESC.get(medio, f"Recaudos por {medio}") + (" · " + ords if ords != "Ordenes: " else "")
-            fila(cod, ter, desc, deb=sum(p[4] for p in ps), reporta=rep, medio=medio, grupo="venta")
+            fila(cod, ter, desc, deb=sum(p[4] for p in ps), reporta=rep, medio=medio, grupo="venta", docs=[p[3]["id"] for p in ps])
         if partes:
             pro_e = dom_e = 0; nums_p, nums_d = set(), set()
             for cod, ter, medio, d, v in partes:   # la propina/domicilio no pagados en efectivo se reparten según lo que puso cada medio
@@ -207,32 +212,36 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             if pro_e: fila(PROPINAS, "Consumidor Final", "Ordenes: " + abreviar_recibos(nums_p), cre=pro_e, reporta=rep, grupo="venta")
             if dom_e: fila(DOMICILIOS, "Consumidor Final", "Ordenes: " + abreviar_recibos(nums_d), cre=dom_e, reporta=rep, grupo="venta")
             fila(RESTAURANTE, "Consumidor Final", "Recaudos con tarjeta, transferencias, apps y crédito", cre=total_e - pro_e - dom_e, reporta=rep, grupo="venta")
-        for d in ventas:
-            if d.get("consumo") and not d.get("cortesia") and not (d["efectivo"] + d["tarjeta"] + d["transf"] + d.get("credito", 0)):
-                avisos.append(f"Recibo {d['numero'] or 's/n'}: no se leyó con qué se pagó ({d['consumo']:,}); no entra al libro".replace(",", "."))
+        sin_medio = [d for d in ventas if d.get("consumo") and not d.get("cortesia") and not (d["efectivo"] + d["tarjeta"] + d["transf"] + d.get("credito", 0))]
+        for d in sin_medio:   # no se leyó con qué se pagó: entra a la cuenta puente, no se descarta (R10)
+            avisos.append(f"Recibo {d['numero'] or 's/n'}: no se leyó con qué se pagó ({d['consumo']:,}); quedó en la cuenta puente {cfg['puente_ingreso']}, corrige el medio".replace(",", "."))
+        if sin_medio:
+            ids, ords = [d["id"] for d in sin_medio], "Ordenes: " + abreviar_recibos(d["numero"] for d in sin_medio if d["numero"])
+            fila(cfg["puente_ingreso"], "Consumidor Final", "Venta sin medio de pago · " + ords, deb=sum(d["consumo"] for d in sin_medio), reporta=cfg["reporta_banco"], grupo="venta", docs=ids)
+            fila(RESTAURANTE, "Consumidor Final", "Venta sin medio de pago · " + ords, cre=sum(d["consumo"] for d in sin_medio), reporta=cfg["reporta_banco"], grupo="venta", docs=ids)
 
     # 3) caja menor: un renglón por cuenta + un crédito a Efectivo
     cm = [d for d in docs if d["tipo"] in ("gasto_caja", "caja_menor_manuscrito") and d["medio"] in ("", "Efectivo")]
     por_cuenta = defaultdict(list)
     for d in cm: por_cuenta[d.get("cuenta", "")].append(d)
     for cod, ds in sorted(por_cuenta.items(), key=lambda kv: (kv[0] == "", kv[0])):
-        if not cod: avisos.append(f"{len(ds)} gasto(s) de caja sin cuenta: " + ", ".join(d["numero"] or "s/n" for d in ds))
-        fila(cod, "Cuantías menores", "Recibos: " + rangos(d["numero"] for d in ds if d["numero"]), deb=sum(d["valor"] for d in ds), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto")
+        if not cod: avisos.append(f"{len(ds)} gasto(s) de caja sin cuenta: " + ", ".join(d["numero"] or "s/n" for d in ds) + f"; quedaron en la cuenta puente {cfg['puente_gasto']}")
+        fila(cod or cfg["puente_gasto"], "Cuantías menores", "Recibos: " + rangos(d["numero"] for d in ds if d["numero"]), deb=sum(d["valor"] for d in ds), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto", docs=[d["id"] for d in ds])
     if cm:
         fila(EFECTIVO, "Cuantías menores", "Recibos: " + rangos(d["numero"] for d in cm if d["numero"]), cre=sum(d["valor"] for d in cm), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto")
 
-    # 4) facturas y gastos pagados por banco o en efectivo, uno por uno (si no se leyó el valor, no se inventa un asiento en cero)
+    # 4) facturas y gastos pagados por banco o en efectivo, uno por uno (si no se leyó el valor, no se inventa un asiento: queda en pendientes)
     for d in docs:
-        if d["tipo"] == "factura" and not d["valor"]:
-            avisos.append(f"Factura {d['numero'] or d['tercero'] or 's/n'}: sin valor leído, no genera asientos (corrígela o desmárcala)"); continue
         if d["tipo"] == "factura" or (d["tipo"] in ("gasto_caja", "caja_menor_manuscrito") and d["medio"] not in ("", "Efectivo")):
-            if not d["valor"]: avisos.append(f"Factura {d['numero'] or d['tercero'] or 's/n'}: sin valor, no se contabilizó"); continue
+            if not d["valor"]:
+                pendientes.append(dict(id=d["id"], tipo=d["tipo"], numero=d["numero"], tercero=d["tercero"], valor=0, motivo="sin valor leído"))
+                avisos.append(f"Factura {d['numero'] or d['tercero'] or 's/n'}: sin valor leído, quedó en pendientes (corrige el valor o desmárcala)"); continue
             if d["medio"] in ("Tarjeta", "Mixto"): avisos.append(f"Factura {d['numero'] or d['tercero'] or 's/n'}: pagada con tarjeta; se registró contra Bancos, revisa el medio")
-            if not d["cuenta"]: avisos.append(f"Factura {d['numero'] or d['tercero'] or 's/n'}: falta la cuenta")
+            if not d["cuenta"]: avisos.append(f"Factura {d['numero'] or d['tercero'] or 's/n'}: falta la cuenta; quedó en la cuenta puente {cfg['puente_gasto']}")
             ef = d["medio"] == "Efectivo"; rep = cfg["reporta_efectivo"] if ef else cfg["reporta_banco"]
             desc = d.get("detalle") or "Compra"; ter = d["tercero"] or "Proveedor"
-            fila(d["cuenta"], ter, desc, deb=d["valor"], reporta=rep, medio=d["medio"], grupo="gasto")
-            fila(EFECTIVO if ef else BANCO, ter, desc, cre=d["valor"], reporta=rep, medio=d["medio"], grupo="gasto")
+            fila(d["cuenta"] or cfg["puente_gasto"], ter, desc, deb=d["valor"], reporta=rep, medio=d["medio"], grupo="gasto", docs=[d["id"]])
+            fila(EFECTIVO if ef else BANCO, ter, desc, cre=d["valor"], reporta=rep, medio=d["medio"], grupo="gasto", docs=[d["id"]])
     for d in docs:
         if d["tipo"] in ("venta", "gasto_caja", "factura") and d.get("avisos") and not d.get("revisado"):
             avisos += [f"{d['tipo'].replace('_', ' ').capitalize()} {d['numero'] or ''}: {a}".replace("  ", " ") for a in d["avisos"]]
@@ -243,4 +252,4 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     if any(not x["ok"] for x in cruces): avisos.append(f"El cierre del POS no coincide con tus papeles en {sum(not x['ok'] for x in cruces)} concepto(s): ¿falta alguna comanda o se leyó mal?")
     deb, cre = sum(f["debito"] for f in filas), sum(f["credito"] for f in filas)
     if deb != cre: avisos.insert(0, f"El día no cuadra: débito {deb:,} · crédito {cre:,} (diferencia {deb - cre:,})".replace(",", "."))
-    return dict(filas=filas, debito=deb, credito=cre, diferencia=deb - cre, avisos=avisos, documentos=todos, cierre=cie, cruces=cruces, faltan=faltan)
+    return dict(filas=filas, debito=deb, credito=cre, diferencia=deb - cre, avisos=avisos, pendientes=pendientes, documentos=todos, cierre=cie, cruces=cruces, faltan=faltan)
