@@ -89,5 +89,15 @@ en_libro = {p["id"] for x in dias for p in x["pendientes"]} | {i for x in dias f
 chk(set(contados) <= en_libro, f"ningún papel desaparece de construir: {sorted(set(contados) - en_libro) or 'todos están'}")
 # Excel
 x = libro_a_excel({"2026-09-12": r["filas"] + r2["filas"]}, "Mi restaurante", "900.000.000-1")
+# guarda de exportación (R10): una fila sin código no llega a MOVIMIENTOS, sale como aviso
+from openpyxl import load_workbook
+sin_cod = dict(r3["filas"][0], codigo="", descripcion="fila sin código")
+wb = load_workbook(io.BytesIO(libro_a_excel({"2026-09-13": [sin_cod]})))
+mov = [ws for ws in wb if ws.title.startswith("MOVIMIENTOS")]
+n_mov = sum(1 for ws in mov for fila in ws.iter_rows(min_row=9, values_only=True) if any(fila))
+av = [c for c in wb["AVISOS"]["A"]] if "AVISOS" in wb.sheetnames else []
+chk(n_mov == 0 and any("sin código" in str(c.value) for c in av), f"fila sin código: {n_mov} filas en MOVIMIENTOS y aviso en la hoja AVISOS")
+wb2 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-13": r3["filas"]})))
+chk("AVISOS" not in wb2.sheetnames, "sin filas malas no hay hoja AVISOS")
 import tempfile, os; open(os.path.join(tempfile.gettempdir(), "libro_prueba.xlsx"), "wb").write(x)
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

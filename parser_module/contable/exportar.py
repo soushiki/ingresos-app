@@ -17,8 +17,11 @@ FINO = Border(bottom=Side(style="hair", color="BFBFBF"))
 def libro_a_excel(dias: dict, negocio: str = "", nit: str = "") -> bytes:
     """dias: {'2026-09-12': [fila, …]} con filas de asientos.construir()."""
     wb = Workbook(); wb.remove(wb.active)
-    por_mes = defaultdict(list)
-    for f in sorted(dias): por_mes[f[:7]].extend(dias[f])
+    por_mes, avisos = defaultdict(list), []
+    for f in sorted(dias):
+        for x in dias[f]:   # R10: una fila sin código de cuenta no entra a MOVIMIENTOS; se avisa
+            if str(x.get("codigo") or "").strip(): por_mes[f[:7]].append(x)
+            else: avisos.append(f"{f}: fila sin código de cuenta ({x.get('descripcion') or x.get('nombre') or 's/d'}, débito {x.get('debito') or 0:,}, crédito {x.get('credito') or 0:,}); no se exportó".replace(",", "."))
     hojas = []
     for ym in sorted(por_mes):
         y, m = int(ym[:4]), int(ym[5:7]); nom = f"MOVIMIENTOS {MESES[m - 1]}"; hojas.append((nom, y, m))
@@ -61,4 +64,7 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "") -> bytes:
     rs.cell(t + 2, 1).alignment = Alignment(wrap_text=True, vertical="top"); rs.merge_cells(start_row=t + 2, start_column=1, end_row=t + 2, end_column=4); rs.row_dimensions[t + 2].height = 48
     for i, w in enumerate([22, 20, 20, 26], 1): rs.column_dimensions[L(i)].width = w
     if not hojas: wb.remove(rs); wb.create_sheet("MOVIMIENTOS")
+    if avisos:
+        av = wb.create_sheet("AVISOS"); av["A1"] = "Avisos de exportación"; av["A1"].font = Font(bold=True); av.column_dimensions["A"].width = 110
+        for a in avisos: av.append([a])
     buf = io.BytesIO(); wb.save(buf); return buf.getvalue()
