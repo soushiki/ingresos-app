@@ -288,7 +288,7 @@ dv[0].fecha_limite = None   # fecha_limite no se guarda en la base: el RESUMEN d
 wb = load_workbook(io.BytesIO(sxl.libro([*d2, *dv])))
 chk(wb.sheetnames == ["RESUMEN", "CTG-60", "CTG-61"], f"R5: hoja RESUMEN + una hoja por documento: {wb.sheetnames}")
 rs = [tuple(c.value for c in f) for f in wb["RESUMEN"].iter_rows()]
-chk(rs[0] == ("Número", "Proveedor", "Semana", "Total", "Fecha límite", "Estado")
+chk(rs[0] == ("Número", "Proveedor", "Semana", "Total", "Fecha límite", "Estado", "Ajusta a")
     and rs[1][:4] == ("CTG-60", d2[0].proveedor.nombre, "2026-W38", 40000) and rs[1][5] == "generado"
     and rs[2][0] == "CTG-61" and rs[2][3] == 7000 and rs[2][4] is None, f"RESUMEN: número, proveedor, semana, total, fecha límite, estado: {rs[1:]}")
 h = wb["CTG-60"]; campos = {f[0].value: f[1].value for f in h.iter_rows() if f[0].value}
@@ -506,5 +506,102 @@ r = cl.post("/api/soporte/9999/anular", json={"motivo": "x"}, headers=LOC)
 chk(r.status_code == 409, f"POST anular inexistente → 409 ({r.status_code})")
 r = cl.post(f"/api/soporte/{did}/anular", json={}, headers=LOC)
 chk(r.status_code == 400, f"POST anular sin motivo → 400 ({r.status_code})")
+
+
+# ── T16 · nota de ajuste (R8): rango NA propio, referencia y valor ──────────
+c16 = sdb.abrir(tmp / "t16.db")
+prov.guardar(c16, {"tipo_id": "CC", "num_id": "1047000333", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
+c16.execute("UPDATE rango SET ultimo = 57 WHERE clase = 'DS'")
+L16 = {**dia("2026-09-14", fac("a", "2026-09-14", 30000), fac("b", "2026-09-15", 20000)), **dia("2026-09-21", fac("c", "2026-09-21", 9000))}
+d58 = sop.generar(c16, [g for g in sop.semanas(L16, c16, hoy=H15) if g.semana == "2026-W38"], hoy=H15)[0]
+d59 = sop.generar(c16, [g for g in sop.semanas(L16, c16, hoy=date(2026, 9, 22)) if g.semana == "2026-W39"], hoy=date(2026, 9, 22))[0]
+chk((d58.prefijo, d58.numero, d58.total) == ("CTG", 58, 50000), f"preparación: CTG-58 por 50.000 ({d58.prefijo}-{d58.numero})")
+def na(*a, **k):
+    try: return sop.nota_ajuste(c16, *a, **k)
+    except sop.NoSePuede as e: return str(e)
+ds_ultimo = lambda: c16.execute("SELECT ultimo FROM rango WHERE clase = 'DS'").fetchone()[0]
+na_ultimo = lambda: c16.execute("SELECT ultimo FROM rango WHERE clase = 'NA' AND activo = 1").fetchone()
+AJ = [{"descripcion": "Devolución de 2 kg de pescado", "valor": -20000}]
+chk("transmitido" in na(d58.id, AJ, "Devolución") and na_ultimo() is None, "R8: un documento solo generado no lleva nota de ajuste (se anula) y no gasta número NA")
+sop.marcar_transmitido(c16, d58.id)
+n1 = na(d58.id, AJ, "  Devolución parcial  ", hoy=date(2026, 9, 25))
+chk(isinstance(n1, sop.Documento) and (n1.clase, n1.prefijo, n1.numero, n1.ajusta_a, n1.total) == ("NA", "NA", 1, "CTG-58", -20000) and ds_ultimo() == 59,
+    f"R8 (done): CTG-58 + ajuste de −20.000 → número NA propio con la referencia y el valor; el rango CTG no se toca: {n1 if isinstance(n1, str) else (n1.prefijo, n1.numero, n1.ajusta_a, n1.total)}")
+ln = sop.documentos(c16, ids=[n1.id])[0]
+chk((ln.clase, ln.ajusta_a, ln.concepto, ln.total, ln.estado, ln.fecha_generacion, ln.semana, ln.fecha_limite) == ("NA", "CTG-58", "Devolución parcial", -20000, "generado", "2026-09-25", "2026-W38", "")
+    and ln.proveedor.nombre == "Carlos Cordero" and [(l.descripcion, l.valor, l.origen_doc_id) for l in ln.lineas] == [("Devolución de 2 kg de pescado", -20000, "CTG-58")],
+    "R8: guardada con clase, referencia, concepto, vendedor del documento, fecha de hoy y sus líneas")
+o58 = sop.documentos(c16, ids=[d58.id])[0]
+chk((o58.estado, o58.total, len(o58.lineas)) == ("transmitido", 50000, 2) and sop.documento_de(c16, "2026-09-14", "a") == "CTG-58"
+    and sop.bloqueos(c16, "2026-09-14", L16["2026-09-14"]["documentos"]) == [], "ADR-003: el transmitido queda intacto; sus compras siguen siendo de CTG-58 y el libro no se bloquea por la nota")
+# validaciones (regulado: todo campo de R8)
+for lin, con_, m in [(AJ, "", "concepto"), ([], "x", "líneas"), ("x", "x", "líneas"), ([{"descripcion": "", "valor": -1}], "x", "descripción"),
+                     ([{"descripcion": "d", "valor": 0}], "x", "valor"), ([{"descripcion": "d", "valor": True}], "x", "valor"),
+                     ([{"descripcion": "d", "valor": -1.5}], "x", "valor"), ([{"descripcion": "d", "valor": "-100"}], "x", "valor"),
+                     ([{"descripcion": "d", "valor": -10 ** 11}], "x", "valor"), ([{"descripcion": "d" * 201, "valor": -1}], "x", "descripción"),
+                     ([{"descripcion": "d", "valor": 500}, {"descripcion": "e", "valor": -500}], "x", "suma 0"), (AJ, "c" * 201, "Concepto")]:
+    r = na(d58.id, lin, con_)
+    chk(isinstance(r, str) and m in r, f"R8: {m} inválido → error: «{r if isinstance(r, str) else r.numero}»")
+chk("negativo" in na(d58.id, [{"descripcion": "d", "valor": -30001}], "x") and na_ultimo()["ultimo"] == 1,
+    "R8: un ajuste que deja el documento negativo (50.000 − 20.000 − 30.001) se rechaza sin gastar número")
+chk("nota de ajuste" in na(n1.id, AJ, "x"), "R8: no hay nota de ajuste sobre otra nota")
+sop.anular(c16, d59.id, "prueba")
+chk("anulado" in na(d59.id, AJ, "x"), "R8: no hay nota de ajuste sobre un anulado")
+chk("no existe" in na(9999, AJ, "x"), "R8: documento inexistente → error")
+# rango NA configurable (contable.json → rango_na), sin reutilizar números
+AJR = {"rango_na": {"prefijo": "AJ", "desde": 100, "hasta": 101}}
+n2 = na(d58.id, [{"descripcion": "Faltó cobrar hielo", "valor": 3000}], "Ajuste a favor", AJR)
+chk(isinstance(n2, sop.Documento) and (n2.prefijo, n2.numero, n2.total) == ("AJ", 100, 3000), f"rango_na configurable: prefijo AJ desde 100 → AJ-100 (y un ajuste positivo): {n2 if isinstance(n2, str) else (n2.prefijo, n2.numero)}")
+n3 = na(d58.id, [{"descripcion": "d", "valor": -1000}], "x", {"rango_na": {"prefijo": "NA", "desde": 1, "hasta": 10000}})
+chk(isinstance(n3, sop.Documento) and (n3.prefijo, n3.numero) == ("NA", 2), f"volver al rango NA sigue en NA-2: el NA-1 gastado no vuelve: {n3 if isinstance(n3, str) else (n3.prefijo, n3.numero)}")
+n4 = na(d58.id, [{"descripcion": "d", "valor": -1000}], "x", AJR)
+chk(isinstance(n4, sop.Documento) and (n4.prefijo, n4.numero) == ("AJ", 101), f"volver al rango AJ sigue en AJ-101: {n4 if isinstance(n4, str) else (n4.prefijo, n4.numero)}")
+chk(c16.execute("SELECT COUNT(*) FROM rango WHERE clase = 'NA' AND activo = 1").fetchone()[0] == 1, "un solo rango NA activo después de cambiarlo")
+antes16 = c16.execute("SELECT COUNT(*) FROM documento").fetchone()[0]
+try: sop.nota_ajuste(c16, d58.id, [{"descripcion": "d", "valor": -1}], "x", AJR); r = ""
+except sdb.RangoAgotado as e: r = str(e)
+chk("agotado" in r and c16.execute("SELECT COUNT(*) FROM documento").fetchone()[0] == antes16, f"rango NA agotado (AJ 100–101) → error claro, sin documento: «{r}»")
+chk("otra clase" in na(d58.id, AJ, "x", {"rango_na": {"prefijo": "CTG", "desde": 1, "hasta": 10}}), "el prefijo del rango DS (CTG) no se usa para las notas")
+for mal in [{"prefijo": "na", "desde": 1, "hasta": 9}, {"prefijo": "NA", "desde": 0, "hasta": 9}, {"prefijo": "NA", "desde": 9, "hasta": 1},
+            {"prefijo": "NAAAA", "desde": 1, "hasta": 9}, {"prefijo": "NA", "desde": True, "hasta": 9}, "NA"]:
+    try: sop.config({"rango_na": mal}); r = False
+    except ValueError: r = True
+    chk(r, f"contable.json: rango_na inválido {mal!r} → ValueError")
+saldo = 50000 + c16.execute("SELECT SUM(total) FROM documento WHERE ajusta_a = ? AND estado != 'anulado'", (d58.id,)).fetchone()[0]
+chk(saldo == 50000 - 20000 + 3000 - 1000 - 1000 and "negativo" in na(d58.id, [{"descripcion": "d", "valor": -(saldo + 1)}], "x")
+    and isinstance(na(d58.id, [{"descripcion": "d", "valor": -saldo}], "x"), sop.Documento),
+    f"R8: el tope cuenta las notas anteriores ({saldo} con ajustes): se puede bajar hasta 0, no por debajo")
+# Excel: hoja de la nota y columna «Ajusta a» en el RESUMEN
+wb16 = load_workbook(io.BytesIO(sxl.libro(sop.documentos(c16))))
+chk("NA-1" in wb16.sheetnames and "AJ-100" in wb16.sheetnames, f"R5/R8: una hoja por nota de ajuste: {wb16.sheetnames}")
+cn = {f[0].value: f[1].value for f in wb16["NA-1"].iter_rows() if f[0].value}
+fn = [tuple(c.value for c in f) for f in wb16["NA-1"].iter_rows()]
+chk(cn.get("Número") == "NA-1" and cn.get("Ajusta a") == "CTG-58" and cn.get("Concepto del ajuste") == "Devolución parcial"
+    and cn.get("Nombre del vendedor") == "Carlos Cordero" and cn.get("Fecha de generación") == "2026-09-25"
+    and any(f[1:3] == ("Devolución de 2 kg de pescado", -20000) for f in fn) and fn[-1][1:3] == ("Total", -20000),
+    f"Excel de la nota: número, referencia, concepto, vendedor, línea y total −20.000: {cn.get('Ajusta a')}, {fn[-1]}")
+r16 = {f[0].value: (f[3].value, f[6].value) for f in wb16["RESUMEN"].iter_rows(min_row=2)}
+chk(r16.get("NA-1") == (-20000, "CTG-58") and r16.get("CTG-58") == (50000, None), f"RESUMEN: la nota con su valor y «Ajusta a»: {r16.get('NA-1')}")
+# migración 3 sobre una base de la versión 2
+viejo = sdb.MIGRACIONES; sdb.MIGRACIONES = viejo[:2]
+c3 = sdb.abrir(tmp / "mig3.db"); sdb.MIGRACIONES = viejo; sdb.migrar(c3)
+chk(c3.execute("PRAGMA user_version").fetchone()[0] == 3 and "concepto" in [r[1] for r in c3.execute("PRAGMA table_info(documento)")], "migración 3 agrega `concepto` a una base existente"); c3.close()
+# ruta POST /api/soporte/<id>/ajuste
+r = cl.post(f"/api/soporte/{did}/ajuste", json={"concepto": "x", "lineas": AJ}, headers=AJENO)
+chk(r.status_code == 403, f"T1: POST ajuste con Origin ajeno → 403 ({r.status_code})")
+r = cl.post(f"/api/soporte/{did}/ajuste", json={"concepto": "", "lineas": AJ}, headers=LOC)
+chk(r.status_code == 409 and "concepto" in r.get_json()["error"], f"POST ajuste sin concepto → 409: {r.get_json()}")
+r = cl.post(f"/api/soporte/{did}/ajuste", json=["x"], headers=LOC)
+chk(r.status_code == 400, f"POST ajuste con cuerpo que no es objeto → 400 ({r.status_code})")
+r = cl.post(f"/api/soporte/{did}/ajuste", json={"concepto": "Devolución", "lineas": [{"descripcion": "Devolución", "valor": -2000}]}, headers=LOC)
+jd = r.get_json().get("documento") or {}
+chk(r.status_code == 200 and (jd.get("numero"), jd.get("clase"), jd.get("ajusta_a"), jd.get("total")) == ("NA-1", "NA", "CTG-1", -2000), f"POST ajuste → 200 con la nota NA-1 sobre CTG-1: {r.get_json()}")
+dj = {d["numero"]: d for d in cl.get("/api/soporte/documentos").get_json()["documentos"]}
+chk(dj.get("NA-1", {}).get("ajusta_a") == "CTG-1" and dj.get("CTG-1", {}).get("clase") == "DS" and dj["CTG-1"]["ajusta_a"] is None, "GET documentos lista la nota con su referencia")
+r = cl.post(f"/api/soporte/{jd['id']}/anular", json={"motivo": "Valor equivocado"}, headers=LOC)
+r2 = cl.post(f"/api/soporte/{did}/ajuste", json={"concepto": "Devolución", "lineas": [{"descripcion": "Devolución", "valor": -1000}]}, headers=LOC)
+chk(r.status_code == 200 and (r2.get_json().get("documento") or {}).get("numero") == "NA-2", f"una nota generada se anula y su número no vuelve: {r2.get_json()}")
+xl = load_workbook(io.BytesIO(cl.get("/api/soporte/excel").data))
+chk({"NA-1", "NA-2", "CTG-1"} <= set(xl.sheetnames), f"GET excel trae las notas: {xl.sheetnames}")
 
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

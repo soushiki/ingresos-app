@@ -43,6 +43,10 @@ MIGRACIONES = [
         'direccion', p.direccion, 'municipio', p.municipio, 'correo', p.correo, 'no_obligado', p.no_obligado = 1)
         FROM proveedor p WHERE p.id = documento.proveedor_id);
     """,
+    # T16: concepto de la nota de ajuste (R8), aparte de `motivo`, que es el de la anulación.
+    """
+    ALTER TABLE documento ADD COLUMN concepto TEXT;
+    """,
 ]
 
 
@@ -97,3 +101,21 @@ def reservar_numero(con: sqlite3.Connection, clase: str) -> tuple[str, int]:
         raise RangoAgotado(f"{clase}: no hay rango de numeración activo; regístrelo antes de generar.")
     raise RangoAgotado(f"{clase}: el rango {rg['prefijo']} {rg['desde']}–{rg['hasta']} está agotado; "
                        f"pida a la DIAN un rango nuevo y regístrelo antes de generar.")
+
+
+def asegurar_rango(con: sqlite3.Connection, clase: str, prefijo: str, desde: int, hasta: int) -> None:
+    """Deja activo el rango (prefijo, desde, hasta) de `clase`, el que dice contable.json. Va dentro de la transacción.
+
+    Si cambia, el rango viejo se desactiva y el nuevo sigue después del último número ya usado con ese prefijo
+    dentro del rango: un número gastado nunca vuelve (ADR-003). Un prefijo de otra clase no se comparte.
+    """
+    if not con.in_transaction:
+        raise RuntimeError("asegurar_rango va dentro de soporte_db.transaccion (BEGIN IMMEDIATE)")
+    act = con.execute("SELECT id, prefijo, desde, hasta FROM rango WHERE clase = ? AND activo = 1", (clase,)).fetchone()
+    if act and (act["prefijo"], act["desde"], act["hasta"]) == (prefijo, desde, hasta): return
+    if con.execute("SELECT 1 FROM rango WHERE clase != ? AND prefijo = ?", (clase, prefijo)).fetchone():
+        raise ValueError(f"{clase}: el prefijo {prefijo} ya es de otra clase de documento; use uno propio")
+    usado = con.execute("SELECT MAX(numero) FROM documento WHERE prefijo = ? AND numero BETWEEN ? AND ?", (prefijo, desde, hasta)).fetchone()[0]
+    ultimo = max(desde - 1, usado or 0)
+    if act: con.execute("UPDATE rango SET activo = 0 WHERE id = ?", (act["id"],))
+    con.execute("INSERT INTO rango(clase, prefijo, desde, hasta, ultimo, activo) VALUES (?, ?, ?, ?, ?, 1)", (clase, prefijo, desde, hasta, ultimo))

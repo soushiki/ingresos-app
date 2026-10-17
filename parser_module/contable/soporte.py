@@ -12,6 +12,9 @@ Fuentes de los valores (docs/sdlc/03-design.md sección 6):
 - Ciclo de vida (R7): generado → transmitido (con el CUDS que da la solución gratuita DIAN: SHA-384, 96 hexadecimales,
   Res. 167/2021 art. 4 y Anexo técnico) o generado → anulado (con motivo; el número queda gastado, ADR-003). Lo transmitido
   no cambia: `bloqueos` impide editar sus compras en el libro y se corrige con nota de ajuste (R8).
+- Nota de ajuste (`nota_ajuste`, R8): consecutivo interno propio, clase NA, rango `rango_na` de contable.json (Res. 167/2021
+  art. 5 y Res. 165/2023: nota de ajuste al documento soporte con referencia al documento que ajusta; prefijo y rango
+  por confirmar con contabilidad, por defecto NA 1–10000).
 """
 from __future__ import annotations
 import json, re, sqlite3
@@ -20,7 +23,9 @@ from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
 from parser_module.contable import proveedores as prov, soporte_db as sdb
 
-DEFECTO = {"regla_plazo": "misma_semana", "aviso_dias": 2, "tolerancia_fecha_dias": 7, "festivos": []}
+DEFECTO = {"regla_plazo": "misma_semana", "aviso_dias": 2, "tolerancia_fecha_dias": 7, "festivos": [],
+           "rango_na": {"prefijo": "NA", "desde": 1, "hasta": 10000}}
+PREFIJO = re.compile(r"[A-Z0-9]{1,4}")   # Anexo técnico DS: prefijo de hasta 4 caracteres alfanuméricos
 REGLAS = ("misma_semana", "semana_siguiente")
 EN_PLAZO, VENCE_PRONTO, VENCIDA = "en_plazo", "vence_pronto", "vencida"
 
@@ -63,6 +68,11 @@ def config(c: dict | None) -> dict:
     t = c["tolerancia_fecha_dias"]
     if not isinstance(t, int) or isinstance(t, bool) or t < 0: raise ValueError("tolerancia_fecha_dias debe ser un entero >= 0")
     c["festivos"] = {date.fromisoformat(f) for f in c["festivos"]}
+    r = c["rango_na"]
+    ent = lambda v: isinstance(v, int) and not isinstance(v, bool)
+    if (not isinstance(r, dict) or not isinstance(r.get("prefijo"), str) or not PREFIJO.fullmatch(r["prefijo"])
+            or not ent(r.get("desde")) or not ent(r.get("hasta")) or not 1 <= r["desde"] <= r["hasta"]):
+        raise ValueError("rango_na debe ser {prefijo: hasta 4 letras o dígitos en mayúscula, desde: entero >= 1, hasta: entero >= desde}")
     return c
 
 
@@ -186,6 +196,9 @@ class Documento:
     iva: int = 0
     motivo: str = ""                   # por qué se anuló
     cuds: str = ""                     # código único que dio la DIAN al transmitirlo (opcional)
+    clase: str = "DS"                  # DS documento soporte · NA nota de ajuste (R8)
+    ajusta_a: str = ""                 # NA: número del documento que ajusta («CTG-58»)
+    concepto: str = ""                 # NA: por qué se ajusta
 
 
 class NoSeGenera(Exception):
@@ -244,17 +257,18 @@ def _proveedor_fijo(con: sqlite3.Connection, r: sqlite3.Row) -> prov.Proveedor:
 
 
 def documentos(con: sqlite3.Connection, cfg: dict | None = None, ids: list[int] | None = None) -> list[Documento]:
-    """Documentos DS de la base, anulados incluidos (N1: su número sale en el RESUMEN). `fecha_limite` se recalcula con `cfg`."""
+    """Documentos DS y notas de ajuste NA, anulados incluidos (N1: su número sale en el RESUMEN).
+    `fecha_limite` del DS se recalcula con `cfg`; la nota de ajuste no tiene plazo semanal."""
     c = config(cfg)
     out = []
-    for r in con.execute("SELECT * FROM documento WHERE clase = 'DS' ORDER BY id"):
+    for r in con.execute("SELECT d.*, o.prefijo || '-' || o.numero AS ajusta_num FROM documento d LEFT JOIN documento o ON o.id = d.ajusta_a ORDER BY d.id"):
         if ids is not None and r["id"] not in ids: continue
         ls = [Linea(l["fecha_compra"], l["origen_fecha"], l["origen_doc_id"], l["descripcion"], l["valor"])
               for l in con.execute("SELECT * FROM linea WHERE documento_id = ? ORDER BY fecha_compra, origen_doc_id", (r["id"],))]
         y, w = r["semana_iso"].split("-W")
-        lim = fecha_limite(date.fromisocalendar(int(y), int(w), 1), c["regla_plazo"], c["festivos"]).isoformat()
+        lim = fecha_limite(date.fromisocalendar(int(y), int(w), 1), c["regla_plazo"], c["festivos"]).isoformat() if r["clase"] == "DS" else ""
         out.append(Documento(r["id"], r["prefijo"], r["numero"], _proveedor_fijo(con, r), r["semana_iso"], r["fecha_generacion"], r["total"], ls,
-                             lim, r["estado"], r["iva"], r["motivo"] or "", r["cuds"] or ""))
+                             lim, r["estado"], r["iva"], r["motivo"] or "", r["cuds"] or "", r["clase"], r["ajusta_num"] or "", r["concepto"] or ""))
     return out
 
 
@@ -292,6 +306,60 @@ def anular(con: sqlite3.Connection, doc_id: int, motivo: str) -> None:
         if r["estado"] == "transmitido": raise NoSePuede(f"ADR-003: transmitido no se anula ({r['prefijo']}-{r['numero']}); prepare una nota de ajuste")
         if r["estado"] != "generado": raise NoSePuede(f"{r['prefijo']}-{r['numero']} ya está anulado")
         con.execute("UPDATE documento SET estado = 'anulado', motivo = ? WHERE id = ? AND estado = 'generado'", (motivo, doc_id))
+
+
+MAX_VALOR = 10 ** 10   # el mismo tope de la compra manual (T14)
+
+
+def nota_ajuste(con: sqlite3.Connection, doc_id: int, lineas: list[dict], concepto: str, cfg: dict | None = None,
+                hoy: date | None = None) -> Documento:
+    """Nota de ajuste (R8) sobre un documento DS transmitido: número NA propio del rango `rango_na` (Res. 167/2021 art. 5;
+    Res. 165/2023), referencia `ajusta_a` al documento y su valor. Lo transmitido no se toca (ADR-003).
+
+    `lineas`: [{descripcion, valor}] con valor entero en pesos ≠ 0 (negativo baja, positivo sube). El total no puede dejar
+    el documento con valor negativo contando las otras notas no anuladas. Numerar y crear van en una transacción (N1).
+    """
+    rna = config(cfg)["rango_na"]
+    hoy = hoy or date.today()
+    concepto = concepto.strip() if isinstance(concepto, str) else ""
+    if not concepto: raise NoSePuede("Escriba el concepto del ajuste (por qué se corrige)")
+    if len(concepto) > 200: raise NoSePuede("Concepto demasiado largo (máx. 200)")
+    if not isinstance(lineas, list) or not 1 <= len(lineas) <= 50: raise NoSePuede("La nota lleva entre 1 y 50 líneas")
+    ls = []
+    for i, l in enumerate(lineas, 1):
+        if not isinstance(l, dict): raise NoSePuede(f"línea {i}: formato inválido")
+        desc, v = l.get("descripcion"), l.get("valor")
+        desc = desc.strip() if isinstance(desc, str) else ""
+        if not desc or len(desc) > 200: raise NoSePuede(f"línea {i}: la descripción va de 1 a 200 caracteres")
+        if not isinstance(v, int) or isinstance(v, bool) or v == 0 or abs(v) > MAX_VALOR:
+            raise NoSePuede(f"línea {i}: el valor es un entero en pesos distinto de 0 (máx. {_pesos(MAX_VALOR)})")
+        ls.append((desc, v))
+    total = sum(v for _, v in ls)
+    if total == 0: raise NoSePuede("El ajuste suma 0: no hay nada que corregir")
+    creado = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with sdb.transaccion(con):
+        o = con.execute("SELECT * FROM documento WHERE id = ?", (doc_id,)).fetchone()
+        if o is None: raise NoSePuede(f"no existe el documento {doc_id}")
+        num = f"{o['prefijo']}-{o['numero']}"
+        if o["clase"] != "DS": raise NoSePuede(f"R8: {num} es una nota de ajuste; el ajuste se hace sobre el documento soporte")
+        if o["estado"] != "transmitido":
+            raise NoSePuede(f"R8: {num} está {o['estado']}; solo un documento transmitido lleva nota de ajuste"
+                            + (" (un generado se anula y se vuelve a generar)" if o["estado"] == "generado" else ""))
+        previo = con.execute("SELECT COALESCE(SUM(total), 0) FROM documento WHERE ajusta_a = ? AND estado != 'anulado'", (doc_id,)).fetchone()[0]
+        if o["total"] + previo + total < 0:
+            raise NoSePuede(f"R8: {num} vale {_pesos(o['total'] + previo)} con sus ajustes; un ajuste de {_pesos(total)} lo deja negativo")
+        try: sdb.asegurar_rango(con, "NA", rna["prefijo"], rna["desde"], rna["hasta"])
+        except ValueError as e: raise NoSePuede(str(e))
+        prefijo, numero = sdb.reservar_numero(con, "NA")
+        nid = con.execute("INSERT INTO documento(clase, prefijo, numero, proveedor_id, proveedor_json, semana_iso, fecha_generacion, total, iva, "
+                          "ajusta_a, concepto, creado) VALUES ('NA', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
+                          (prefijo, numero, o["proveedor_id"], o["proveedor_json"], o["semana_iso"], hoy.isoformat(), total, doc_id, concepto, creado)).lastrowid
+        # La línea apunta al documento ajustado, no a un papel del libro: así `documento_de` y `bloqueos` no la toman por una compra.
+        lineas_na = [Linea(hoy.isoformat(), "", num, d, v) for d, v in ls]
+        con.executemany("INSERT INTO linea(documento_id, fecha_compra, origen_fecha, origen_doc_id, descripcion, valor) VALUES (?, ?, ?, ?, ?, ?)",
+                        [(nid, l.fecha_compra, l.origen_fecha, l.origen_doc_id, l.descripcion, l.valor) for l in lineas_na])
+        p = _proveedor_fijo(con, o)
+    return Documento(nid, prefijo, numero, p, o["semana_iso"], hoy.isoformat(), total, lineas_na, clase="NA", ajusta_a=num, concepto=concepto)
 
 
 def _pesos(v: int) -> str:

@@ -385,7 +385,8 @@ def _sop_cfg() -> dict:
 
 def _doc_json(d) -> dict:
     return dict(id=d.id, numero=f"{d.prefijo}-{d.numero}", proveedor=d.proveedor.nombre, semana=d.semana, fecha_generacion=d.fecha_generacion,
-                total=d.total, estado=d.estado, motivo=d.motivo, cuds=d.cuds, fecha_limite=d.fecha_limite, lineas=[asdict(l) for l in d.lineas])
+                total=d.total, estado=d.estado, motivo=d.motivo, cuds=d.cuds, fecha_limite=d.fecha_limite, lineas=[asdict(l) for l in d.lineas],
+                clase=d.clase, ajusta_a=d.ajusta_a or None, concepto=d.concepto)
 
 
 def _grupo_json(g) -> dict:
@@ -435,6 +436,21 @@ def sop_anular(doc_id):
         except soporte.NoSePuede as e: return jsonify(error=str(e)), 409
         finally: con.close()
     return jsonify(ok=True)
+
+
+@app.post("/api/soporte/<int:doc_id>/ajuste")
+def sop_ajuste(doc_id):
+    """R8: nota de ajuste sobre un documento transmitido. Cuerpo: {concepto, lineas: [{descripcion, valor}]}; la validación vive en soporte.py."""
+    j = request.get_json(silent=True) or {}
+    if not isinstance(j, dict): return jsonify(error="Cuerpo inválido"), 400
+    with LOCK:
+        con = _sop_con()
+        try: d = soporte.nota_ajuste(con, doc_id, j.get("lineas"), j.get("concepto"), _sop_cfg())
+        except soporte.NoSePuede as e: return jsonify(error=str(e)), 409
+        except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
+        except soporte_db.RangoAgotado as e: return jsonify(error=str(e)), 409
+        finally: con.close()
+    return jsonify(ok=True, documento=_doc_json(d))
 
 
 @app.get("/api/soporte/semanas")
