@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # iter. 2: T9 (soporte.semanas); smoke en Excel pendiente (usuario)
+next: 5-implement   # iter. 2: T10 (soporte.generar, Opus); smoke en Excel pendiente (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # iter. 2: T9 (soporte.semanas); smoke en Excel pendiente (u
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: T9 (iter. 2)
+- [ ] 5-implement      current task: T10 (iter. 2)
 - [ ] 6-test           (iter. 1: pasa tras FIX-1…6; smoke en Excel pendiente)
 - [ ] 7-release
 - [~] 8-maintain
@@ -57,3 +57,4 @@ next: 5-implement   # iter. 2: T9 (soporte.semanas); smoke en Excel pendiente (u
 2026-10-17 | 5-implement | DEBT-1: construir() arma las filas desde DATOS OCR (una sola clasificación); salida idéntica en 60 días-variante reales; 2 checks nuevos; suites verdes
 2026-10-17 | 5-implement | T7: soporte_db.py (esquema 03 §4, user_version, semilla DS CTG 1–10000, reservar_numero en BEGIN IMMEDIATE); 16 checks en probar_documento_soporte.py; suites verdes
 2026-10-17 | 5-implement | T8: proveedores.py (guardar con validación DIAN de tipo/número/DV, alias normalizado, asociar sin robar, resolver, es_encabezado); 18 checks; suites verdes
+2026-10-17 | 5-implement | T9: soporte.py (semanas por proveedor y semana ISO, fecha_limite con festivos, estados en_plazo/vence_pronto/vencida; terceros sin registrar aparte); 18 checks; suites verdes

@@ -1,7 +1,8 @@
 """Prueba del documento soporte (Res. DIAN 167/2021): base soporte.db (ADR-001), numeración reservada (ADR-003)."""
 import sqlite3, tempfile, threading
 from pathlib import Path
-from parser_module.contable import soporte_db as sdb, proveedores as prov
+from datetime import date
+from parser_module.contable import soporte_db as sdb, proveedores as prov, soporte as sop
 ok = True
 def chk(c, m):
     global ok; ok &= bool(c); print(("✓ " if c else "✗ ") + m)
@@ -129,6 +130,42 @@ except prov.DatosIncompletos: robado = False
 chk(not robado and prov.resolver(con, "carlos cordero bazurto").id == p1.id, "R2: un alias de otro proveedor no se cambia sin reasignar=True")
 prov.asociar(con, "carlos cordero bazurto", pn.id, reasignar=True)
 chk(prov.resolver(con, "carlos cordero bazurto").id == pn.id, "R2: reasignar=True mueve el alias")
+con.close()
+
+# ── T9 · semanas: agrupar y plazo ───────────────────────────────────────────
+con = sdb.abrir(tmp / "semanas.db")
+pc = prov.guardar(con, {"tipo_id": "CC", "num_id": "1047000111", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
+def fac(i, f, v, t="Carlos Cordero", **k): return {"id": i, "tipo": "factura", "fecha": f, "valor": v, "tercero": t, "contar": True, "origen": f"p{i}", **k}
+def lib(*ds): return {"x": {"fecha": "2026-09-01", "documentos": list(ds)}}
+L = lib(fac("a", "2026-09-14", 10000), fac("b", "2026-09-16", 25000, "CARLOS  cordero"), fac("c", "2026-09-20", 5000),
+        fac("d", "2026-09-21", 7000), fac("z", "2026-09-15", 0), fac("v", "2026-09-15", 900, "Otro", dup_de="a"),
+        {"id": "g", "tipo": "gasto_caja", "fecha": "2026-09-15", "valor": 999, "tercero": "Caja"})
+gs = sop.semanas(L, con, hoy=date(2026, 9, 10))
+g38 = [g for g in gs if g.semana == "2026-W38"]
+chk(len(gs) == 2 and len(g38) == 1, f"R3: 3 compras de una semana → 1 grupo (grupos: {[(g.semana, g.total) for g in gs]})")
+chk(g38[0].total == 40000 and len(g38[0].compras) == 3 and g38[0].proveedor.id == pc.id, "R3: el total del grupo es 10000+25000+5000 y el alias resuelve al proveedor")
+chk(g38[0].lunes == "2026-09-14" and g38[0].domingo == "2026-09-20", "R3: la semana va de lunes a domingo (el domingo 20 cuenta en W38, el 21 en W39)")
+chk(sum(len(g.compras) for g in gs) == 4, "R10: duplicados, valor 0 y gastos de caja no entran como compras")
+sin = sop.semanas(lib(fac("a", "2026-09-14", 100, "Tienda X"), fac("b", "2026-09-15", 200, "Tienda Y")), con, hoy=date(2026, 9, 10))
+chk(len(sin) == 2 and all(g.proveedor is None for g in sin), "R1: terceros sin registrar quedan en grupos aparte, sin proveedor")
+chk(len(sop.semanas(L, con, hoy=date(2026, 9, 10), desde="2026-09-21")) == 1, "el filtro desde/hasta recorta las compras")
+
+# plazos: semana del 14 al 20 de sep 2026; el viernes es el 18
+chk(sop.fecha_limite(date(2026, 9, 16), "misma_semana", set()) == date(2026, 9, 18), "R6: sin festivos el límite es el viernes de la semana")
+chk(sop.fecha_limite(date(2026, 9, 16), "misma_semana", {date(2026, 9, 18)}) == date(2026, 9, 17), "R6: festivo el viernes → el límite es el jueves")
+chk(sop.fecha_limite(date(2026, 9, 14), "misma_semana", {date(2026, 9, 17), date(2026, 9, 18)}) == date(2026, 9, 16), "R6: festivos jueves y viernes → miércoles")
+chk(sop.fecha_limite(date(2026, 9, 16), "semana_siguiente", set()) == date(2026, 9, 25), "R6: regla semana_siguiente → viernes de la semana siguiente")
+cfg = {"festivos": ["2026-09-18"]}
+def de(hoy, c=cfg): return [g for g in sop.semanas(L, con, c, hoy=hoy) if g.semana == "2026-W38"][0]
+chk(de(date(2026, 9, 14)).fecha_limite == "2026-09-17", "R6: con el festivo en config el grupo trae el límite 2026-09-17")
+chk(de(date(2026, 9, 14)).dias_restantes == 3 and de(date(2026, 9, 14)).estado == sop.EN_PLAZO, "R6: lunes con límite el jueves → quedan 3 hábiles, en plazo")
+chk(de(date(2026, 9, 15)).estado == sop.VENCE_PRONTO and de(date(2026, 9, 17)).estado == sop.VENCE_PRONTO, "R6: a 2 días hábiles del límite (y el día mismo) → vence pronto")
+chk(de(date(2026, 9, 18)).estado == sop.VENCIDA and de(date(2026, 9, 18)).dias_restantes < 0, "R6: el día después del límite (viernes festivo) → vencida")
+chk(de(date(2026, 9, 15), {"festivos": ["2026-09-18"], "aviso_dias": 0}).estado == sop.EN_PLAZO, "R6: aviso_dias configurable (0 → solo avisa el mismo día)")
+chk(sop.semanas(L, con, cfg, hoy=date(2026, 9, 30))[0].estado == sop.VENCIDA, "R6: las vencidas salen primero")
+try: sop.config({"regla_plazo": "cuando_sea"}); malo = False
+except ValueError: malo = True
+chk(malo, "regla_plazo desconocida → error claro")
 con.close()
 
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
