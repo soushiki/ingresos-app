@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 6-test   # iter. 2 (T7–T13); luego iter. 3 desde T14; smoke en Excel pendiente (usuario)
+next: 6-test   # iter. 2 (T7–T13); luego iter. 3 desde T14; it. 4 (OCR separado) después; smoke en Excel pendiente (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -64,3 +64,4 @@ next: 6-test   # iter. 2 (T7–T13); luego iter. 3 desde T14; smoke en Excel pen
 2026-10-17 | 5-implement | T13: pestaña ③ Documento soporte (semanas con estado, registrar proveedor, generar, Excel); semanas trae `documentado` y se ocultan; verificada en preview escritorio y 375×812 (arreglo: #m3 se desbordaba a 770 px); suites verdes
 2026-10-17 | 5-implement | Hallazgos del preview con datos reales (para 6-test): semanas agrupadas por la fecha OCR de la factura → semanas 2018-W39/2024-W52 «vencidas hace 2100 d» (años mal leídos); «Sin Texto» aparece como tercero (es_encabezado no lo filtra en semanas)
 2026-10-17 | 5-implement | Iteración 2 completa (T7–T13) → 6-test
+2026-10-17 | 4-plan | Pedido del usuario: separar la lectura OCR (el PC del contador no la corre) → it. 4 en 04-plan (D1 + T18–T21), después de la it. 3

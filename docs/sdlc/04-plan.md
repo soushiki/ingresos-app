@@ -5,6 +5,7 @@
 - It. 1 = Fase A (R10, R9): el libro no descarta nada y su Excel trae DATOS OCR con fórmulas.
 - It. 2 = Fase B de punta a punta: proveedor → semana → número CTG → Excel → pestaña.
 - It. 3 = ciclo de vida: compra manual, transmitido/anulado/bloqueos, nota de ajuste y rendimiento.
+- It. 4 (añadida 2026-10-17, por diseñar) = separar la lectura OCR del resto: archivo de datos crudos que el contador importa sin Ollama.
 - Antes de la it. 2 hay que confirmar con contabilidad: `regla_plazo` (riesgo 1), el prefijo y el rango de la nota de ajuste (Q3), y una captura del formulario DIAN (riesgo 3).
 - Pruebas: `chk` en `probar_contable.py`, `probar_datos_ocr.py` (nuevo) y `probar_documento_soporte.py` (nuevo).
 
@@ -39,3 +40,11 @@
 - [ ] T15 (M) `marcar_transmitido` (CUDS opcional), `anular(motivo)` y `bloqueos()` conectado al guardado del libro; botones en la pestaña — R7, N1 — done when: hay checks de que editar el valor de una compra transmitida → bloqueado, y de que un anulado aparece en RESUMEN y su número no vuelve — files: soporte.py, app.py, static/contable.html, probar_documento_soporte.py
 - [ ] T16 (M) `nota_ajuste`: rango NA propio (configurable), referencia `ajusta_a` y hoja en el Excel — R8 — done when: un check de CTG-58 + ajuste de −20.000 da un número NA propio con la referencia y el valor — files: soporte.py, soporte_db.py, soporte_excel.py, app.py, probar_documento_soporte.py
 - [ ] T17 (S) Rendimiento y suite completa: 50 documentos generados en ≤2 s, Excel soporte ≤2 s, Excel del libro de un mes ≤5 s; todos los `probar_*.py` en verde — N4 — done when: los tiempos medidos quedan anotados aquí — files: probar_documento_soporte.py
+
+## Iteración 4 — Lectura OCR separada · demo: leo los papeles en mi PC, exporto los datos crudos, y en un PC sin Ollama la app los importa y arma el libro y los documentos soporte
+Pedido del usuario (2026-10-17): el PC del contador no puede correr el OCR. La frontera ya existe en el código (la lista de papeles leídos → `datos_ocr`/`construir`), así que no se rehace nada de T1–T17. Empieza después de cerrar la it. 3. Tareas provisionales: se ajustan tras D1.
+- [ ] D1 (S) Mini-diseño + ADR-004 (gate: aprobación del usuario): formato del archivo crudo (recomendado .xlsx con la hoja DATOS OCR y una versión de esquema; CSV no, porque Excel en español usa «;» y coma decimal), qué pasa con las fotos (zip aparte o solo la ruta), cómo se importa un día ya existente (reemplazar, fusionar o rechazar) — files: docs/sdlc/03-design.md, adr/004
+- [ ] T18 (M) Exportar datos crudos: botón y ruta que escriben el archivo de D1 para un rango de días — done when: un check exporta y vuelve a leer el archivo sin perder campos — files: app.py, exportar.py, static/contable.html, probar_datos_ocr.py
+- [ ] T19 (M) Importar datos crudos: ruta y pantalla que validan esquema y filas (las malas salen como aviso, nada se pierde en silencio, R10) y los guardan en `libro.json` — done when: export → import da el mismo libro y las mismas semanas; un archivo de otra versión se rechaza con un mensaje claro — files: app.py, static/contable.html, probar_datos_ocr.py
+- [ ] T20 (S) Modo sin OCR: la app arranca y funciona sin Ollama (oculta la lectura, deja importar) — done when: con Ollama apagado la app arranca, importa y genera documentos — files: app.py, static/contable.html
+- [ ] T21 (S) Instalación para el contador: instrucciones paso a paso (o un .bat) para correr la app en su PC — done when: un PC limpio la arranca siguiendo solo las instrucciones — files: LEEME-contador.md (nuevo)
