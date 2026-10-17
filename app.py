@@ -360,11 +360,11 @@ RUTA_SOPORTE = DATOS / "soporte.db"
 
 @app.before_request
 def _revisar_origen():
-    """T1 de 03: otra página web no puede hacer POST/DELETE a localhost (CSRF) ni por DNS rebinding. Host y Origin deben ser locales."""
+    """T1 de 03: otra página web no puede hacer POST/DELETE a localhost (CSRF). FIX-10: el Host se revisa en todo método,
+    así una página por DNS rebinding tampoco lee proveedores (cédulas, direcciones) ni el Excel con GET."""
+    if urlsplit("//" + request.host).hostname not in {"127.0.0.1", "localhost", "::1"}:
+        return jsonify(error="Host no permitido"), 403
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        permitidos = {"127.0.0.1", "localhost"}
-        if (request.host.rsplit(":", 1)[0] if not request.host.startswith("[") else request.host) not in permitidos:
-            return jsonify(error="Host no permitido"), 403
         o = request.headers.get("Origin")
         if o is not None and (urlsplit(o).netloc != request.host or urlsplit(o).scheme not in ("http", "https")):
             return jsonify(error="Origen no permitido"), 403

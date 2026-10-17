@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # FIX-10; luego 6-test de iter. 2 y iter. 3 desde T14; it. 4 (OCR separado) después; smoke en Excel pendiente (usuario)
+next: 6-test   # re-test iter. 2 (FIX-7…10); luego iter. 3 desde T14; it. 4 (OCR separado) después; smoke en Excel pendiente (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # FIX-10; luego 6-test de iter. 2 y iter. 3 desde T14; it. 4
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: FIX-10 (Host en GET)
+- [ ] 5-implement      current task: — (FIX-10 hecho; sigue T14 tras 6-test)
 - [ ] 6-test           (iter. 1 pasa; iter. 2 no pasa: FIX-7…10; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
@@ -70,3 +70,4 @@ next: 5-implement   # FIX-10; luego 6-test de iter. 2 y iter. 3 desde T14; it. 4
 2026-10-17 | 5-implement | FIX-7: compras ya documentadas forman su grupo con `documentado`; lo nuevo de la semana se numera aparte (CTG-2 solo con b); generar/ruta prefieren lo no documentado; 8 checks; suites verdes
 2026-10-17 | 5-implement | FIX-8: tercero rótulo («Sin Texto», vacío) → un grupo «elegir proveedor» por compra, sin botón Registrar; 2 checks; datos reales: 5 grupos así, 12 Registrar legítimos; suites verdes
 2026-10-17 | 5-implement | FIX-9: fecha del papel a >tolerancia_fecha_dias (7) del día → fecha del día + aviso con las dos en el grupo y la pestaña; 5 checks; datos reales: 5 avisos, ninguna semana fuera de 2026; suites verdes
+2026-10-17 | 5-implement | FIX-10: Host local revisado en todo método (GET con Host ajeno → 403 en proveedores, semanas, excel); acepta [::1]; 6 checks; suites verdes → 6-test
