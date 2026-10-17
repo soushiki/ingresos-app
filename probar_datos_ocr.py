@@ -204,4 +204,64 @@ chk(rq.status_code == 200 and "ingresos_crudo_2026-09-14_2026-09-30.json" in rq.
     and [d["fecha"] for d in jr.get("dias", [])] == ["2026-09-14", "2026-09-20"] and jr["sha256"] == huella(jr["dias"]), f"T18: GET /api/contable/crudo descarga el rango: {rq.status_code}")
 chk(cl18.get("/api/contable/crudo?desde=2027-01-01").status_code == 404 and cl18.get("/api/contable/crudo?desde=1/9/26").status_code == 400, "T18: rango vacío → 404, fecha mal → 400")
 chk(cl18.get("/api/contable/crudo", headers={"Host": "evil.example.com"}).status_code == 403, "T18: Host ajeno → 403 (FIX-10)")
+# T19 · ADR-004: importar el archivo crudo (valida archivo y días; nuevo entra, igual se omite, distinto = conflicto, R7 bloquea, R10 informa)
+from dataclasses import asdict
+from datetime import date as _date
+from parser_module.contable import soporte as _sop
+from parser_module.contable.exportar import leer_crudo, CrudoInvalido
+def _arch(j, **cambios):
+    j = {**copy.deepcopy(j), **cambios}
+    if "sha256" not in cambios: j["sha256"] = huella(j["dias"])
+    return json.dumps(j, ensure_ascii=False).encode("utf-8")
+def _rechaza(data):
+    try: leer_crudo(data); return ""
+    except CrudoInvalido as e: return str(e)
+lib19 = {f: dict(fecha=f, documentos=r["documentos"], banco={}, cierre={}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"],
+                 credito=r["credito"], diferencia=r["diferencia"], guardado="2026-09-15T08:00:00") for f, r in (("2026-09-13", r3), ("2026-09-14", r12))}
+a19 = crudo(lib19); j19 = json.loads(a19)
+d19, m19 = leer_crudo(a19)
+chk(not m19 and [d["fecha"] for d in d19] == ["2026-09-13", "2026-09-14"] and all(d == {k: lib19[d["fecha"]][k] for k in d} for d in d19), "ADR-004: la ida y vuelta perdió datos (leer_crudo)")
+msg = _rechaza(_arch(j19, version=2))
+chk("versión 2" in msg and "versión 1" in msg, f"T19: otra versión se rechaza con mensaje claro: {msg!r}")
+chk(all(_rechaza(x) for x in (_arch(j19, sha256="0" * 64), _arch(j19, formato="otro"), b"{no es json", a19[: len(a19) // 2], b"\xff\xfe")),
+    "ADR-004: archivo ajeno aceptado (sha256 distinta, otro formato, JSON roto, cortado)")
+malo = copy.deepcopy(j19["dias"][0])
+casos = [dict(malo, fecha="2026-02-30"), dict(malo, fecha="2026-09-01", documentos=[dict(malo["documentos"][0], tipo="pickle")]),
+         dict(malo, fecha="2026-09-02", documentos=[dict(malo["documentos"][0], valor=-5)]), dict(malo, fecha="2026-09-03", documentos=[dict(malo["documentos"][0], texto="x" * 5001)]),
+         dict(malo, fecha="2026-09-04", documentos=[{"tipo": "factura"}]), dict(malo, fecha="2026-09-05", banco=[1]), dict(malo, fecha="2026-09-06", documentos=["x"] * 2001),
+         dict(malo, fecha="2026-09-13")]
+d19b, m19b = leer_crudo(_arch(j19, dias=j19["dias"] + casos))
+chk([d["fecha"] for d in d19b] == ["2026-09-13", "2026-09-14"] and len(m19b) == len(casos) and all(x["motivo"] for x in m19b),
+    f"T19: días malos (fecha, tipo, negativo, texto largo, sin id, banco, >2000, repetido) salen con motivo y los buenos quedan: {[x['motivo'][:25] for x in m19b]}")
+T19 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO, web.RUTA_CONT, web.RUTA_SOPORTE = T19 / "libro.json", T19 / "contable.json", T19 / "soporte.db"
+imp = lambda data, reemplazar="": cl18.post("/api/contable/crudo", data={"archivo": (io.BytesIO(data), "c.json"), "reemplazar": reemplazar}, content_type="multipart/form-data")
+r = imp(_arch(j19, version=2))
+chk(r.status_code == 400 and "versión" in r.get_json()["error"] and not web.RUTA_LIBRO.exists(), f"T19: POST con otra versión → 400 sin escribir: {r.status_code}")
+r = imp(_arch(j19, dias=j19["dias"] + casos[:2])); ji = r.get_json(); li = web._leer_libro()
+chk(r.status_code == 200 and ji["nuevos"] == ["2026-09-13", "2026-09-14"] and len(ji["invalidos"]) == 2 and sorted(li) == ["2026-09-13", "2026-09-14"],
+    f"T19: libro vacío → entran los días buenos, los malos van al informe: {r.status_code} {ji and {k: len(v) for k, v in ji.items() if isinstance(v, list)}}")
+chk(len(li) == 2 and all(li[f][k] == lib19[f][k] for f in li for k in ("documentos", "banco", "cierre", "filas", "pendientes", "debito", "credito", "guardado")),
+    "ADR-004: la ida y vuelta perdió datos (POST: documentos, filas y totales iguales)")
+hoy = _date(2026, 9, 20)
+chk([asdict(g) for g in _sop.semanas(li, None, None, hoy)] == [asdict(g) for g in _sop.semanas(lib19, None, None, hoy)], "T19: export → import da las mismas semanas de documento soporte")
+antes = web.RUTA_LIBRO.read_bytes(); ji = imp(a19).get_json()
+chk(ji["iguales"] == ["2026-09-13", "2026-09-14"] and not ji["nuevos"] and web.RUTA_LIBRO.read_bytes() == antes, "T19: importar otra vez el mismo archivo → iguales, libro sin tocar")
+otro = copy.deepcopy(j19); otro["dias"][1]["documentos"][0]["valor"] = 99000
+ji = imp(_arch(otro)).get_json()
+chk([c["fecha"] for c in ji["conflictos"]] == ["2026-09-14"] and web._leer_libro()["2026-09-14"]["documentos"][0]["valor"] == 12000, "T19: día distinto → conflicto, no se toca")
+ji = imp(_arch(otro), "2026-09-14").get_json()
+chk(ji["reemplazados"] == ["2026-09-14"] and web._leer_libro()["2026-09-14"]["documentos"][0]["valor"] == 99000, "T19: marcado para reemplazar → se reemplaza")
+_b = web._bloqueos; web._bloqueos = lambda f, d: ["CTG-1 (transmitido): la compra cambia"] if f == "2026-09-14" else []
+ji = imp(a19, "2026-09-14").get_json(); web._bloqueos = _b
+chk([x["fecha"] for x in ji["bloqueados"]] == ["2026-09-14"] and not ji["reemplazados"] and web._leer_libro()["2026-09-14"]["documentos"][0]["valor"] == 99000,
+    "T19: R7 — un día con compras de un DS transmitido nunca se reemplaza")
+chk(cl18.post("/api/contable/crudo", headers={"Host": "evil.example.com"}).status_code == 403 and imp(b"").status_code == 400 and cl18.post("/api/contable/crudo").status_code == 400,
+    "T19: Host ajeno → 403; archivo vacío o ausente → 400")
+if LIB.exists():
+    T19b = Path(tempfile.mkdtemp()); web.RUTA_LIBRO, web.RUTA_CONT = T19b / "libro.json", LIB.parent / "contable.json"
+    ji = imp(crudo(lib)).get_json(); li, cfg = web._leer_libro(), web._cont_cfg()
+    esp = {f: construir(f, copy.deepcopy(d["documentos"]), d.get("banco", {}), cfg, d.get("cierre")) for f, d in lib.items()}
+    malos = [f for f in lib if f not in li or li[f]["documentos"] != lib[f]["documentos"] or li[f]["filas"] != esp[f]["filas"]]
+    chk(not ji["invalidos"] and len(ji["nuevos"]) == len(lib) and not malos, f"T19: libro.json real ({len(lib)} días) export → import en vacío: mismos documentos y filas (distintos: {malos[:3]})")
+    chk([asdict(g) for g in _sop.semanas(li, None, None, hoy)] == [asdict(g) for g in _sop.semanas(lib, None, None, hoy)], "T19: libro real → mismas semanas")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

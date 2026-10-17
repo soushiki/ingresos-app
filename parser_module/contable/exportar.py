@@ -162,3 +162,67 @@ def crudo(lib: dict, desde: str = "", hasta: str = "") -> bytes:
             for f in sorted(lib) if (not desde or f >= desde) and (not hasta or f <= hasta)]
     return json.dumps(dict(formato=FORMATO_CRUDO, version=VERSION_CRUDO, exportado=datetime.now().isoformat(timespec="seconds"), desde=desde, hasta=hasta,
                            sha256=huella(dias), dias=dias), ensure_ascii=False, indent=1).encode("utf-8")
+
+
+TIPOS_CRUDO = {"cierre", "venta", "gasto_caja", "caja_menor_manuscrito", "factura", "otro"}   # los de documentos.PARSERS más «otro»
+MAX_VALOR, MAX_TEXTO, MAX_DOCS, MAX_HONDO = 10**10, 5000, 2000, 6
+
+
+class CrudoInvalido(ValueError):
+    """El archivo entero no sirve (no es JSON, otro formato o versión, sha256 distinta): no se escribe nada."""
+
+
+def _malo(v, ruta: str, hondo: int = 0) -> str:
+    """Primer valor fuera de los topes de 03 §10 (números 0–10^10, textos ≤ 5.000), o «» si todo está bien."""
+    if hondo > MAX_HONDO: return f"{ruta}: demasiado anidado"
+    if v is None or isinstance(v, bool): return ""
+    if isinstance(v, (int, float)):
+        return "" if v == v and 0 <= v <= MAX_VALOR else f"{ruta}: valor {v} fuera de 0–10.000.000.000"
+    if isinstance(v, str): return "" if len(v) <= MAX_TEXTO else f"{ruta}: texto de {len(v)} caracteres (máx. {MAX_TEXTO})"
+    if isinstance(v, list): return next((m for i, x in enumerate(v) if (m := _malo(x, f"{ruta}[{i}]", hondo + 1))), "")
+    if isinstance(v, dict): return next((m for k, x in v.items() if (m := _malo(x, f"{ruta}.{k}", hondo + 1))), "")
+    return f"{ruta}: tipo de dato desconocido"
+
+
+def _motivo_dia(d) -> str:
+    if not isinstance(d, dict): return "el día no es un objeto"
+    f = d.get("fecha")
+    try: ok = isinstance(f, str) and len(f) == 10 and date.fromisoformat(f).isoformat() == f
+    except ValueError: ok = False
+    if not ok: return f"fecha inválida: {str(f)[:20]!r}"
+    docs = d.get("documentos")
+    if not isinstance(docs, list): return "«documentos» no es una lista"
+    if len(docs) > MAX_DOCS: return f"{len(docs)} documentos (máx. {MAX_DOCS})"
+    for i, x in enumerate(docs):
+        if not isinstance(x, dict): return f"documento {i + 1}: no es un objeto"
+        if x.get("tipo") not in TIPOS_CRUDO: return f"documento {i + 1}: tipo desconocido {str(x.get('tipo'))[:30]!r}"
+        if not isinstance(x.get("id"), str) or not x["id"]: return f"documento {i + 1}: sin id"
+        if m := _malo(x, f"documento {i + 1}"): return m
+    for k in ("banco", "cierre"):
+        if not isinstance(d.get(k, {}), dict): return f"«{k}» no es un objeto"
+        if m := _malo(d.get(k, {}), k): return m
+    if not isinstance(d.get("guardado", ""), str) or len(d.get("guardado", "")) > 40: return "«guardado» inválido"
+    return ""
+
+
+def leer_crudo(data: bytes) -> tuple[list, list]:
+    """Archivo crudo (ADR-004) → (días válidos, inválidos [{fecha, motivo}]). Valida en el orden de 03 §10: JSON, formato, versión y
+    sha256 (si falla, CrudoInvalido y no se usa nada); después cada día. Un día malo no entra pero sale en la lista (R10)."""
+    try: j = json.loads(data.decode("utf-8-sig"))   # json, nunca pickle ni eval: el archivo viene de otro equipo
+    except (UnicodeDecodeError, ValueError): raise CrudoInvalido("El archivo no es un .json válido (¿está cortado?)") from None
+    if not isinstance(j, dict) or j.get("formato") != FORMATO_CRUDO:
+        raise CrudoInvalido("El archivo no es de datos crudos de Ingresos (falta «formato: ingresos-crudo»)")
+    if j.get("version") != VERSION_CRUDO:
+        raise CrudoInvalido(f"El archivo es de la versión {str(j.get('version'))[:10]} y esta app lee la versión {VERSION_CRUDO}: "
+                            "exporte de nuevo con la misma versión de la app en los dos PCs")
+    dias = j.get("dias")
+    if not isinstance(dias, list) or j.get("sha256") != huella(dias):
+        raise CrudoInvalido("La huella sha256 no coincide: el archivo se cortó o se editó a mano. Exporte de nuevo")
+    buenos, malos, vistos = [], [], set()
+    for d in dias:
+        m = _motivo_dia(d) or ("fecha repetida en el archivo" if d["fecha"] in vistos else "")
+        f = d.get("fecha") if isinstance(d, dict) and isinstance(d.get("fecha"), str) else "?"
+        if m: malos.append(dict(fecha=f[:20], motivo=m)); continue
+        vistos.add(f)
+        buenos.append(dict(fecha=f, documentos=d["documentos"], banco=d.get("banco") or {}, cierre=d.get("cierre") or {}, guardado=d.get("guardado") or ""))
+    return buenos, malos

@@ -1,7 +1,7 @@
 """Ingresos Diarios · Fotos de cierres de caja manuscritos → tabla → Excel.
 Ejecuta:  python app.py   (abre http://127.0.0.1:5050)"""
 from __future__ import annotations
-import io, json, os, re, threading, webbrowser
+import copy, io, json, os, re, threading, webbrowser
 from datetime import datetime
 from pathlib import Path
 import requests
@@ -20,7 +20,7 @@ from parser_module.contable.documentos import PARSERS, _base as _base_doc
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs
-from parser_module.contable.exportar import crudo as crudo_json
+from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
 from datetime import date
 from urllib.parse import urlsplit
@@ -345,6 +345,39 @@ def cont_crudo():
     if not any((not d or k >= d) and (not h or k <= h) for k in lib): return jsonify(error="No hay días en ese rango"), 404
     return send_file(io.BytesIO(crudo_json(lib, d, h)), mimetype="application/json", as_attachment=True,
                      download_name=f"ingresos_crudo_{d or 'inicio'}_{h or 'fin'}.json")
+
+
+@app.post("/api/contable/crudo")
+def cont_importar():
+    """ADR-004 (T19): importa un archivo crudo día por día. Nuevo → entra; igual → se omite; distinto → conflicto (no se toca salvo que
+    venga en `reemplazar`); con compras de un DS transmitido → bloqueado (R7); inválido → no entra y sale con el motivo (R10).
+    Cada día se recalcula con la config de este PC (ADR-002) y todo se guarda en una sola escritura de libro.json."""
+    f = request.files.get("archivo")
+    if not f: return jsonify(error="No llegó ningún archivo"), 400
+    try: dias, invalidos = leer_crudo(f.read())
+    except CrudoInvalido as e: return jsonify(error=str(e)), 400
+    reemplazar = {x.strip() for x in request.form.get("reemplazar", "").split(",") if x.strip()}
+    inf = dict(nuevos=[], iguales=[], conflictos=[], bloqueados=[], reemplazados=[], invalidos=invalidos)
+    leido = lambda d: (d.get("documentos", []), d.get("banco") or {}, d.get("cierre") or {})
+    with LOCK:
+        lib, cfg, cambio = _leer_libro(), _cont_cfg(), False
+        for d in dias:
+            fecha = d["fecha"]; previo = lib.get(fecha)
+            if previo is not None and leido(previo) == leido(d): inf["iguales"].append(fecha); continue
+            try: r = construir_asientos(fecha, copy.deepcopy(d["documentos"]), d["banco"], cfg, d["cierre"])
+            except Exception as e:  # noqa: BLE001  un documento que el cálculo no entiende: el día no entra y se dice por qué
+                inf["invalidos"].append(dict(fecha=fecha, motivo=f"no se pudo calcular: {str(e)[:120]}")); continue
+            if previo is not None:
+                b = _bloqueos(fecha, r["documentos"])
+                if b: inf["bloqueados"].append(dict(fecha=fecha, motivos=b)); continue
+                if fecha not in reemplazar:
+                    inf["conflictos"].append(dict(fecha=fecha, papeles_actuales=len(previo.get("documentos", [])), papeles_archivo=len(d["documentos"]))); continue
+            lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=d["banco"], cierre=d["cierre"], cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"],
+                              debito=r["debito"], credito=r["credito"], diferencia=r["diferencia"], guardado=d["guardado"] or datetime.now().isoformat(timespec="seconds"),
+                              importado=datetime.now().isoformat(timespec="seconds"))
+            inf["reemplazados" if previo is not None else "nuevos"].append(fecha); cambio = True
+        if cambio: _guardar_libro(lib)
+    return jsonify(ok=True, **inf)
 
 
 @app.delete("/api/contable/libro/<fecha>")

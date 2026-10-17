@@ -96,7 +96,8 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
  <div class="bar"><b style="font-size:16px">Libro contable</b><span class="m">Solo entran días confirmados. Para corregir uno, reábrelo.</span><span class="sp"></span>
   Desde <span class="fw"><input type="text" class="fx" id="f1" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1">📅</button><input type="date" class="fh" tabindex="-1"></span>
   hasta <span class="fw"><input type="text" class="fx" id="f2" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1">📅</button><input type="date" class="fh" tabindex="-1"></span>
-  <button class="g" id="fclr">Todo</button><button id="xl2" disabled>⬇ Excel (MOVIMIENTOS)</button><button class="g" id="cru2" disabled title="Lo leído de estos días, para importarlo en el PC del contador (sin OCR)">⬇ Datos crudos (.json)</button></div>
+  <button class="g" id="fclr">Todo</button><button id="xl2" disabled>⬇ Excel (MOVIMIENTOS)</button><button class="g" id="cru2" disabled title="Lo leído de estos días, para importarlo en el PC del contador (sin OCR)">⬇ Datos crudos (.json)</button><button class="g" id="imp2" title="Trae los días leídos en otro PC (archivo .json de «Datos crudos»)">⬆ Importar datos crudos</button><input type="file" id="impf" accept=".json,application/json" hidden></div>
+ <div class="card" id="impr" hidden></div>
  <div class="card" id="res2"></div>
  <div class="wrap" style="max-height:62vh"><table style="min-width:1100px"><thead><tr><th>Fecha</th><th>Código</th><th>Cuenta</th><th>Tercero</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Reporta</th><th>Medio</th></tr></thead><tbody id="tbl"></tbody></table>
   <div id="vacio2" class="m" style="padding:30px;text-align:center">Aún no hay días en el libro.</div></div>
@@ -282,6 +283,19 @@ $("tbl").addEventListener("click",async e=>{const ab=e.target.dataset.ab,bo=e.ta
   const i=dias.findIndex(x=>x.fecha===ab);if(i>=0)dias[i]=n;else if(dias.length===1&&!dias[0].docs.length&&!dias[0].fotos.length)dias[0]=n;else dias.push(n);act=dias.indexOf(n);irTab(1);syncUI();recalcular();toast("Día reabierto: corrígelo y vuelve a confirmarlo")}});
 $("fclr").onclick=()=>{$("f1").value="";$("f2").value="";renderLibro()};
 $("cru2").onclick=async()=>{const r=await fetch(`/api/contable/crudo?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudieron exportar los datos crudos");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"ingresos_crudo.json";a.click()};
+let IMPF=null;$("imp2").onclick=()=>$("impf").click();$("impf").onchange=()=>{const f=$("impf").files[0];$("impf").value="";if(f){IMPF=f;importar("")}};
+async function importar(reemplazar){const fd=new FormData();fd.append("archivo",IMPF);fd.append("reemplazar",reemplazar);const e=$("impr");e.hidden=false;e.textContent="Importando…";
+ const r=await fetch("/api/contable/crudo",{method:"POST",body:fd});const j=await r.json().catch(()=>({}));
+ if(!r.ok){e.innerHTML=`<b class="bad">No se importó nada.</b> ${esc(j.error||"Error "+r.status)}`;return}
+ const L=(t,xs,f)=>xs.length?`<div style="margin-top:6px"><b>${t} (${xs.length})</b><ul style="margin:4px 0 0 18px;padding:0">${xs.map(f).join("")}</ul></div>`:"";
+ e.innerHTML=`<div class="bar" style="margin:0"><b>Importado de ${esc(IMPF.name)}</b><span class="sp"></span><button class="g" id="impx">Cerrar</button></div>`+
+  `<div class="tot" style="margin:6px 0 0"><span class="ok">${j.nuevos.length} nuevos</span><span>${j.reemplazados.length} reemplazados</span><span>${j.iguales.length} iguales (omitidos)</span>${j.conflictos.length?`<span class="bad">${j.conflictos.length} en conflicto</span>`:""}${j.bloqueados.length?`<span class="bad">${j.bloqueados.length} bloqueados</span>`:""}${j.invalidos.length?`<span class="bad">${j.invalidos.length} inválidos</span>`:""}</div>`+
+  L("Ya están en el libro con otros datos: no se tocaron. Marca los que quieras reemplazar",j.conflictos,c=>`<li style="list-style:none;margin-left:-18px"><label><input type="checkbox" class="impc" value="${esc(c.fecha)}"> ${fmtF(c.fecha)} · ${c.papeles_actuales} papeles en el libro → ${c.papeles_archivo} en el archivo</label></li>`)+
+  (j.conflictos.length?`<button id="impok" style="margin-top:6px">Reemplazar los marcados</button>`:"")+
+  L("Bloqueados (R7: tienen compras de un documento soporte transmitido; nunca se reemplazan)",j.bloqueados,b=>`<li>${fmtF(b.fecha)}: ${esc(b.motivos.join(" · "))}</li>`)+
+  L("Inválidos (no entraron)",j.invalidos,x=>`<li>${esc(x.fecha)}: ${esc(x.motivo)}</li>`);
+ $("impx").onclick=()=>{e.hidden=true};const ok=$("impok");if(ok)ok.onclick=()=>{const m=[...document.querySelectorAll(".impc:checked")].map(i=>i.value);if(!m.length)return toast("Marca al menos un día");if(confirm(`¿Reemplazar ${m.length} ${m.length===1?"día":"días"} del libro por los del archivo?`))importar(m.join(","))};
+ if(j.nuevos.length||j.reemplazados.length){await cargarLibro();cargarSoporte()}}
 $("xl2").onclick=async()=>{const r=await fetch(`/api/contable/excel?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudo generar el Excel");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"reporte_contable.xlsx";a.click()};
 /* ══════ módulo ③: documento soporte ══════ */
 let SEM=[],PROVS=[],DOCS=[];const ESTL={en_plazo:"En plazo",vence_pronto:"Vence pronto",vencida:"Vencida"},ESTD={generado:"Generado",transmitido:"Transmitido",anulado:"Anulado"};
