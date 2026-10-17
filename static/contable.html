@@ -111,7 +111,12 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
  <div class="card" id="s_res" style="display:none"></div>
  <div class="card" id="d_card" style="display:none"><h2>Documentos numerados</h2>
   <p class="m" style="margin:0 0 8px">Cuando lo transcribas en la solución gratuita de la DIAN, márcalo «transmitido» (con el CUDS si lo tienes): ya no se podrán cambiar sus compras. Un documento con error se anula; su número queda gastado.</p>
-  <div class="wrap" style="max-height:40vh"><table id="d_t" style="min-width:640px"><thead><tr><th>Número</th><th>Proveedor</th><th>Semana</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody id="d_tb"></tbody></table></div></div>
+  <div class="wrap" style="max-height:40vh"><table id="d_t" style="min-width:640px"><thead><tr><th>Número</th><th>Proveedor</th><th>Semana</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody id="d_tb"></tbody></table></div>
+  <div id="a_f" style="display:none;margin-top:10px"><h2 id="a_tit">Nota de ajuste</h2>
+   <p class="m" style="margin:0 0 8px">Corrige un documento ya transmitido sin tocarlo: la nota lleva su propio número. Valor negativo baja el documento, positivo lo sube.</p>
+   <div class="pf"><div style="grid-column:1/-1"><label>Concepto (por qué se corrige)</label><input type="text" id="a_con" maxlength="200"></div></div>
+   <div id="a_ls"></div>
+   <div class="bar" style="margin-top:8px"><button class="g" id="a_mas">+ Línea</button><span class="m" id="a_tot"></span><span class="sp"></span><button class="g" id="a_no">Cancelar</button><button id="a_ok">Guardar nota</button></div></div></div>
  <div class="card"><h2>Compra manual</h2>
   <p class="m" style="margin:0 0 8px">Una compra que no está en los papeles (por ejemplo, pagada por transferencia). Queda en el libro del día de su fecha y en la semana de su proveedor.</p>
   <div class="pf"><div><label>Proveedor</label><input type="text" id="c_ter" maxlength="200" list="c_provs"><datalist id="c_provs"></datalist></div>
@@ -290,14 +295,25 @@ function renderSoporte(){const ver=$("s_todas").checked,L=SEM.map((g,i)=>[g,i]).
  $("p_tb").innerHTML=PROVS.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(p.tipo_id)} ${esc(p.num_id)}</td><td>${esc(p.municipio)}</td><td><button class="g" data-ed="${p.id}">✎</button></td></tr>`).join("");$("c_provs").innerHTML=PROVS.map(p=>`<option value="${esc(p.nombre)}">`).join("");renderDocsSop();sopBoton()}
 /* R7: generado → transmitido (CUDS opcional) o → anulado (motivo); el servidor decide si se puede */
 function renderDocsSop(){$("d_card").style.display=DOCS.length?"":"none";
- $("d_tb").innerHTML=[...DOCS].reverse().map(d=>`<tr class="${d.estado==="anulado"?"hecho":""}"><td><b>${esc(d.numero)}</b></td><td>${esc(d.proveedor)}</td><td>${esc(d.semana)}</td><td class="num">${fmt(d.total)}</td>`+
+ $("d_tb").innerHTML=[...DOCS].reverse().map(d=>`<tr class="${d.estado==="anulado"?"hecho":""}"><td><b>${esc(d.numero)}</b>${d.ajusta_a?`<br><span class="m">Ajusta a ${esc(d.ajusta_a)}</span>`:""}${d.concepto?`<br><span class="m">${esc(d.concepto)}</span>`:""}</td><td>${esc(d.proveedor)}</td><td>${esc(d.semana)}</td><td class="num">${fmt(d.total)}</td>`+
   `<td><span class="est ${d.estado==="generado"?"en_plazo":"hecho"}">${esc(ESTD[d.estado]||d.estado)}</span>${d.estado==="anulado"&&d.motivo?`<br><span class="m">${esc(d.motivo)}</span>`:""}${d.cuds?`<br><span class="m" title="${esc(d.cuds)}">CUDS ${esc(d.cuds.slice(0,10))}…</span>`:""}</td>`+
-  `<td class="sc">${d.estado==="generado"?`<button class="g" data-tx="${d.id}">Transmitido</button><button class="g" data-an="${d.id}">Anular</button>`:""}<button class="g" data-xl="${d.id}" title="Excel de este documento">⬇</button></td></tr>`).join("")}
-$("d_tb").addEventListener("click",async e=>{const t=e.target,d=DOCS.find(x=>x.id==(t.dataset.tx||t.dataset.an||t.dataset.xl));if(!d)return;
- if(t.dataset.xl)return bajarXl(String(d.id));let r;
+  `<td class="sc">${d.estado==="generado"?`<button class="g" data-tx="${d.id}">Transmitido</button><button class="g" data-an="${d.id}">Anular</button>`:""}${d.clase==="DS"&&d.estado==="transmitido"?`<button class="g" data-aj="${d.id}">Nota de ajuste</button>`:""}<button class="g" data-xl="${d.id}" title="Excel de este documento">⬇</button></td></tr>`).join("")}
+$("d_tb").addEventListener("click",async e=>{const t=e.target,d=DOCS.find(x=>x.id==(t.dataset.tx||t.dataset.an||t.dataset.xl||t.dataset.aj));if(!d)return;
+ if(t.dataset.xl)return bajarXl(String(d.id));if(t.dataset.aj)return abrirAjuste(d);let r;
  if(t.dataset.tx){const cuds=prompt(`${d.numero} · ${d.proveedor}\nMarcar como transmitido a la DIAN. Después no se podrán cambiar sus compras.\n\nCUDS (opcional, 96 caracteres):`,"");if(cuds===null)return;r=await jpost(`/api/soporte/${d.id}/transmitido`,{cuds:cuds.trim()})}
  else{const motivo=prompt(`Anular ${d.numero} · ${d.proveedor}\nEl número queda gastado y sus compras vuelven a quedar pendientes.\n\nMotivo:`,"");if(motivo===null)return;r=await jpost(`/api/soporte/${d.id}/anular`,{motivo})}
  if(!r.ok)return toast(await errDe(r),7000);toast(t.dataset.tx?`${d.numero} marcado transmitido`:`${d.numero} anulado`);await cargarSoporte()});
+/* R8: nota de ajuste sobre un DS transmitido; concepto + líneas (descripción, valor ±); el servidor valida y numera */
+let AJ=null;const aLinea=()=>`<div class="pf a_l"><div><label>Descripción</label><input type="text" class="a_d" maxlength="200"></div><div><label>Valor (− baja, + sube)</label><input type="text" class="a_v" inputmode="numeric" maxlength="17" placeholder="ej. -20.000"></div></div>`;
+const aVal=i=>{const t=i.value.trim(),n=+t.replace(/\D/g,"");return /^\s*[-−]/.test(t)?-n:n};
+function aTotal(){const t=[...document.querySelectorAll("#a_ls .a_v")].reduce((s,i)=>s+aVal(i),0);$("a_tot").textContent=t?`Ajuste: ${t<0?"−":"+"} $ ${fmt(Math.abs(t))}`:""}
+function abrirAjuste(d){AJ=d;$("a_tit").textContent=`Nota de ajuste a ${d.numero} · ${d.proveedor} ($ ${fmt(d.total)})`;$("a_con").value="";$("a_ls").innerHTML=aLinea();aTotal();$("a_f").style.display="block";$("a_f").scrollIntoView({block:"center"});$("a_con").focus()}
+$("a_mas").onclick=()=>{if($("a_ls").children.length<50)$("a_ls").insertAdjacentHTML("beforeend",aLinea())};$("a_ls").addEventListener("input",aTotal);
+$("a_no").onclick=()=>{AJ=null;$("a_f").style.display="none"};
+$("a_ok").onclick=async()=>{if(!AJ)return;const lineas=[...document.querySelectorAll("#a_ls .a_l")].map(l=>({descripcion:l.querySelector(".a_d").value,valor:aVal(l.querySelector(".a_v"))})).filter(l=>l.descripcion.trim()||l.valor);
+ if(!lineas.length)return toast("Escribe al menos una línea con descripción y valor",5000);const b=$("a_ok");b.disabled=true;
+ try{const r=await jpost(`/api/soporte/${AJ.id}/ajuste`,{concepto:$("a_con").value,lineas});if(!r.ok)return toast(await errDe(r),7000);const n=(await r.json()).documento;
+  toast(`${n.numero} creada (ajusta a ${AJ.numero})`);$("a_no").onclick();await cargarSoporte()}catch(e){toast("No se pudo guardar la nota")}finally{b.disabled=false}};
 function sopBoton(){$("s_gen").disabled=!document.querySelector("#s_tb .sk:checked")}
 $("s_todas").onchange=renderSoporte;$("s_tb").addEventListener("change",sopBoton);
 $("s_tb").addEventListener("click",e=>{const i=e.target.dataset.reg;if(i===undefined)return;const g=SEM[+i];$("p_nombre").value=g.tercero;$("p_alias").value=g.tercero;$("p_tit").textContent="Registrar proveedor: "+g.tercero;$("p_num").focus();$("p_nombre").scrollIntoView({block:"center"})});

@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 6-test        # iter. 3 completa (T14–T17); it. 4 (OCR separado) después; smokes it. 1 (Excel) e it. 2 (pestaña ③) pendientes (usuario)
+next: 5-implement   # FIX-12 (fórmulas en Excel), luego re-test it. 3; después it. 4; smokes it. 1–3 pendientes (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,8 +13,8 @@ next: 6-test        # iter. 3 completa (T14–T17); it. 4 (OCR separado) despué
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: — (it. 3 completa; sigue it. 4 tras 6-test)
-- [ ] 6-test           (iter. 1 y 2 pasan; smokes pendientes)
+- [ ] 5-implement      current task: FIX-12
+- [ ] 6-test           (iter. 1 y 2 pasan; it. 3 no pasa: FIX-11, FIX-12; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
 
@@ -76,3 +76,5 @@ next: 6-test        # iter. 3 completa (T14–T17); it. 4 (OCR separado) despué
 2026-10-17 | 5-implement | T15: transmitido (CUDS 96 hex opcional), anular (motivo; ADR-003), bloqueos() en guardar/borrar día (409); vendedor fijo al generar (migración 2); tarjeta «Documentos numerados» en ③ verificada en copia y 375 px; 37 checks; suites verdes
 2026-10-17 | 5-implement | T16: nota_ajuste (solo sobre DS transmitido; concepto, líneas ≠0, no deja el DS negativo), rango_na configurable (default NA 1–10000, sin reutilizar al cambiarlo), migración 3 (concepto), hoja NA + «Ajusta a» en RESUMEN, POST /api/soporte/<id>/ajuste; 40 checks; suites verdes. Falta botón en ③ (contable.html fuera de la tarea)
 2026-10-17 | 5-implement | T17: 3 checks N4 (50 DS en 0,07 s, Excel soporte 0,15 s, Excel del libro de sept. real en 0,50 s; límites 2/2/5 s); suites verdes. Iteración 3 completa → 6-test
+2026-10-17 | 6-test | Iter. 3 no pasa: suite verde y R4/R7/R8/N1/N2/N4 con checks, pero falta el botón de nota de ajuste en ③ (FIX-11) y hay inyección de fórmulas en los Excel (FIX-12) → 06-test-report.md
+2026-10-17 | 5-implement | FIX-11: botón «Nota de ajuste» en DS transmitidos (concepto + líneas ±, total en vivo) y «Ajusta a CTG-N» en la tabla; demo en copia: CTG-1 → −20.000 → NA-1, su ⬇ trae hoja NA-1; 375 px sin desborde; suites verdes
