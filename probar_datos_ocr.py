@@ -1,7 +1,10 @@
 """Prueba de la hoja DATOS OCR (R9, ADR-002): una fila por papel y medio de pago; ningún papel falta, ni los que van a puente."""
-import io, zipfile
+import copy, io, json, re, zipfile
+from pathlib import Path
 from openpyxl import load_workbook
 from parser_module.contable import construir, leer_texto, libro_a_excel
+from parser_module.contable.exportar import MESES
+MESES_ = {m: i for i, m in enumerate(MESES, 1)}
 from parser_module.contable.asientos import CFG, COLS_DATOS
 from parser_module.contable.ejemplos import FOTO_PAPELES, GASTO, VENTA
 ok = True
@@ -44,4 +47,94 @@ filas = [f_ for f_ in ws.iter_rows(min_row=2, values_only=True) if any(f_)]
 chk(ws.title == "DATOS OCR" and len(filas) == len(D), f"hoja DATOS OCR primera, {len(filas)} filas = {len(D)} datos")
 chk(not any("vbaProject" in n for n in zipfile.ZipFile(io.BytesIO(x)).namelist()), "ADR-002: el libro no trae macros")
 chk("DATOS OCR" not in load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": r["filas"]}))).sheetnames, "sin datos no se agrega la hoja (compatibilidad)")
+
+
+# T6 · MOVIMIENTOS con fórmulas. openpyxl no calcula y aquí no hay Excel: un evaluador mínimo (refs, SUMIFS, MIN, SUM, + y −) hace de Excel.
+TOK = re.compile(r"\s*(?:(?P<num>\d+(?:\.\d+)?)|(?P<str>\"(?:[^\"]|\"\")*\")|(?P<ref>(?:'[^']+'!)?\$?[A-Z]+\$?\d*(?::\$?[A-Z]+\$?\d*)?)(?P<fn>\()?|(?P<op>[-+(),]))")
+def evaluar(wb, hoja, celda, memo):
+    if (hoja, celda) in memo: return memo[hoja, celda]
+    v = wb[hoja][celda].value
+    if isinstance(v, str) and v.startswith("="):
+        toks = [m for m in TOK.finditer(v[1:]) if m.group()]; i = 0
+        def rango(t):
+            h, _, r_ = t.rpartition("!"); h = h.strip("'") or hoja; a, _, b = r_.replace("$", "").partition(":")
+            ws = wb[h]; ca, cb = re.sub(r"\d", "", a), re.sub(r"\d", "", b)
+            fa, fb = (int(re.sub(r"\D", "", a)), int(re.sub(r"\D", "", b))) if re.search(r"\d", a) else (1, ws.max_row)
+            return [[(h, f"{c}{k}") for k in range(fa, fb + 1)] for c in sorted({ca, cb})][0]
+        def igual(x, crit):
+            if isinstance(crit, str):
+                neg = crit.startswith("<>"); c = crit[2:] if neg else crit.removeprefix("=")
+                c = re.sub(r"~(.)", r"\1", c); s = "" if x is None else str(x)
+                e = s.lower() == c.lower() or (s.replace(".0", "") == c)
+                return e != neg
+            return x == crit
+        def atomo():
+            nonlocal i
+            t = toks[i]; i += 1
+            if t["op"] == "(": x = expr(); i += 1; return x
+            if t["num"]: return float(t["num"])
+            if t["str"]: return t["str"][1:-1].replace('""', '"')
+            if t["fn"]:
+                args = []
+                while True:
+                    if toks[i]["ref"] and ":" in toks[i]["ref"] and toks[i + 1]["op"] in (",", ")"): args.append(rango(toks[i]["ref"])); i += 1
+                    else: args.append(expr())
+                    i += 1
+                    if toks[i - 1]["op"] == ")": break
+                fn = t["ref"].upper()
+                if fn == "MIN": return min(args)
+                if fn == "SUM": return sum(evaluar(wb, h, c, memo) or 0 for h, c in args[0])
+                if fn == "SUMIFS":
+                    tot = 0
+                    for k, (h, c) in enumerate(args[0]):
+                        if k == 0: continue   # encabezado
+                        if all(igual(wb[args[n][k][0]][args[n][k][1]].value, args[n + 1]) for n in range(1, len(args), 2)): tot += wb[h][c].value or 0
+                    return tot
+                raise ValueError(fn)
+            h, _, c = t["ref"].rpartition("!")
+            return evaluar(wb, h.strip("'") or hoja, c.replace("$", ""), memo)
+        def expr():
+            nonlocal i
+            x = atomo()
+            while i < len(toks) and toks[i]["op"] in ("+", "-"):
+                o = toks[i]["op"]; i += 1; y = atomo(); x = x + y if o == "+" else x - y
+            return x
+        v = expr()
+    memo[hoja, celda] = v; return v
+
+def movimientos(wb):
+    ws = next(w for w in wb.worksheets if w.title.startswith("MOVIMIENTOS")); memo = {}
+    return ws, [(r, evaluar(wb, ws.title, f"F{r}", memo), evaluar(wb, ws.title, f"G{r}", memo)) for r in range(9, ws.max_row + 1) if ws[f"B{r}"].value]
+
+ws, mov = movimientos(wb)
+imp = [ws[f"{'G' if f['fx'][0] == 'credito' else 'F'}{k}"].value for k, f in enumerate(r["filas"], 9)]
+chk(all(isinstance(x, str) and x.startswith("=") for x in imp), f"ADR-002: cada importe de MOVIMIENTOS es una fórmula ({len(imp)} filas)")
+chk(any("'DATOS OCR'!" in x and "SUMIFS" in x for x in imp) and any(re.fullmatch(r"='DATOS OCR'!G\d+", x) for x in imp), "hay SUMIFS por fecha/estado/cuenta y referencias directas a DATOS OCR")
+chk([(int(d), int(c)) for _, d, c in mov] == [(f["debito"], f["credito"]) for f in r["filas"]], "evaluadas, las fórmulas dan lo mismo que construir()")
+# corregir a mano en DATOS OCR: el efectivo de la venta mixta pasa de 100.000 a 130.000
+fe = next(k for k, x in enumerate(D, 2) if x["id"] == v["id"] and x["medio"] == "Efectivo")
+wb["DATOS OCR"][f"G{fe}"] = 130000
+_, mov2 = movimientos(wb)
+cambio = {r_: (d2 - d1, c2 - c1) for (r_, d1, c1), (_, d2, c2) in zip(mov, mov2) if (d1, c1) != (d2, c2)}
+fil = {k: f for k, f in enumerate(r["filas"], 9)}
+chk(sorted((fil[k]["codigo"], dc) for k, dc in cambio.items()) == [("11050501", (30000, 0)), ("41401501", (0, 30000))],
+    f"cambiar un valor en DATOS OCR mueve Efectivo y la contrapartida de ingresos: {[(fil[k]['codigo'], dc) for k, dc in cambio.items()]}")
+chk(evaluar(wb, ws.title, "F7", {}) == evaluar(wb, ws.title, "G7", {}), "y el mes sigue cuadrando (total débito = total crédito)")
+wb["DATOS OCR"][f"J{fe}"] = "no cuenta"   # marcar el papel como «no cuenta» lo saca del libro
+_, mov3 = movimientos(wb)
+chk(sum(d for _, d, _ in mov3) == sum(f["debito"] for f in r["filas"]) - 100000, "cambiar el estado a «no cuenta» saca ese valor del libro")
+av = load_workbook(io.BytesIO(x))["AVISOS"]
+chk(any("grupo nuevo" in (c.value or "") for c in av["A"]), "AVISOS explica que un grupo nuevo no agrega fila en MOVIMIENTOS")
+
+# fitness ADR-002 con los días guardados (si hay libro.json): cada día evaluado = construir()
+LIB = Path(__file__).parent / "datos" / "libro.json"
+if LIB.exists():
+    lib = json.loads(LIB.read_text(encoding="utf-8")); rs = {k: construir(k, copy.deepcopy(d["documentos"]), d.get("banco"), None, d.get("cierre")) for k, d in lib.items()}
+    wb = load_workbook(io.BytesIO(libro_a_excel({k: q["filas"] for k, q in rs.items()}, datos={k: q["datos"] for k, q in rs.items()})))
+    malos, n = [], 0
+    for w in [w for w in wb.worksheets if w.title.startswith("MOVIMIENTOS")]:
+        memo, m = {}, MESES_[w.title.split()[1]]; esp = [(f["debito"], f["credito"]) for k in sorted(rs) if int(k[5:7]) == m for f in rs[k]["filas"]]
+        got = [(int(evaluar(wb, w.title, f"F{q}", memo)), int(evaluar(wb, w.title, f"G{q}", memo))) for q in range(9, w.max_row + 1) if w[f"B{q}"].value]
+        n += len(got); malos += [q for q, (a, b) in enumerate(zip(got, esp)) if a != b] + ([-1] if len(got) != len(esp) else [])
+    chk(not malos, f"libro.json: {len(rs)} días, {n} asientos con fórmula = construir() (distintos: {len(malos)})")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

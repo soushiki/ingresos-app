@@ -19,11 +19,45 @@ DATOS_HEAD = {"fecha": "Fecha", "archivo": "Archivo de origen", "tipo": "Tipo", 
 AMARILLO = "FFF2CC"
 
 
-def hoja_datos(wb, datos: dict):
-    """DATOS OCR (R9, ADR-002), primera hoja: una fila por papel y medio de pago. Lo que no está «ok» o trae aviso va en amarillo."""
-    ws = wb.create_sheet("DATOS OCR"); ws.append(list(DATOS_HEAD.values()))
+D = "'DATOS OCR'!"
+DC = {k: L(i) for i, k in enumerate(DATOS_HEAD, 1)}   # columna de cada campo en DATOS OCR
+NOTAS_DATOS = ["Los importes de MOVIMIENTOS son fórmulas sobre la hoja DATOS OCR: corrige allí un valor, una cuenta o un estado y el libro se recalcula al abrirlo en Excel.",
+               "Solo suman las filas con estado «ok». Si corriges una cuenta o un medio que no tiene fila en MOVIMIENTOS (un grupo nuevo), ese valor no entra: corrígelo en la app y vuelve a exportar.",
+               "La propina y el domicilio de cada venta van como valor fijo: si corriges el valor de una venta, corrige también su propina y su domicilio."]
+
+
+def _criterio(v) -> str:
+    """Criterio literal de SUMIFS: comodines escapados y un «=» delante si el texto empieza con un operador (ADR-002: nunca una celda vacía)."""
+    s, op = str(v), ""
+    if s.startswith("<>"): s, op = s[2:], "<>"
+    s = s.replace("~", "~~").replace("*", "~*").replace("?", "~?")
+    if not op and s[:1] in ("<", ">", "="): op = "="
+    return '"' + (op + s).replace('"', '""') + '"'
+
+
+def formula(fx, fila: int, ref_fila, ref_dato) -> str:
+    """fx de asientos.construir → texto de la fórmula (sin «=»). ref_fila(j) y ref_dato(i) dan la celda (o el valor) de otra fila del día o de DATOS OCR."""
+    op, *a = fx
+    if op == "sum":
+        col, crit = a
+        pares = [(DC["fecha"], f"$A{fila}"), (DC["estado"], '"ok"')] + [(DC[k], _criterio(v)) for k, v in crit.items()]
+        return f"SUMIFS({D}{DC[col]}:{DC[col]}," + ",".join(f"{D}{c}:{c},{x}" for c, x in pares) + ")"
+    if op == "dato": return ref_dato(a[0])
+    if op == "fila": return ref_fila(a[0])
+    t = [formula(x, fila, ref_fila, ref_dato) for x in a]
+    if op == "min": return f"MIN({','.join(t)})"
+    if op == "+": return "+".join(t) if len(t) > 1 else t[0]
+    if op == "-": return t[0] + "".join(f"-({x})" if "+" in x or "-" in x else f"-{x}" for x in t[1:])
+    raise ValueError(f"fx desconocido: {op}")
+
+
+def hoja_datos(wb, datos: dict) -> dict:
+    """DATOS OCR (R9, ADR-002), primera hoja: una fila por papel y medio de pago. Lo que no está «ok» o trae aviso va en amarillo.
+    Devuelve {fecha: fila de la hoja donde empieza ese día} para que MOVIMIENTOS apunte a sus datos."""
+    ws = wb.create_sheet("DATOS OCR"); ws.append(list(DATOS_HEAD.values())); inicio = {}
     for c in ws[1]: c.font = Font(bold=True); c.fill = _f(AZUL); c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     for f in sorted(datos):
+        inicio[f] = ws.max_row + 1
         for r in datos[f]:
             ws.append([date.fromisoformat(r["fecha"]) if k == "fecha" else (int(r[k]) if k == "cuenta" and str(r[k]).isdigit() else (r[k] if r[k] != "" else None)) for k in DATOS_HEAD])
             k = ws.max_row; ws.cell(k, 1).number_format = "dd/mm/yyyy"
@@ -32,16 +66,18 @@ def hoja_datos(wb, datos: dict):
                 for c in ws[k]: c.fill = _f(AMARILLO)
     for i, w in enumerate([12, 40, 14, 10, 26, 30, 14, 16, 11, 12, 36, 12, 12, 10, 10], 1): ws.column_dimensions[L(i)].width = w
     ws.freeze_panes = "A2"; ws.auto_filter.ref = f"A1:{L(len(DATOS_HEAD))}{max(ws.max_row, 2)}"
+    return inicio
 
 
 def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | None = None) -> bytes:
-    """dias: {'2026-09-12': [fila, …]} con filas de asientos.construir(); datos: {'2026-09-12': construir()['datos']} para la hoja DATOS OCR."""
+    """dias: {'2026-09-12': [fila, …]} con filas de asientos.construir(); datos: {'2026-09-12': construir()['datos']} para la hoja DATOS OCR.
+    Con datos, cada importe es una fórmula sobre DATOS OCR (ADR-002); filas y datos de un día deben salir del mismo construir()."""
     wb = Workbook(); wb.remove(wb.active)
-    if datos: hoja_datos(wb, datos)
+    inicio = hoja_datos(wb, datos) if datos else {}
     por_mes, avisos = defaultdict(list), []
     for f in sorted(dias):
-        for x in dias[f]:   # R10: una fila sin código de cuenta no entra a MOVIMIENTOS; se avisa
-            if str(x.get("codigo") or "").strip(): por_mes[f[:7]].append(x)
+        for j, x in enumerate(dias[f]):   # R10: una fila sin código de cuenta no entra a MOVIMIENTOS; se avisa
+            if str(x.get("codigo") or "").strip(): por_mes[f[:7]].append(dict(x, _j=j))
             else: avisos.append(f"{f}: fila sin código de cuenta ({x.get('descripcion') or x.get('nombre') or 's/d'}, débito {x.get('debito') or 0:,}, crédito {x.get('credito') or 0:,}); no se exportó".replace(",", "."))
     hojas = []
     for ym in sorted(por_mes):
@@ -57,9 +93,19 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
         for i, h in enumerate(HEAD, 1):
             c = ws.cell(8, i, h or None); c.font = Font(bold=True); c.fill = _f(AZUL); c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         ws.row_dimensions[8].height = 32
-        for k, f in enumerate(sorted(filas, key=lambda x: (x["fecha"], 0)), 9):   # sorted es estable: conserva el orden de cada día
+        filas = sorted(filas, key=lambda x: (x["fecha"], 0))   # sorted es estable: conserva el orden de cada día
+        pos = {(f["fecha"], f["_j"]): (k, f) for k, f in enumerate(filas, 9)}
+        def ref_fila(fe, j):   # celda del importe de otra fila del mismo día (contrapartida); si no se exportó, su valor
+            k, g = pos.get((fe, j), (None, dias[fe][j]))
+            lado = (g.get("fx") or ["debito"])[0]
+            return f"{'G' if lado == 'credito' else 'F'}{k}" if k else str(g[lado] or 0)
+        for k, f in enumerate(filas, 9):
+            imp = [f["debito"] or 0, f["credito"] or 0]
+            if f.get("fx") and f["fecha"] in inicio:   # ADR-002: el importe sale de DATOS OCR
+                base, fe = inicio[f["fecha"]], f["fecha"]
+                imp[f["fx"][0] == "credito"] = "=" + formula(f["fx"][1], k, lambda j: ref_fila(fe, j), lambda i: f"{D}{DC['valor']}{base + i}")
             v = [date.fromisoformat(f["fecha"]), int(f["codigo"]) if str(f["codigo"]).isdigit() else (f["codigo"] or None), f["nombre"], f["tercero"], f["descripcion"],
-                 f["debito"] or 0, f["credito"] or 0, None, f["reporta"] or None, f["medio"] or None]
+                 *imp, None, f["reporta"] or None, f["medio"] or None]
             for i, x in enumerate(v, 1):
                 c = ws.cell(k, i, x); c.border = FINO
                 c.fill = _f(VERDE if str(f["codigo"]).startswith("4") or f.get("grupo") == "venta" else ROSA)
@@ -85,7 +131,7 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
     rs.cell(t + 2, 1).alignment = Alignment(wrap_text=True, vertical="top"); rs.merge_cells(start_row=t + 2, start_column=1, end_row=t + 2, end_column=4); rs.row_dimensions[t + 2].height = 48
     for i, w in enumerate([22, 20, 20, 26], 1): rs.column_dimensions[L(i)].width = w
     if not hojas: wb.remove(rs); wb.create_sheet("MOVIMIENTOS")
-    if avisos:
+    if avisos or inicio:
         av = wb.create_sheet("AVISOS"); av["A1"] = "Avisos de exportación"; av["A1"].font = Font(bold=True); av.column_dimensions["A"].width = 110
-        for a in avisos: av.append([a])
+        for a in avisos + (NOTAS_DATOS if inicio else []): av.append([a])
     buf = io.BytesIO(); wb.save(buf); return buf.getvalue()
