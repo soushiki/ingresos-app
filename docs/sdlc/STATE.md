@@ -13,7 +13,7 @@ next: 5-implement   # it. 4: D1 (mini-diseño + ADR-004, gate) → T18–T21; sm
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: T18 (it. 4)
+- [ ] 5-implement      current task: T19 (it. 4)
 - [ ] 6-test           (iter. 1, 2 y 3 pasan; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
@@ -82,3 +82,4 @@ next: 5-implement   # it. 4: D1 (mini-diseño + ADR-004, gate) → T18–T21; sm
 2026-10-17 | 6-test | Re-test iter. 3: pasa; FIX-11 y FIX-12 cerrados, suite verde, sin defectos nuevos; smokes it. 1–3 pendientes (usuario) → it. 4
 2026-10-17 | 5-implement | D1 propuesto: .json versionado con sha256 (no xlsx/CSV), sin fotos, import día a día (nuevo entra, distinto = conflicto a elegir, transmitido nunca), soporte.db solo en el PC del contador → 03-design §10, adr/004; gate pendiente
 2026-10-17 | 5-implement | D1 aprobado por el usuario: ADR-004 aceptado; sigue T18
+2026-10-17 | 5-implement | T18: exportar.crudo/huella (ADR-004: formato, version 1, sha256, solo documentos/banco/cierre/guardado), GET /api/contable/crudo (rango, 400/404, Host), botón «Datos crudos (.json)» en ②; 30 días reales ida y vuelta iguales; arreglado desborde de ② a 375 px (como #m3); 10 checks; suites verdes

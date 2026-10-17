@@ -179,4 +179,29 @@ if LIB.exists():
         got = [(int(evaluar(wb, w.title, f"F{q}", memo)), int(evaluar(wb, w.title, f"G{q}", memo))) for q in range(9, w.max_row + 1) if w[f"B{q}"].value]
         n += len(got); malos += [q for q, (a, b) in enumerate(zip(got, esp)) if a != b] + ([-1] if len(got) != len(esp) else [])
     chk(not malos, f"libro.json: {len(rs)} días, {n} asientos con fórmula = construir() (distintos: {len(malos)})")
+# T18 · ADR-004: archivo crudo .json (formato, version, sha256; solo lo leído, sin lo derivado), filtrado por rango
+from parser_module.contable.exportar import crudo, huella
+lib18 = {"2026-09-13": dict(fecha="2026-09-13", documentos=r3["documentos"], banco={"x": 1}, cierre={"y": [2]}, cruces=[], filas=r3["filas"], debito=1, credito=1, guardado="2026-09-14T08:00:00"),
+         "2026-09-14": dict(fecha="2026-09-14", documentos=r12["documentos"], banco={}, cierre={}, filas=r12["filas"], guardado="2026-09-15T08:00:00"),
+         "2026-09-20": dict(fecha="2026-09-20", documentos=[], banco={}, cierre={}, filas=[], guardado="")}
+j18 = json.loads(crudo(lib18, "2026-09-13", "2026-09-14").decode("utf-8"))
+chk(j18["formato"] == "ingresos-crudo" and j18["version"] == 1 and (j18["desde"], j18["hasta"]) == ("2026-09-13", "2026-09-14") and j18["exportado"],
+    f"T18: cabecera formato/version/desde/hasta/exportado: {[j18.get(k) for k in ('formato', 'version', 'desde', 'hasta')]}")
+chk([d["fecha"] for d in j18["dias"]] == ["2026-09-13", "2026-09-14"], f"T18: solo los días del rango, en orden: {[d['fecha'] for d in j18['dias']]}")
+chk(all(set(d) == {"fecha", "documentos", "banco", "cierre", "guardado"} for d in j18["dias"]), "T18: cada día lleva solo lo leído (sin filas/cruces/débito, que se recalculan)")
+chk(all(d == {k: lib18[d["fecha"]][k] for k in d} for d in j18["dias"]), "ADR-004: la ida y vuelta perdió datos (documentos/banco/cierre/guardado)")
+chk(j18["sha256"] == huella(j18["dias"]) and huella(j18["dias"][:1]) != j18["sha256"], "T18: sha256 sobre los días coincide y cambia si falta un día")
+chk(json.loads(crudo(lib18, "", "").decode("utf-8"))["dias"].__len__() == 3, "T18: sin rango exporta todos los días")
+if LIB.exists():
+    jl = json.loads(crudo(lib, "", ""))
+    chk(len(jl["dias"]) == len(lib) and all(d["documentos"] == lib[d["fecha"]]["documentos"] for d in jl["dias"]) and jl["sha256"] == huella(jl["dias"]),
+        f"T18: libro.json real ({len(lib)} días) exporta y vuelve a leerse igual")
+import tempfile, app as web
+T18 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO = T18 / "libro.json"; web.RUTA_LIBRO.write_text(json.dumps(lib18), encoding="utf8")
+cl18 = web.app.test_client(); rq = cl18.get("/api/contable/crudo?desde=2026-09-14&hasta=2026-09-30")
+jr = json.loads(rq.data) if rq.status_code == 200 else {}
+chk(rq.status_code == 200 and "ingresos_crudo_2026-09-14_2026-09-30.json" in rq.headers.get("Content-Disposition", "")
+    and [d["fecha"] for d in jr.get("dias", [])] == ["2026-09-14", "2026-09-20"] and jr["sha256"] == huella(jr["dias"]), f"T18: GET /api/contable/crudo descarga el rango: {rq.status_code}")
+chk(cl18.get("/api/contable/crudo?desde=2027-01-01").status_code == 404 and cl18.get("/api/contable/crudo?desde=1/9/26").status_code == 400, "T18: rango vacío → 404, fecha mal → 400")
+chk(cl18.get("/api/contable/crudo", headers={"Host": "evil.example.com"}).status_code == 403, "T18: Host ajeno → 403 (FIX-10)")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

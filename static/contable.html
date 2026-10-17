@@ -48,8 +48,8 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 .est{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}.est.en_plazo{background:var(--verde);color:#1b6b46}.est.vence_pronto{background:var(--warn);color:#8a5d00}.est.vencida{background:#fdeceb;color:var(--bad)}.est.hecho{background:var(--head);color:#17466f}
 #tws td{padding:6px}#tws tr.hecho td{opacity:.7}.sc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 @media(max-width:1000px){main{flex-direction:column}#panel{width:auto}}
-@media(max-width:1000px){#m3{align-items:stretch}#m3>.col{width:100%;max-width:100%}}
-@media(max-width:600px){#m3 .bar{flex-wrap:wrap}#m3 .bar>button{flex:1 1 140px}#m3 .bar .sp{display:none}}
+@media(max-width:1000px){#m2,#m3{align-items:stretch}#m2>.col,#m3>.col{width:100%;max-width:100%}}
+@media(max-width:600px){#m2 .bar,#m3 .bar{flex-wrap:wrap}#m2 .bar>button,#m3 .bar>button{flex:1 1 140px}#m2 .bar .sp,#m3 .bar .sp{display:none}}
 @media(max-width:800px){#tabs{overflow-x:auto}#tabs button{white-space:nowrap}.wrap{max-height:none}}
 @media(max-width:600px){body{font-size:15px}header{padding:8px 10px}header h1{font-size:16px}main{padding:8px}button,select,input[type=text]{min-height:40px}.pf{grid-template-columns:1fr}.bar>button{flex:1 1 auto}.zonas,.cie{grid-template-columns:1fr 1fr}}
 @media(max-height:500px) and (orientation:landscape){header{padding:4px 10px}.wrap{max-height:none}#toast{bottom:6px}}
@@ -96,7 +96,7 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
  <div class="bar"><b style="font-size:16px">Libro contable</b><span class="m">Solo entran días confirmados. Para corregir uno, reábrelo.</span><span class="sp"></span>
   Desde <span class="fw"><input type="text" class="fx" id="f1" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1">📅</button><input type="date" class="fh" tabindex="-1"></span>
   hasta <span class="fw"><input type="text" class="fx" id="f2" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1">📅</button><input type="date" class="fh" tabindex="-1"></span>
-  <button class="g" id="fclr">Todo</button><button id="xl2" disabled>⬇ Excel (MOVIMIENTOS)</button></div>
+  <button class="g" id="fclr">Todo</button><button id="xl2" disabled>⬇ Excel (MOVIMIENTOS)</button><button class="g" id="cru2" disabled title="Lo leído de estos días, para importarlo en el PC del contador (sin OCR)">⬇ Datos crudos (.json)</button></div>
  <div class="card" id="res2"></div>
  <div class="wrap" style="max-height:62vh"><table style="min-width:1100px"><thead><tr><th>Fecha</th><th>Código</th><th>Cuenta</th><th>Tercero</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Reporta</th><th>Medio</th></tr></thead><tbody id="tbl"></tbody></table>
   <div id="vacio2" class="m" style="padding:30px;text-align:center">Aún no hay días en el libro.</div></div>
@@ -270,7 +270,7 @@ $("conf").onclick=async()=>{const dd=dudosos();
 /* ══════ módulo ②: libro ══════ */
 async function cargarLibro(){LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length;renderLibro()}
 const fval=id=>parseFecha($(id).value)||"";
-function renderLibro(){const a=fval("f1"),b=fval("f2"),L=LIBRO.filter(d=>(!a||d.fecha>=a)&&(!b||d.fecha<=b));$("vacio2").style.display=L.length?"none":"block";$("xl2").disabled=!L.length;
+function renderLibro(){const a=fval("f1"),b=fval("f2"),L=LIBRO.filter(d=>(!a||d.fecha>=a)&&(!b||d.fecha<=b));$("vacio2").style.display=L.length?"none":"block";$("xl2").disabled=$("cru2").disabled=!L.length;
  $("tbl").innerHTML=L.map(d=>`<tr class="dia"><td colspan="5">📅 ${fmtF(d.fecha)} · ${d.filas.length} filas · ${d.documentos.filter(x=>x.contar).length} papeles${(d.cruces||[]).some(x=>!x.ok)?' · <span class="bad">⚠ cierre ≠ papeles</span>':""}</td><td class="num">${fmt(d.debito)}</td><td class="num">${fmt(d.credito)}</td><td colspan="2">${d.diferencia===0?'<span class="ok">✓ cuadra</span>':`<span class="bad">⚠ dif. ${fmt(d.diferencia)}</span>`} <button class="g" data-ab="${d.fecha}">✎ Reabrir</button> <button class="g" data-bo="${d.fecha}">✕</button></td></tr>`+
   d.filas.map(f=>`<tr class="${f.grupo==="venta"?"venta":"gasto"}"><td>${fmtF(f.fecha)}</td><td>${esc(f.codigo)}</td><td>${esc(f.nombre)}</td><td>${esc(f.tercero)}</td><td>${esc(f.descripcion)}</td><td class="num">${f.debito?fmt(f.debito):""}</td><td class="num">${f.credito?fmt(f.credito):""}</td><td>${esc(f.reporta)}</td><td>${esc(f.medio)}</td></tr>`).join("")).join("");
  const filas=L.flatMap(d=>d.filas),deb=filas.reduce((s,f)=>s+f.debito,0),cre=filas.reduce((s,f)=>s+f.credito,0),ing=filas.filter(f=>f.codigo[0]==="4").reduce((s,f)=>s+f.credito-f.debito,0),gas=filas.filter(f=>f.codigo&&f.codigo[0]==="5").reduce((s,f)=>s+f.debito-f.credito,0),r=ing-gas;
@@ -281,6 +281,7 @@ $("tbl").addEventListener("click",async e=>{const ab=e.target.dataset.ab,bo=e.ta
   const n=nuevoDiaObj(d.fecha);n.docs=d.documentos.map(x=>({...x,foto:null,origen:x.origen||"libro",manual_contar:true}));n.banco={...BANCO0,...d.banco};n.cierre=d.cierre||{};
   const i=dias.findIndex(x=>x.fecha===ab);if(i>=0)dias[i]=n;else if(dias.length===1&&!dias[0].docs.length&&!dias[0].fotos.length)dias[0]=n;else dias.push(n);act=dias.indexOf(n);irTab(1);syncUI();recalcular();toast("Día reabierto: corrígelo y vuelve a confirmarlo")}});
 $("fclr").onclick=()=>{$("f1").value="";$("f2").value="";renderLibro()};
+$("cru2").onclick=async()=>{const r=await fetch(`/api/contable/crudo?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudieron exportar los datos crudos");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"ingresos_crudo.json";a.click()};
 $("xl2").onclick=async()=>{const r=await fetch(`/api/contable/excel?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudo generar el Excel");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"reporte_contable.xlsx";a.click()};
 /* ══════ módulo ③: documento soporte ══════ */
 let SEM=[],PROVS=[],DOCS=[];const ESTL={en_plazo:"En plazo",vence_pronto:"Vence pronto",vencida:"Vencida"},ESTD={generado:"Generado",transmitido:"Transmitido",anulado:"Anulado"};

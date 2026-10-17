@@ -1,8 +1,8 @@
 """Excel con tu estructura: una hoja «MOVIMIENTOS <MES>» por mes (mismas columnas y colores) y una hoja «RESULTADO»."""
 from __future__ import annotations
-import io
+import hashlib, io, json
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter as L
@@ -144,3 +144,21 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
         av = wb.create_sheet("AVISOS"); av["A1"] = "Avisos de exportación"; av["A1"].font = Font(bold=True); av.column_dimensions["A"].width = 110
         for a in avisos + (NOTAS_DATOS if inicio else []): av.append([a]); texto(av.cell(av.max_row, 1))
     buf = io.BytesIO(); wb.save(buf); return buf.getvalue()
+
+
+# ═════════════ ADR-004: archivo crudo para llevar lo leído a un PC sin OCR ═════════════
+FORMATO_CRUDO, VERSION_CRUDO = "ingresos-crudo", 1
+CAMPOS_CRUDO = ("fecha", "documentos", "banco", "cierre", "guardado")   # solo lo leído; filas, cruces y totales se recalculan al importar (ADR-002)
+
+
+def huella(dias: list) -> str:
+    """sha256 de los días serializados con claves ordenadas: detecta un archivo cortado o editado a mano."""
+    return hashlib.sha256(json.dumps(dias, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def crudo(lib: dict, desde: str = "", hasta: str = "") -> bytes:
+    """libro.json → .json {formato, version, exportado, desde, hasta, sha256, dias} con los días del rango (vacío = sin límite)."""
+    dias = [{k: lib[f].get(k, {} if k in ("banco", "cierre") else [] if k == "documentos" else "") for k in CAMPOS_CRUDO} | {"fecha": f}
+            for f in sorted(lib) if (not desde or f >= desde) and (not hasta or f <= hasta)]
+    return json.dumps(dict(formato=FORMATO_CRUDO, version=VERSION_CRUDO, exportado=datetime.now().isoformat(timespec="seconds"), desde=desde, hasta=hasta,
+                           sha256=huella(dias), dias=dias), ensure_ascii=False, indent=1).encode("utf-8")

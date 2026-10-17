@@ -20,6 +20,7 @@ from parser_module.contable.documentos import PARSERS, _base as _base_doc
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs
+from parser_module.contable.exportar import crudo as crudo_json
 from dataclasses import asdict
 from datetime import date
 from urllib.parse import urlsplit
@@ -333,6 +334,17 @@ def cont_confirmar():
                           diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
         _guardar_libro(lib)
     return jsonify(ok=True, dias=len(lib), diferencia=r["diferencia"])
+
+
+@app.get("/api/contable/crudo")
+def cont_crudo():
+    """ADR-004: lo leído (documentos, banco, cierre) de los días del rango, para importarlo en un PC sin OCR (T19)."""
+    d, h = request.args.get("desde", ""), request.args.get("hasta", "")
+    if any(x and not ISO.match(x) for x in (d, h)): return jsonify(error="Fecha inválida"), 400
+    lib = _leer_libro()
+    if not any((not d or k >= d) and (not h or k <= h) for k in lib): return jsonify(error="No hay días en ese rango"), 404
+    return send_file(io.BytesIO(crudo_json(lib, d, h)), mimetype="application/json", as_attachment=True,
+                     download_name=f"ingresos_crudo_{d or 'inicio'}_{h or 'fin'}.json")
 
 
 @app.delete("/api/contable/libro/<fecha>")
