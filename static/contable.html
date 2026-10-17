@@ -48,8 +48,8 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 .est{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}.est.en_plazo{background:var(--verde);color:#1b6b46}.est.vence_pronto{background:var(--warn);color:#8a5d00}.est.vencida{background:#fdeceb;color:var(--bad)}.est.hecho{background:var(--head);color:#17466f}
 #tws td{padding:6px}#tws tr.hecho td{opacity:.7}.sc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 @media(max-width:1000px){main{flex-direction:column}#panel{width:auto}}
-@media(max-width:1000px){#m2,#m3{align-items:stretch}#m2>.col,#m3>.col{width:100%;max-width:100%}}
-@media(max-width:600px){#m2 .bar,#m3 .bar{flex-wrap:wrap}#m2 .bar>button,#m3 .bar>button{flex:1 1 140px}#m2 .bar .sp,#m3 .bar .sp{display:none}}
+@media(max-width:1000px){#m1,#m2,#m3{align-items:stretch}#m1>.col,#m2>.col,#m3>.col{width:100%;max-width:100%}}
+@media(max-width:600px){#m1 .bar,#m2 .bar,#m3 .bar{flex-wrap:wrap}#m1 .bar>button,#m2 .bar>button,#m3 .bar>button{flex:1 1 140px}#m2 .bar .sp,#m3 .bar .sp{display:none}}
 @media(max-width:800px){#tabs{overflow-x:auto}#tabs button{white-space:nowrap}.wrap{max-height:none}}
 @media(max-width:600px){body{font-size:15px}header{padding:8px 10px}header h1{font-size:16px}main{padding:8px}button,select,input[type=text]{min-height:40px}.pf{grid-template-columns:1fr}.bar>button{flex:1 1 auto}.zonas,.cie{grid-template-columns:1fr 1fr}}
 @media(max-height:500px) and (orientation:landscape){header{padding:4px 10px}.wrap{max-height:none}#toast{bottom:6px}}
@@ -73,10 +73,11 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
   <div class="zona" data-cat="comandas"><b>🧾 Comandas</b>recibos de venta · <i data-n="comandas">0</i></div>
   <div class="zona" data-cat="gastos"><b>💸 Gastos</b>caja menor y facturas · <i data-n="gastos">0</i></div>
  </div><input id="file" type="file" accept="image/*,application/pdf" multiple hidden><input id="carpeta" type="file" webkitdirectory multiple hidden>
- <div class="bar"><button id="carp" class="g" title="Elige la carpeta del día: las subcarpetas CIERRE, COMANDAS y GASTOS fijan el grupo de cada archivo">📁 Subir carpeta</button><button id="scan" class="g" disabled>▶ Leer pendientes</button><button id="stop" class="g" disabled>Detener</button>
+ <div class="bar"><button id="carp" class="g" title="Elige la carpeta del día: las subcarpetas CIERRE, COMANDAS y GASTOS fijan el grupo de cada archivo">📁 Subir carpeta</button><button id="scan" class="g" disabled>▶ Leer pendientes</button><button id="impo" style="display:none" title="Trae los días leídos en el PC de lectura (archivo .json de «Datos crudos»)">⬆ Importar datos</button><button id="stop" class="g" disabled>Detener</button>
   <select id="nuevo"><option value="">+ Papel manual…</option><option value="venta">Comanda (recibo de venta)</option><option value="gasto_caja">Gasto de caja</option><option value="factura">Factura de proveedor</option></select>
   <label class="m"><input type="checkbox" id="pdfimg"> PDF como imagen</label>
   <button id="vaciar" class="g">Vaciar día</button><span id="msg" class="m"></span></div>
+ <div class="card" id="sinocr" style="display:none"><b>Este PC no lee fotos</b> <span class="m" id="sinocr_t"></span><br><span class="m">Lee los papeles en el PC que tiene el OCR, descarga allá <b>② Libro contable → ⬇ Datos crudos (.json)</b> y tráelo aquí con <b>⬆ Importar datos</b>. Los PDF con texto y los papeles manuales sí funcionan.</span></div>
  <div class="fotos" id="fotos"></div>
  <div class="wrap"><table id="td" style="min-width:1750px"><thead><tr><th>Papel</th><th>Tipo</th><th>Nº</th><th>Tercero</th><th>Detalle</th><th>Consumo</th><th>Propina</th><th>Domicilio</th><th>Efectivo</th><th>Tarjeta</th><th>Transf. / app</th><th>Fiado</th><th>Valor</th><th>Cuenta contable</th><th>Medio</th><th>Contar</th><th></th></tr></thead><tbody id="tbd"></tbody></table>
   <div id="vacio" class="m" style="padding:26px;text-align:center">Sube el cierre, las comandas y los gastos del día (fotos o PDF). Cada papel aparece como una fila que puedes corregir.</div></div>
@@ -355,8 +356,11 @@ function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classLi
 $("tabs").onclick=e=>{const t=e.target.closest("button");if(t)irTab(t.dataset.tab)};
 $("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
 document.addEventListener("fullscreenchange",()=>$("fs").textContent=document.fullscreenElement?"✕ Salir de pantalla completa":"⛶ Pantalla completa");
-$("motor").onchange=()=>$("modelo").style.display=$("motor").value==="local"?"":"none";
+let SINOCR=null;   /* T20: /api/estado con sin_ocr → «Importar datos» en vez de «Leer» (forzado = SIN_OCR=1: sin motores) */
+function modoOCR(){const f=!!(SINOCR&&SINOCR.forzado),s=!!SINOCR&&(f||$("motor").value==="local");$("sinocr").style.display=s?"":"none";$("impo").style.display=s?"":"none";$("scan").style.display=$("stop").style.display=s?"none":"";
+ $("motor").style.display=f?"none":"";$("modelo").style.display=!f&&$("motor").value==="local"?"":"none";$("sinocr_t").textContent=f?"(modo sin OCR)":"(Ollama sin conexión: enciéndelo para leer aquí, o importa)"}
+$("motor").onchange=modoOCR;$("impo").onclick=()=>{irTab(2);$("impf").click()};
 window.addEventListener("beforeunload",e=>{if(dias.some(d=>d.docs.length)){e.preventDefault();e.returnValue=""}});
-async function estado(){try{const j=await (await fetch("/api/estado")).json(),c=$("chip");c.className="chip "+(j.ollama?"ok":"bad");c.textContent=j.ollama?"● Ollama conectado":"● Ollama sin conexión";const m=$("modelo"),cur=m.value||j.modelo;let ms=j.modelos.length?j.modelos:[j.modelo];if(j.modelos.length&&!ms.includes(j.modelo))ms=[j.modelo,...ms];m.innerHTML=ms.map(x=>`<option ${x===cur?"selected":""}>${esc(x)}</option>`).join("")}catch(e){$("chip").textContent="● Servidor sin respuesta"}}
+async function estado(){try{const j=await (await fetch("/api/estado")).json(),c=$("chip");c.className="chip "+(j.ollama?"ok":"bad");c.textContent=j.forzado?"● Sin OCR · importa datos":j.ollama?"● Ollama conectado":"● Ollama sin conexión";SINOCR=j.sin_ocr?j:null;modoOCR();const m=$("modelo"),cur=m.value||j.modelo;let ms=j.modelos.length?j.modelos:[j.modelo];if(j.modelos.length&&!ms.includes(j.modelo))ms=[j.modelo,...ms];m.innerHTML=ms.map(x=>`<option ${x===cur?"selected":""}>${esc(x)}</option>`).join("")}catch(e){$("chip").textContent="● Servidor sin respuesta"}}
 (async()=>{CUENTAS=(await (await fetch("/api/contable/catalogo")).json()).cuentas.filter(c=>c.clase!=="PATRIMONIO");syncUI();await cargarLibro();estado();setInterval(estado,20000)})();
 </script></body></html>

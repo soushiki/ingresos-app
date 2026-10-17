@@ -33,6 +33,7 @@ ESQ = Esquema.cargar(RUTA_ESQ, Esquema.plantilla("restaurante_pyg"))   # primera
 CFG = Config.cargar(str(RUTA_ALIAS), ESQ)
 LOCK = threading.Lock()
 OLLAMA = os.getenv("LOCAL_VLM_URL", "http://localhost:11434/v1").rstrip("/")
+SIN_OCR = os.getenv("SIN_OCR") == "1"   # T20/ADR-004: PC del contador, no lee fotos (no busca a Ollama); importa los datos crudos
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 app.config["MAX_CONTENT_LENGTH"] = 40 * 1024 * 1024
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -99,12 +100,14 @@ def esquema_guardar():
 
 @app.get("/api/estado")
 def estado():
+    """T20: sin_ocr = este PC no puede leer fotos con la IA local (SIN_OCR=1 u Ollama apagado); la pestaña ① ofrece importar."""
+    if SIN_OCR: return jsonify(ollama=False, sin_ocr=True, forzado=True, modelos=[], modelo="")
     try:
         r = requests.get(OLLAMA.removesuffix("/v1") + "/api/tags", timeout=2)
         modelos = [m["name"] for m in r.json().get("models", [])]; ok = True
     except Exception:  # noqa: BLE001
         modelos, ok = [], False
-    return jsonify(ollama=ok, modelos=modelos, modelo=os.getenv("LOCAL_VLM_MODEL", "qwen2.5vl:7b"))
+    return jsonify(ollama=ok, sin_ocr=not ok, forzado=False, modelos=modelos, modelo=os.getenv("LOCAL_VLM_MODEL", "qwen2.5vl:7b"))
 
 
 @app.post("/api/escanear")
@@ -279,6 +282,7 @@ def cont_escanear():
             if texto is not None: fuente = "texto"
         else: texto, img = None, data
         if texto is None:
+            if SIN_OCR: raise RuntimeError("Este PC está en modo sin OCR: lee las fotos en el PC de lectura e importa aquí sus datos crudos (.json).")
             eng = get_engine(motor, **({"model": modelo} if modelo and motor == "local" else {}))
             texto, segundos, grados = _leer_hoja(img, eng, giro)
     except Exception as e:  # noqa: BLE001

@@ -634,4 +634,38 @@ if REAL.exists():
     chk(r.status_code == 200 and t_mes <= 5, f"N4: Excel del libro de {mes} ({nd} días reales: construir + DATOS OCR + fórmulas) en {t_mes:.2f} s (≤5 s)")
 else: print("· N4: sin datos/libro.json, se omite el Excel del libro de un mes")
 
+# ── T20 · modo sin OCR (ADR-004): con Ollama apagado la app arranca, importa el crudo y genera documentos ──
+import os, subprocess, sys
+from parser_module.contable.exportar import crudo as _crudo
+MUERTO = "http://127.0.0.1:9/v1"   # nada escucha en el puerto 9: Ollama apagado
+for env, nom in (({"SIN_OCR": ""}, "Ollama apagado"), ({"SIN_OCR": "1"}, "SIN_OCR=1")):
+    p20 = subprocess.run([sys.executable, "-c", "import app, json; print(json.dumps(app.app.test_client().get('/api/estado').get_json()))"],
+                         env={**os.environ, "LOCAL_VLM_URL": MUERTO, "NO_BROWSER": "1", **env}, capture_output=True, text=True, timeout=90, cwd=Path(web.__file__).parent)
+    e20 = json.loads((p20.stdout.strip().splitlines() or ["{}"])[-1]) if p20.returncode == 0 else {}
+    chk(e20.get("ollama") is False and e20.get("sin_ocr") is True, f"T20: {nom} → la app arranca y /api/estado dice sin_ocr: {e20 or p20.stderr[-300:]}")
+web.OLLAMA, _so = MUERTO, web.SIN_OCR; web.SIN_OCR = True
+t0 = time.perf_counter(); e20 = cl.get("/api/estado").get_json()
+chk(e20["sin_ocr"] and not e20["ollama"] and time.perf_counter() - t0 < 0.5, f"T20: SIN_OCR=1 no busca a Ollama ({time.perf_counter() - t0:.2f} s)")
+from PIL import Image as _Img
+_png = io.BytesIO(); _Img.new("RGB", (40, 40), "white").save(_png, "PNG")
+r = cl.post("/api/contable/escanear", data={"foto": (io.BytesIO(_png.getvalue()), "gasto.png"), "motor": "local"}, content_type="multipart/form-data")
+chk(r.status_code == 200 and r.get_json()["ok"] is False and "sin OCR" in r.get_json()["error"], f"T20: foto en modo sin OCR → error claro, no se intenta leer: {r.get_json()}")
+import pymupdf as _fz
+_pd = _fz.open(); _pd.new_page().insert_text((72, 72), "FACTURA DE VENTA 77\nCarlos Cordero NIT 1047123456\nPapa criolla 5.000\nTOTAL 5.000\nMedio de pago: efectivo"); _pdf = _pd.tobytes()
+r = cl.post("/api/contable/escanear", data={"foto": (io.BytesIO(_pdf), "f.pdf"), "motor": "local"}, content_type="multipart/form-data")
+chk(r.get_json()["ok"] and r.get_json()["fuente"] == "texto", "T20: un PDF con texto se sigue leyendo sin OCR")
+T20 = Path(tempfile.mkdtemp()); web.RUTA_SOPORTE, web.RUTA_LIBRO, web.RUTA_CONT = T20 / "soporte.db", T20 / "libro.json", T20 / "contable.json"
+f20 = {**r.get_json()["documentos"][0], "fecha": "2026-09-14", "valor": 15000, "tercero": "Carlos Cordero", "origen": "foto1.jpg"}   # una factura como la deja el PC de lectura
+a20 = _crudo({"2026-09-14": {"documentos": [f20]}})
+r = cl.post("/api/contable/crudo", data={"archivo": (io.BytesIO(a20), "c.json")}, content_type="multipart/form-data")
+chk(r.status_code == 200 and r.get_json()["nuevos"] == ["2026-09-14"], f"T20: sin OCR se importa el crudo: {r.get_json()}")
+pid20 = cl.post("/api/proveedores", json={**BASE, "alias_ocr": "Carlos Cordero"}, headers=LOC).get_json()["proveedor"]["id"]
+s20 = cl.get("/api/soporte/semanas").get_json()["semanas"]
+r = cl.post("/api/soporte/generar", json={"semanas": [{"semana": s20[0]["semana"], "proveedor_id": pid20}], "confirmar_vencidos": True}, headers=LOC)
+d20 = r.get_json().get("documentos", []) if r.status_code == 200 else []
+chk([(d["numero"], d["total"]) for d in d20] == [("CTG-1", 15000)] and cl.get("/api/soporte/excel").status_code == 200, f"T20: sin OCR se genera CTG-1 y su Excel: {r.get_json()}")
+html20 = (Path(web.__file__).parent / "static" / "contable.html").read_text(encoding="utf8")
+chk('id="sinocr"' in html20 and "j.sin_ocr" in html20, "T20: la pestaña ① tiene el aviso «Importar datos» que se muestra con sin_ocr")
+web.SIN_OCR = _so
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
