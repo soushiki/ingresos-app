@@ -238,4 +238,24 @@ chk(sorted(res) == [0, 0, 0, 1] and c0.execute("SELECT count(*) FROM documento")
     f"4 hilos generan la misma semana a la vez → 1 documento, los demás rechazados: {res}")
 c0.close()
 
+# ── T11 · soporte_excel.libro ───────────────────────────────────────────────
+import io
+from openpyxl import load_workbook
+from parser_module.contable import soporte_excel as sxl
+dv[0].fecha_limite = None   # fecha_limite no se guarda en la base: el RESUMEN debe aguantar None
+wb = load_workbook(io.BytesIO(sxl.libro([*d2, *dv])))
+chk(wb.sheetnames == ["RESUMEN", "CTG-60", "CTG-61"], f"R5: hoja RESUMEN + una hoja por documento: {wb.sheetnames}")
+rs = [tuple(c.value for c in f) for f in wb["RESUMEN"].iter_rows()]
+chk(rs[0] == ("Número", "Proveedor", "Semana", "Total", "Fecha límite", "Estado")
+    and rs[1][:4] == ("CTG-60", d2[0].proveedor.nombre, "2026-W38", 40000) and rs[1][5] == "generado"
+    and rs[2][0] == "CTG-61" and rs[2][3] == 7000 and rs[2][4] is None, f"RESUMEN: número, proveedor, semana, total, fecha límite, estado: {rs[1:]}")
+h = wb["CTG-60"]; campos = {f[0].value: f[1].value for f in h.iter_rows() if f[0].value}
+chk(campos.get("Número") == "CTG-60" and campos.get("Fecha de generación") == "2026-09-15" and campos.get("Tipo de documento del vendedor") == "CC"
+    and campos.get("Número de documento") == d2[0].proveedor.num_id and campos.get("Nombre del vendedor") == d2[0].proveedor.nombre
+    and campos.get("Dirección") and campos.get("Municipio"), "art. 4: número, fecha de generación y datos del vendedor en la hoja del documento")
+filas = [tuple(c.value for c in f) for f in h.iter_rows()]
+det = [f for f in filas if f[0] in ("2026-09-14", "2026-09-16", "2026-09-20")]
+chk(len(det) == 3 and sum(f[2] for f in det) == 40000 and filas[-2][1:3] == ("IVA", 0) and filas[-1][1:3] == ("Total", 40000),
+    f"art. 4: detalle de la operación (3 líneas con papel de origen), IVA y total: {filas[-2:]}")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
