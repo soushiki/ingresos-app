@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # FIX-14 (it. 4); smokes it. 1–4 pendientes (usuario)
+next: 6-test   # re-test it. 4 (FIX-13/14); smokes it. 1–4 pendientes (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # FIX-14 (it. 4); smokes it. 1–4 pendientes (usuario)
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: FIX-14
+- [ ] 5-implement      current task: —
 - [ ] 6-test           (iter. 1, 2 y 3 pasan; it. 4 no pasa: FIX-13/14; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
@@ -88,3 +88,4 @@ next: 5-implement   # FIX-14 (it. 4); smokes it. 1–4 pendientes (usuario)
 2026-10-17 | 5-implement | T21: LEEME-contador.md (Python con PATH, copiar sin datos/, pip, .env SIN_OCR=1, iniciar.bat, trabajo semanal, copia de soporte.db, tabla de fallas); probado en copia limpia (git archive + venv nuevo): arranca sin OCR, importa 30 días reales, 17 semanas en ③. Iteración 4 completa → 6-test
 2026-10-17 | 6-test | Iter. 4 no pasa: suite verde y done-when de T18–T21 con checks, pero un día con faltante (número negativo) se rechaza al importar (FIX-13) y el tope de texto 5.000 está justo + RecursionError → 500 (FIX-14) → 06-test-report.md
 2026-10-17 | 5-implement | FIX-13: _malo acepta |v| ≤ 10^10 (faltante_impreso negativo); cierre con faltante va y vuelve igual por crudo → leer_crudo → POST; caso -5 → 10^11; ADR-004 anota el tope; suites verdes
+2026-10-17 | 5-implement | FIX-14: MAX_TEXTO 5.000 → 20.000 (texto de 6.000 entra); RecursionError de json.loads → CrudoInvalido (anidado 100.000 niveles → 400 sin escribir); ADR-004 anotado; 2 checks; suites verdes → 6-test

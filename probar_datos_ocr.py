@@ -227,7 +227,7 @@ chk(all(_rechaza(x) for x in (_arch(j19, sha256="0" * 64), _arch(j19, formato="o
     "ADR-004: archivo ajeno aceptado (sha256 distinta, otro formato, JSON roto, cortado)")
 malo = copy.deepcopy(j19["dias"][0])
 casos = [dict(malo, fecha="2026-02-30"), dict(malo, fecha="2026-09-01", documentos=[dict(malo["documentos"][0], tipo="pickle")]),
-         dict(malo, fecha="2026-09-02", documentos=[dict(malo["documentos"][0], valor=10**11)]), dict(malo, fecha="2026-09-03", documentos=[dict(malo["documentos"][0], texto="x" * 5001)]),
+         dict(malo, fecha="2026-09-02", documentos=[dict(malo["documentos"][0], valor=10**11)]), dict(malo, fecha="2026-09-03", documentos=[dict(malo["documentos"][0], texto="x" * 20001)]),
          dict(malo, fecha="2026-09-04", documentos=[{"tipo": "factura"}]), dict(malo, fecha="2026-09-05", banco=[1]), dict(malo, fecha="2026-09-06", documentos=["x"] * 2001),
          dict(malo, fecha="2026-09-13")]
 d19b, m19b = leer_crudo(_arch(j19, dias=j19["dias"] + casos))
@@ -264,6 +264,14 @@ a13 = crudo(lib13); d13, m13 = leer_crudo(a13)
 T13 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO = T13 / "libro.json"; ji13 = imp(a13).get_json(); l13 = web._leer_libro()
 chk(not m13 and d13[0]["documentos"] == [cie13] and ji13["nuevos"] == ["2026-09-21"] and l13["2026-09-21"]["documentos"] == [cie13]
     and l13["2026-09-21"]["cierre"] == {"faltante": -3500}, f"FIX-13: un día con faltante (negativo) no entra al importar: {m13} {ji13}")
+# FIX-14 · topes del crudo: un texto OCR de 6.000 caracteres entra; un JSON anidado muy hondo → CrudoInvalido / 400 sin escribir (no 500)
+lib14 = {"2026-09-22": dict(fecha="2026-09-22", documentos=[dict(cie13, id="cierre-14", texto="línea de cierre\n" * 375)], banco={}, cierre={}, guardado="2026-09-23T08:00:00")}
+d14, m14 = leer_crudo(crudo(lib14))
+chk(not m14 and len(d14[0]["documentos"][0]["texto"]) == 6000, f"FIX-14: un texto de 6.000 caracteres no entra: {m14}")
+hondo = b"[" * 100000 + b"]" * 100000
+msg = _rechaza(hondo)
+T14 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO = T14 / "libro.json"; r14 = imp(hondo)
+chk(".json válido" in msg and r14.status_code == 400 and not web.RUTA_LIBRO.exists(), f"FIX-14: JSON anidado 100.000 niveles → 400 sin escribir: {msg!r} {r14.status_code}")
 if LIB.exists():
     T19b = Path(tempfile.mkdtemp()); web.RUTA_LIBRO, web.RUTA_CONT = T19b / "libro.json", LIB.parent / "contable.json"
     ji = imp(crudo(lib)).get_json(); li, cfg = web._leer_libro(), web._cont_cfg()

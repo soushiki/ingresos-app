@@ -165,7 +165,7 @@ def crudo(lib: dict, desde: str = "", hasta: str = "") -> bytes:
 
 
 TIPOS_CRUDO = {"cierre", "venta", "gasto_caja", "caja_menor_manuscrito", "factura", "otro"}   # los de documentos.PARSERS más «otro»
-MAX_VALOR, MAX_TEXTO, MAX_DOCS, MAX_HONDO = 10**10, 5000, 2000, 6
+MAX_VALOR, MAX_TEXTO, MAX_DOCS, MAX_HONDO = 10**10, 20000, 2000, 6   # texto OCR real ya llega a ~4.000 (FIX-14)
 
 
 class CrudoInvalido(ValueError):
@@ -173,7 +173,7 @@ class CrudoInvalido(ValueError):
 
 
 def _malo(v, ruta: str, hondo: int = 0) -> str:
-    """Primer valor fuera de los topes de 03 §10 (números |v| ≤ 10^10, textos ≤ 5.000), o «» si todo está bien.
+    """Primer valor fuera de los topes de 03 §10 (números |v| ≤ 10^10, textos ≤ 20.000), o «» si todo está bien.
     Negativos sí: el cierre guarda el faltante como faltante_impreso < 0 (documentos.py, FIX-13)."""
     if hondo > MAX_HONDO: return f"{ruta}: demasiado anidado"
     if v is None or isinstance(v, bool): return ""
@@ -210,7 +210,7 @@ def leer_crudo(data: bytes) -> tuple[list, list]:
     """Archivo crudo (ADR-004) → (días válidos, inválidos [{fecha, motivo}]). Valida en el orden de 03 §10: JSON, formato, versión y
     sha256 (si falla, CrudoInvalido y no se usa nada); después cada día. Un día malo no entra pero sale en la lista (R10)."""
     try: j = json.loads(data.decode("utf-8-sig"))   # json, nunca pickle ni eval: el archivo viene de otro equipo
-    except (UnicodeDecodeError, ValueError): raise CrudoInvalido("El archivo no es un .json válido (¿está cortado?)") from None
+    except (UnicodeDecodeError, ValueError, RecursionError): raise CrudoInvalido("El archivo no es un .json válido (¿está cortado?)") from None
     if not isinstance(j, dict) or j.get("formato") != FORMATO_CRUDO:
         raise CrudoInvalido("El archivo no es de datos crudos de Ingresos (falta «formato: ingresos-crudo»)")
     if j.get("version") != VERSION_CRUDO:
