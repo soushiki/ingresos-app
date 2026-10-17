@@ -286,12 +286,13 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     # 3) caja menor: un renglón por cuenta + un crédito a Efectivo
     cm = [d for d in docs if d["tipo"] in ("gasto_caja", "caja_menor_manuscrito") and d["medio"] in ("", "Efectivo")]
     por_cuenta = defaultdict(list)
-    for d in cm: por_cuenta[d.get("cuenta", "")].append(d)
+    for d in cm: por_cuenta[d.get("cuenta") or cfg["puente_gasto"]].append(d)   # sin cuenta = puente: una sola fila con los que ya estaban ahí (FIX-3)
+    sin_cuenta = [d for d in cm if not d.get("cuenta")]
+    if sin_cuenta: avisos.append(f"{len(sin_cuenta)} gasto(s) de caja sin cuenta: " + ", ".join(d["numero"] or "s/n" for d in sin_cuenta) + f"; quedaron en la cuenta puente {cfg['puente_gasto']}")
     jc = []
-    for cod, ds in sorted(por_cuenta.items(), key=lambda kv: (kv[0] == "", kv[0])):
-        if not cod: avisos.append(f"{len(ds)} gasto(s) de caja sin cuenta: " + ", ".join(d["numero"] or "s/n" for d in ds) + f"; quedaron en la cuenta puente {cfg['puente_gasto']}")
-        jc.append(fila(cod or cfg["puente_gasto"], "Cuantías menores", "Recibos: " + rangos(d["numero"] for d in ds if d["numero"]), deb=sum(d["valor"] for d in ds), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto",
-                       docs=[d["id"] for d in ds], fx=S(bloque="caja", cuenta=cod or cfg["puente_gasto"])))
+    for cod, ds in sorted(por_cuenta.items(), key=lambda kv: (kv[0] == cfg["puente_gasto"], kv[0])):
+        jc.append(fila(cod, "Cuantías menores", "Recibos: " + rangos(d["numero"] for d in ds if d["numero"]), deb=sum(d["valor"] for d in ds), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto",
+                       docs=[d["id"] for d in ds], fx=S(bloque="caja", cuenta=cod)))
     if cm:
         fila(EFECTIVO, "Cuantías menores", "Recibos: " + rangos(d["numero"] for d in cm if d["numero"]), cre=sum(d["valor"] for d in cm), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto", fx=["+", *F(*jc)])
 

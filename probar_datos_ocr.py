@@ -136,6 +136,16 @@ wb["DATOS OCR"][f"J{ff}"] = "no cuenta"
 _, mov4 = movimientos(wb)
 chk(dict((q, d) for q, d, _ in mov4)[kf] == 0, f"una factura en «no cuenta» → 0 en MOVIMIENTOS (fila {kf}: {dict((q, d) for q, d, _ in mov4)[kf]:,})")
 chk(evaluar(wb, ws.title, "F7", {}) == evaluar(wb, ws.title, "G7", {}), "y el mes sigue cuadrando sin esa factura")
+# FIX-3: caja menor con un gasto sin cuenta (A) y otro ya en la cuenta puente (B) → una sola fila, un solo SUMIFS
+a = leer_texto(GASTO.format(n=301, v="5,000", d="algo raro"))[0]
+b = dict(leer_texto(GASTO.format(n=302, v="7,000", d="algo raro"))[0], cuenta=PG)
+r3 = construir("2026-09-13", [a, b])
+pg = [f_ for f_ in r3["filas"] if f_["codigo"] == PG and f_["tercero"] == "Cuantías menores"]
+chk(len(pg) == 1 and pg[0]["debito"] == 12000, f"gasto sin cuenta + gasto en {PG} → 1 fila de 12.000: {[f_['debito'] for f_ in pg]}")
+w3 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-13": r3["filas"]}, datos={"2026-09-13": r3["datos"]})))
+s3, m3 = movimientos(w3)
+chk(evaluar(w3, s3.title, "F7", {}) == evaluar(w3, s3.title, "G7", {}) and [(int(d), int(c)) for _, d, c in m3] == [(f_["debito"], f_["credito"]) for f_ in r3["filas"]],
+    "y en Excel débito = crédito (no se suma doble)")
 av = load_workbook(io.BytesIO(x))["AVISOS"]
 chk(any("grupo nuevo" in (c.value or "") for c in av["A"]), "AVISOS explica que un grupo nuevo no agrega fila en MOVIMIENTOS")
 
