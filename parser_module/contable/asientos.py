@@ -164,12 +164,13 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         for d in ventas:
             if d["propina"] > d["efectivo"] + d["tarjeta"] + d["transf"] + d.get("credito", 0): avisos.append(f"Recibo {d['numero']}: la propina ({d['propina']:,}) es mayor que lo pagado".replace(",", "."))
         if efe:
+            if pro + dom > efe:   # el efectivo leído no alcanza (comanda mal leída): no se acredita más de lo que entró, para que el día cuadre
+                avisos.append("El efectivo no alcanza para cubrir propinas y domicilios")
+                pro = min(pro, efe); dom = min(dom, efe - pro)
             fila(EFECTIVO, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if d["efectivo"]), deb=efe, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
             if pro: fila(PROPINAS, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if R[d["id"]]["cash_tip"]), cre=pro, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
             if dom: fila(DOMICILIOS, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if R[d["id"]]["cash_dom"]), cre=dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
-            resto = efe - pro - dom
-            if resto < 0: avisos.append("El efectivo no alcanza para cubrir propinas y domicilios")
-            fila(RESTAURANTE, "Consumidor Final", "Recaudos en efectivo", cre=max(resto, 0), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
+            fila(RESTAURANTE, "Consumidor Final", "Recaudos en efectivo", cre=efe - pro - dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta")
 
     # 2b) ventas que no entraron en efectivo: tarjeta y transferencias/QR/Nequi/Bre-B → banco (salvo que hayas escrito el extracto),
     #     Rappi → ingresos por cobrar, crédito personal (fiado) → cuenta por cobrar al cliente. La propina y el domicilio pagados así

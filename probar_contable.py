@@ -53,6 +53,13 @@ chk(deb == {("11200501", "Tarjeta"): 40000, ("11200501", "Transferencia"): 40000
 fx = leer_texto("Factura de venta No. FV123\nCLIENTE: Samu\nTomate 20.000\nTotal Factura: $ 124,400\n")[0]
 chk(fx["valor"] == 124400, f"«Total Factura: $ 124,400» → {fx['valor']}")
 
+# comanda mal leída: el efectivo no alcanza para propina + domicilio → no se acredita más de lo que entró
+vm = dict(v, id="mal", numero="85599", efectivo=10000, tarjeta=0, domicilio=5000, avisos=[])
+r5 = construir("2026-09-12", [vm])
+ef5 = [(x["codigo"], x["debito"], x["credito"]) for x in r5["filas"] if x["medio"] == "Efectivo" and (x["debito"] or x["credito"])]
+chk(ef5 == [("11050501", 10000, 0), ("28150502", 0, 10000)] and r5["diferencia"] == 0 and any("no alcanza" in a for a in r5["avisos"]),
+    f"efectivo 10.000 < propina 17.800 + domicilio 5.000: propina tope 10.000, domicilio 0, el día cuadra y se avisa: {ef5}")
+
 # recaudos del banco: las cifras de tu día 12/09
 r2 = construir("2026-09-12", [], {"llave": 730550, "tarjetas": 146500, "qr": 1091950})
 chk([x["credito"] for x in r2["filas"] if x["credito"]] == [1969000] and r2["diferencia"] == 0, "recaudos del banco: Restaurante 1.969.000 = 730.550 + 146.500 + 1.091.950")
