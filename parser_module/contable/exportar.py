@@ -103,7 +103,7 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
             imp = [f["debito"] or 0, f["credito"] or 0]
             if f.get("fx") and f["fecha"] in inicio:   # ADR-002: el importe sale de DATOS OCR
                 base, fe = inicio[f["fecha"]], f["fecha"]
-                imp[f["fx"][0] == "credito"] = "=" + formula(f["fx"][1], k, lambda j: ref_fila(fe, j), lambda i: f"{D}{DC['valor']}{base + i}")
+                imp[f["fx"][0] == "credito"] = "=" + formula(f["fx"][1], k, lambda j: ref_fila(fe, j), lambda i: f'IF({D}{DC["estado"]}{base + i}="ok",{D}{DC["valor"]}{base + i},0)')   # FIX-2: solo suma si está «ok»
             v = [date.fromisoformat(f["fecha"]), int(f["codigo"]) if str(f["codigo"]).isdigit() else (f["codigo"] or None), f["nombre"], f["tercero"], f["descripcion"],
                  *imp, None, f["reporta"] or None, f["medio"] or None]
             for i, x in enumerate(v, 1):

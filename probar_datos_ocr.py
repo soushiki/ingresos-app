@@ -50,7 +50,7 @@ chk("DATOS OCR" not in load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": r["
 
 
 # T6 · MOVIMIENTOS con fórmulas. openpyxl no calcula y aquí no hay Excel: un evaluador mínimo (refs, SUMIFS, MIN, SUM, + y −) hace de Excel.
-TOK = re.compile(r"\s*(?:(?P<num>\d+(?:\.\d+)?)|(?P<str>\"(?:[^\"]|\"\")*\")|(?P<ref>(?:'[^']+'!)?\$?[A-Z]+\$?\d*(?::\$?[A-Z]+\$?\d*)?)(?P<fn>\()?|(?P<op>[-+(),]))")
+TOK = re.compile(r"\s*(?:(?P<num>\d+(?:\.\d+)?)|(?P<str>\"(?:[^\"]|\"\")*\")|(?P<ref>(?:'[^']+'!)?\$?[A-Z]+\$?\d*(?::\$?[A-Z]+\$?\d*)?)(?P<fn>\()?|(?P<op>[-+(),=]))")
 def evaluar(wb, hoja, celda, memo):
     if (hoja, celda) in memo: return memo[hoja, celda]
     v = wb[hoja][celda].value
@@ -83,6 +83,7 @@ def evaluar(wb, hoja, celda, memo):
                     if toks[i - 1]["op"] == ")": break
                 fn = t["ref"].upper()
                 if fn == "MIN": return min(args)
+                if fn == "IF": return args[1] if args[0] else args[2]
                 if fn == "SUM": return sum(evaluar(wb, h, c, memo) or 0 for h, c in args[0])
                 if fn == "SUMIFS":
                     tot = 0
@@ -93,11 +94,16 @@ def evaluar(wb, hoja, celda, memo):
                 raise ValueError(fn)
             h, _, c = t["ref"].rpartition("!")
             return evaluar(wb, h.strip("'") or hoja, c.replace("$", ""), memo)
-        def expr():
+        def suma():
             nonlocal i
             x = atomo()
             while i < len(toks) and toks[i]["op"] in ("+", "-"):
                 o = toks[i]["op"]; i += 1; y = atomo(); x = x + y if o == "+" else x - y
+            return x
+        def expr():   # comparación «=» (para IF), sin distinguir mayúsculas como Excel
+            nonlocal i
+            x = suma()
+            if i < len(toks) and toks[i]["op"] == "=": i += 1; y = suma(); return igual(x, y)
             return x
         v = expr()
     memo[hoja, celda] = v; return v
@@ -109,7 +115,7 @@ def movimientos(wb):
 ws, mov = movimientos(wb)
 imp = [ws[f"{'G' if f['fx'][0] == 'credito' else 'F'}{k}"].value for k, f in enumerate(r["filas"], 9)]
 chk(all(isinstance(x, str) and x.startswith("=") for x in imp), f"ADR-002: cada importe de MOVIMIENTOS es una fórmula ({len(imp)} filas)")
-chk(any("'DATOS OCR'!" in x and "SUMIFS" in x for x in imp) and any(re.fullmatch(r"='DATOS OCR'!G\d+", x) for x in imp), "hay SUMIFS por fecha/estado/cuenta y referencias directas a DATOS OCR")
+chk(any("'DATOS OCR'!" in x and "SUMIFS" in x for x in imp) and any(re.fullmatch(r"=IF\('DATOS OCR'!J(\d+)=\"ok\",'DATOS OCR'!G\1,0\)", x) for x in imp), "hay SUMIFS por fecha/estado/cuenta y referencias a DATOS OCR que miran el estado")
 chk([(int(d), int(c)) for _, d, c in mov] == [(f["debito"], f["credito"]) for f in r["filas"]], "evaluadas, las fórmulas dan lo mismo que construir()")
 # corregir a mano en DATOS OCR: el efectivo de la venta mixta pasa de 100.000 a 130.000
 fe = next(k for k, x in enumerate(D, 2) if x["id"] == v["id"] and x["medio"] == "Efectivo")
@@ -123,6 +129,13 @@ chk(evaluar(wb, ws.title, "F7", {}) == evaluar(wb, ws.title, "G7", {}), "y el me
 wb["DATOS OCR"][f"J{fe}"] = "no cuenta"   # marcar el papel como «no cuenta» lo saca del libro
 _, mov3 = movimientos(wb)
 chk(sum(d for _, d, _ in mov3) == sum(f["debito"] for f in r["filas"]) - 100000, "cambiar el estado a «no cuenta» saca ese valor del libro")
+# FIX-2: las filas «dato» (facturas, extracto, Rappi) también respetan el estado
+kf = next(k for k, f_ in enumerate(r["filas"], 9) if f_.get("fx", [None, [None]])[1][0] == "dato" and f_.get("docs") == [f["id"]])
+ff = next(k for k, x_ in enumerate(D, 2) if x_["id"] == f["id"] and x_["valor"])
+wb["DATOS OCR"][f"J{ff}"] = "no cuenta"
+_, mov4 = movimientos(wb)
+chk(dict((q, d) for q, d, _ in mov4)[kf] == 0, f"una factura en «no cuenta» → 0 en MOVIMIENTOS (fila {kf}: {dict((q, d) for q, d, _ in mov4)[kf]:,})")
+chk(evaluar(wb, ws.title, "F7", {}) == evaluar(wb, ws.title, "G7", {}), "y el mes sigue cuadrando sin esa factura")
 av = load_workbook(io.BytesIO(x))["AVISOS"]
 chk(any("grupo nuevo" in (c.value or "") for c in av["A"]), "AVISOS explica que un grupo nuevo no agrega fila en MOVIMIENTOS")
 
