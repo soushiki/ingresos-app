@@ -173,11 +173,12 @@ class CrudoInvalido(ValueError):
 
 
 def _malo(v, ruta: str, hondo: int = 0) -> str:
-    """Primer valor fuera de los topes de 03 §10 (números 0–10^10, textos ≤ 5.000), o «» si todo está bien."""
+    """Primer valor fuera de los topes de 03 §10 (números |v| ≤ 10^10, textos ≤ 5.000), o «» si todo está bien.
+    Negativos sí: el cierre guarda el faltante como faltante_impreso < 0 (documentos.py, FIX-13)."""
     if hondo > MAX_HONDO: return f"{ruta}: demasiado anidado"
     if v is None or isinstance(v, bool): return ""
     if isinstance(v, (int, float)):
-        return "" if v == v and 0 <= v <= MAX_VALOR else f"{ruta}: valor {v} fuera de 0–10.000.000.000"
+        return "" if v == v and -MAX_VALOR <= v <= MAX_VALOR else f"{ruta}: valor {v} fuera de ±10.000.000.000"
     if isinstance(v, str): return "" if len(v) <= MAX_TEXTO else f"{ruta}: texto de {len(v)} caracteres (máx. {MAX_TEXTO})"
     if isinstance(v, list): return next((m for i, x in enumerate(v) if (m := _malo(x, f"{ruta}[{i}]", hondo + 1))), "")
     if isinstance(v, dict): return next((m for k, x in v.items() if (m := _malo(x, f"{ruta}.{k}", hondo + 1))), "")

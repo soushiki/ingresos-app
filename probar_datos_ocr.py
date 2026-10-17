@@ -227,12 +227,12 @@ chk(all(_rechaza(x) for x in (_arch(j19, sha256="0" * 64), _arch(j19, formato="o
     "ADR-004: archivo ajeno aceptado (sha256 distinta, otro formato, JSON roto, cortado)")
 malo = copy.deepcopy(j19["dias"][0])
 casos = [dict(malo, fecha="2026-02-30"), dict(malo, fecha="2026-09-01", documentos=[dict(malo["documentos"][0], tipo="pickle")]),
-         dict(malo, fecha="2026-09-02", documentos=[dict(malo["documentos"][0], valor=-5)]), dict(malo, fecha="2026-09-03", documentos=[dict(malo["documentos"][0], texto="x" * 5001)]),
+         dict(malo, fecha="2026-09-02", documentos=[dict(malo["documentos"][0], valor=10**11)]), dict(malo, fecha="2026-09-03", documentos=[dict(malo["documentos"][0], texto="x" * 5001)]),
          dict(malo, fecha="2026-09-04", documentos=[{"tipo": "factura"}]), dict(malo, fecha="2026-09-05", banco=[1]), dict(malo, fecha="2026-09-06", documentos=["x"] * 2001),
          dict(malo, fecha="2026-09-13")]
 d19b, m19b = leer_crudo(_arch(j19, dias=j19["dias"] + casos))
 chk([d["fecha"] for d in d19b] == ["2026-09-13", "2026-09-14"] and len(m19b) == len(casos) and all(x["motivo"] for x in m19b),
-    f"T19: días malos (fecha, tipo, negativo, texto largo, sin id, banco, >2000, repetido) salen con motivo y los buenos quedan: {[x['motivo'][:25] for x in m19b]}")
+    f"T19: días malos (fecha, tipo, > 10^10, texto largo, sin id, banco, >2000, repetido) salen con motivo y los buenos quedan: {[x['motivo'][:25] for x in m19b]}")
 T19 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO, web.RUTA_CONT, web.RUTA_SOPORTE = T19 / "libro.json", T19 / "contable.json", T19 / "soporte.db"
 imp = lambda data, reemplazar="": cl18.post("/api/contable/crudo", data={"archivo": (io.BytesIO(data), "c.json"), "reemplazar": reemplazar}, content_type="multipart/form-data")
 r = imp(_arch(j19, version=2))
@@ -257,6 +257,13 @@ chk([x["fecha"] for x in ji["bloqueados"]] == ["2026-09-14"] and not ji["reempla
     "T19: R7 — un día con compras de un DS transmitido nunca se reemplaza")
 chk(cl18.post("/api/contable/crudo", headers={"Host": "evil.example.com"}).status_code == 403 and imp(b"").status_code == 400 and cl18.post("/api/contable/crudo").status_code == 400,
     "T19: Host ajeno → 403; archivo vacío o ausente → 400")
+# FIX-13 · un cierre con faltante (faltante_impreso negativo, documentos.py) va y vuelve igual por crudo → leer_crudo → POST
+cie13 = dict(id="cierre-13", tipo="cierre", archivo="cierre.jpg", datos=dict(efectivo=150000, faltante_impreso=-3500), avisos=[], valor=-3500, contar=False)
+lib13 = {"2026-09-21": dict(fecha="2026-09-21", documentos=[cie13], banco={}, cierre={"faltante": -3500}, guardado="2026-09-22T08:00:00")}
+a13 = crudo(lib13); d13, m13 = leer_crudo(a13)
+T13 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO = T13 / "libro.json"; ji13 = imp(a13).get_json(); l13 = web._leer_libro()
+chk(not m13 and d13[0]["documentos"] == [cie13] and ji13["nuevos"] == ["2026-09-21"] and l13["2026-09-21"]["documentos"] == [cie13]
+    and l13["2026-09-21"]["cierre"] == {"faltante": -3500}, f"FIX-13: un día con faltante (negativo) no entra al importar: {m13} {ji13}")
 if LIB.exists():
     T19b = Path(tempfile.mkdtemp()); web.RUTA_LIBRO, web.RUTA_CONT = T19b / "libro.json", LIB.parent / "contable.json"
     ji = imp(crudo(lib)).get_json(); li, cfg = web._leer_libro(), web._cont_cfg()
