@@ -301,8 +301,11 @@ r = cl.post("/api/soporte/generar", json={"semanas": [sel], "confirmar_vencidos"
 c0 = sdb.abrir(web.RUTA_SOPORTE)
 chk(r.status_code == 409 and c0.execute("SELECT count(*) FROM documento").fetchone()[0] == 1 and c0.execute("SELECT ultimo FROM rango").fetchone()[0] == 1,
     f"R3: generar otra vez no duplica ni gasta número ({r.status_code}): {r.get_json()}"); c0.close()
+chk(sm[0]["documentado"] is None, "semanas: antes de generar, documentado es null")
+sm2 = cl.get("/api/soporte/semanas").get_json()["semanas"]
+chk(len(sm2) == 1 and sm2[0]["documentado"] == "CTG-1", f"semanas: tras generar, la semana sale marcada con CTG-1: {[x['documentado'] for x in sm2]}")
 r = cl.get("/api/soporte/excel")
-wb = load_workbook(io.BytesIO(r.data)) if r.status_code == 200 else None
+wb =load_workbook(io.BytesIO(r.data)) if r.status_code == 200 else None
 rs = [tuple(c.value for c in f) for f in wb["RESUMEN"].iter_rows()] if wb else []
 chk(r.status_code == 200 and wb.sheetnames == ["RESUMEN", "CTG-1"] and rs[1][0] == "CTG-1" and rs[1][4] and rs[1][3] == 20000,
     f"GET /api/soporte/excel → 200, hojas RESUMEN y CTG-1, con fecha límite recalculada: {rs[1:]}")

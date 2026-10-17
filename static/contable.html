@@ -44,7 +44,15 @@ pre{white-space:pre-wrap;margin:0;padding:8px;background:var(--soft);border-radi
 .fw{display:inline-flex;align-items:center;gap:2px;position:relative}input.fx{width:116px}input.fx.bad{border-color:var(--bad);background:#fdeceb}
 button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#12324f;color:#fff;padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;z-index:9}#toast.on{opacity:1}
+.pf{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}.pf label{font-size:12px;color:var(--mut);display:block}.pf input,.pf select{width:100%}
+.est{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}.est.en_plazo{background:var(--verde);color:#1b6b46}.est.vence_pronto{background:var(--warn);color:#8a5d00}.est.vencida{background:#fdeceb;color:var(--bad)}.est.hecho{background:var(--head);color:#17466f}
+#tws td{padding:6px}#tws tr.hecho td{opacity:.7}.sc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 @media(max-width:1000px){main{flex-direction:column}#panel{width:auto}}
+@media(max-width:1000px){#m3{align-items:stretch}#m3>.col{width:100%;max-width:100%}}
+@media(max-width:600px){#m3 .bar{flex-wrap:wrap}#m3 .bar>button{flex:1 1 140px}#m3 .bar .sp{display:none}}
+@media(max-width:800px){#tabs{overflow-x:auto}#tabs button{white-space:nowrap}.wrap{max-height:none}}
+@media(max-width:600px){body{font-size:15px}header{padding:8px 10px}header h1{font-size:16px}main{padding:8px}button,select,input[type=text]{min-height:40px}.pf{grid-template-columns:1fr}.bar>button{flex:1 1 auto}.zonas,.cie{grid-template-columns:1fr 1fr}}
+@media(max-height:500px) and (orientation:landscape){header{padding:4px 10px}.wrap{max-height:none}#toast{bottom:6px}}
 </style></head><body>
 <header>
 <h1>📒 Libro contable<small>Papeles del día → asientos verificados → tabla → Excel</small></h1>
@@ -53,7 +61,7 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 <select id="motor"><option value="local">IA local (Ollama)</option><option value="tesseract">Tesseract (solo impreso)</option></select><select id="modelo"></select>
 <button id="fs">⛶ Pantalla completa</button>
 </header>
-<div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button></div>
+<div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button><button data-tab="3">③ Documento soporte <span class="badge" id="b3">0</span></button></div>
 
 <main id="m1">
 <section class="col">
@@ -92,6 +100,26 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
  <div class="card" id="res2"></div>
  <div class="wrap" style="max-height:62vh"><table style="min-width:1100px"><thead><tr><th>Fecha</th><th>Código</th><th>Cuenta</th><th>Tercero</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Reporta</th><th>Medio</th></tr></thead><tbody id="tbl"></tbody></table>
   <div id="vacio2" class="m" style="padding:30px;text-align:center">Aún no hay días en el libro.</div></div>
+</section></main>
+<main id="m3" hidden><section class="col">
+ <div class="card"><h2>Compras por proveedor y semana</h2>
+  <p class="m" style="margin:0 0 8px">Las compras a quien no factura se documentan con un documento soporte por proveedor y semana. Elige las semanas, genera y descarga el Excel.</p>
+  <div class="bar"><label class="m"><input type="checkbox" id="s_todas"> Mostrar las ya documentadas</label><span class="sp"></span>
+   <button id="s_gen" disabled>Generar documento soporte</button><button id="s_xl" class="g">⬇ Excel (todos)</button></div></div>
+ <div class="wrap" style="max-height:52vh"><table id="tws" style="min-width:760px"><thead><tr><th></th><th>Proveedor</th><th>Semana</th><th>Compras</th><th>Total</th><th>Fecha límite</th><th>Estado</th><th></th></tr></thead><tbody id="s_tb"></tbody></table>
+  <div id="s_vacio" class="m" style="padding:26px;text-align:center">No hay compras pendientes de documento soporte. Las facturas del libro contable aparecen aquí.</div></div>
+ <div class="card" id="s_res" style="display:none"></div>
+ <div class="card"><h2 id="p_tit">Registrar proveedor</h2>
+  <p class="m" style="margin:0 0 8px">Sin dirección, municipio y número de ID válidos no se puede generar el documento.</p>
+  <div class="pf"><div><label>Tipo de ID</label><select id="p_tipo"><option>CC</option><option>NIT</option><option>CE</option><option>TI</option><option>RC</option><option>TE</option><option>PA</option><option>PEP</option><option>PPT</option></select></div>
+   <div><label>Número de ID (NIT con -DV)</label><input type="text" id="p_num" maxlength="20"></div>
+   <div><label>Nombre</label><input type="text" id="p_nombre" maxlength="200"></div>
+   <div><label>Dirección</label><input type="text" id="p_dir" maxlength="200"></div>
+   <div><label>Municipio</label><input type="text" id="p_mun" maxlength="80"></div>
+   <div><label>Correo (opcional)</label><input type="text" id="p_correo" maxlength="120"></div>
+   <div><label>Nombre que sale en el papel</label><input type="text" id="p_alias" maxlength="200"></div></div>
+  <div class="bar" style="margin-top:8px"><button id="p_ok">Guardar proveedor</button><button id="p_cl" class="g">Limpiar</button><span class="m" id="p_msg"></span></div>
+  <div class="wrap" style="max-height:30vh;margin-top:8px"><table style="min-width:520px"><thead><tr><th>Nombre</th><th>ID</th><th>Municipio</th><th></th></tr></thead><tbody id="p_tb"></tbody></table></div></div>
 </section></main>
 <div id="toast"></div>
 <script>
@@ -238,7 +266,33 @@ $("tbl").addEventListener("click",async e=>{const ab=e.target.dataset.ab,bo=e.ta
   const i=dias.findIndex(x=>x.fecha===ab);if(i>=0)dias[i]=n;else if(dias.length===1&&!dias[0].docs.length&&!dias[0].fotos.length)dias[0]=n;else dias.push(n);act=dias.indexOf(n);irTab(1);syncUI();recalcular();toast("Día reabierto: corrígelo y vuelve a confirmarlo")}});
 $("fclr").onclick=()=>{$("f1").value="";$("f2").value="";renderLibro()};
 $("xl2").onclick=async()=>{const r=await fetch(`/api/contable/excel?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudo generar el Excel");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"reporte_contable.xlsx";a.click()};
-function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;if(n==2)cargarLibro()}
+/* ══════ módulo ③: documento soporte ══════ */
+let SEM=[],PROVS=[];const ESTL={en_plazo:"En plazo",vence_pronto:"Vence pronto",vencida:"Vencida"};
+const jpost=(u,b)=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
+async function errDe(r){try{return (await r.json()).error||"Error"}catch(_){return "Error "+r.status}}
+async function cargarSoporte(){try{const [a,b]=await Promise.all([fetch("/api/soporte/semanas"),fetch("/api/proveedores")]);
+ if(!a.ok)return toast(await errDe(a),5000);SEM=(await a.json()).semanas;PROVS=b.ok?(await b.json()).proveedores:[];
+ $("b3").textContent=SEM.filter(g=>!g.documentado).length;renderSoporte()}catch(e){toast("No se pudo leer el documento soporte")}}
+function renderSoporte(){const ver=$("s_todas").checked,L=SEM.map((g,i)=>[g,i]).filter(([g])=>ver||!g.documentado);$("s_vacio").style.display=L.length?"none":"block";
+ $("s_tb").innerHTML=L.map(([g,i])=>`<tr class="${g.documentado?"hecho":""}"><td>${g.documentado||!g.registrado?"":`<input type="checkbox" class="sk" data-i="${i}">`}</td><td>${esc(g.tercero)}${g.registrado?"":' <span class="tag">sin registrar</span>'}</td><td>${esc(g.semana)}<br><span class="m">${fmtF(g.lunes)} – ${fmtF(g.domingo)}</span></td><td class="num">${g.compras.length}</td><td class="num">${fmt(g.total)}</td><td>${fmtF(g.fecha_limite)}</td>`+
+  `<td>${g.documentado?`<span class="est hecho">${esc(g.documentado)}</span>`:`<span class="est ${esc(g.estado)}">${esc(ESTL[g.estado]||g.estado)}</span> <span class="m">${g.dias_restantes<0?"hace "+(-g.dias_restantes)+" d":g.dias_restantes+" d"}</span>`}</td><td>${!g.registrado&&!g.documentado?`<button class="g" data-reg="${i}">Registrar</button>`:""}</td></tr>`).join("");
+ $("p_tb").innerHTML=PROVS.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(p.tipo_id)} ${esc(p.num_id)}</td><td>${esc(p.municipio)}</td><td><button class="g" data-ed="${p.id}">✎</button></td></tr>`).join("");sopBoton()}
+function sopBoton(){$("s_gen").disabled=!document.querySelector("#s_tb .sk:checked")}
+$("s_todas").onchange=renderSoporte;$("s_tb").addEventListener("change",sopBoton);
+$("s_tb").addEventListener("click",e=>{const i=e.target.dataset.reg;if(i===undefined)return;const g=SEM[+i];$("p_nombre").value=g.tercero;$("p_alias").value=g.tercero;$("p_tit").textContent="Registrar proveedor: "+g.tercero;$("p_num").focus();$("p_nombre").scrollIntoView({block:"center"})});
+$("p_tb").addEventListener("click",e=>{const p=PROVS.find(x=>x.id==e.target.dataset.ed);if(!p)return;$("p_tipo").value=p.tipo_id;$("p_num").value=p.num_id;$("p_nombre").value=p.nombre;$("p_dir").value=p.direccion;$("p_mun").value=p.municipio;$("p_correo").value=p.correo||"";$("p_alias").value="";$("p_tit").textContent="Editar proveedor";$("p_nombre").scrollIntoView({block:"center"})});
+$("p_cl").onclick=()=>{["p_num","p_nombre","p_dir","p_mun","p_correo","p_alias"].forEach(k=>$(k).value="");$("p_tit").textContent="Registrar proveedor";$("p_msg").textContent=""};
+$("p_ok").onclick=async()=>{const b=$("p_ok");b.disabled=true;try{const r=await jpost("/api/proveedores",{tipo_id:$("p_tipo").value,num_id:$("p_num").value,nombre:$("p_nombre").value,direccion:$("p_dir").value,municipio:$("p_mun").value,correo:$("p_correo").value,alias_ocr:$("p_alias").value});
+ if(!r.ok){const m=await errDe(r);$("p_msg").textContent=m;$("p_msg").className="bad";return toast(m,6000)}$("p_msg").textContent="";$("p_cl").onclick();toast("Proveedor guardado");await cargarSoporte()}catch(e){toast("No se pudo guardar el proveedor")}finally{b.disabled=false}};
+$("s_gen").onclick=async()=>{const el=[...document.querySelectorAll("#s_tb .sk:checked")].map(c=>SEM[+c.dataset.i]);if(!el.length)return;const venc=el.filter(g=>g.estado==="vencida");
+ if(venc.length&&!confirm(`${venc.length} ${venc.length===1?"semana está vencida":"semanas están vencidas"} (pasó la fecha límite). ¿Generar de todos modos?`))return;
+ const b=$("s_gen");b.disabled=true;try{const r=await jpost("/api/soporte/generar",{semanas:el.map(g=>({semana:g.semana,proveedor_id:g.proveedor_id,tercero:g.tercero})),confirmar_vencidos:venc.length>0});
+  if(!r.ok)return toast(await errDe(r),7000);const ds=(await r.json()).documentos,ids=ds.map(d=>d.id).join(",");
+  $("s_res").style.display="block";$("s_res").innerHTML=`<h2>Documentos generados</h2><ul class="av" style="font-size:14px">${ds.map(d=>`<li style="background:var(--verde)"><b>${esc(d.numero)}</b> · ${esc(d.proveedor)} · ${esc(d.semana)} · $ ${fmt(d.total)}</li>`).join("")}</ul><button id="s_dl" data-ids="${esc(ids)}">⬇ Descargar Excel de estos documentos</button>`;
+  toast(`${ds.length} ${ds.length===1?"documento generado":"documentos generados"}`);await cargarSoporte()}catch(e){toast("No se pudo generar")}finally{sopBoton()}};
+async function bajarXl(ids){const r=await fetch("/api/soporte/excel"+(ids?"?ids="+encodeURIComponent(ids):""));if(!r.ok)return toast(await errDe(r));const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"documento_soporte.xlsx";a.click()}
+$("s_xl").onclick=()=>bajarXl("");$("s_res").addEventListener("click",e=>{if(e.target.id==="s_dl")bajarXl(e.target.dataset.ids)});
+function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;if(n==2)cargarLibro();if(n==3)cargarSoporte()}
 $("tabs").onclick=e=>{const t=e.target.closest("button");if(t)irTab(t.dataset.tab)};
 $("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
 document.addEventListener("fullscreenchange",()=>$("fs").textContent=document.fullscreenElement?"✕ Salir de pantalla completa":"⛶ Pantalla completa");

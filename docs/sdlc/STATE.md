@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # iter. 2: T13 (pestaña Documento soporte); smoke en Excel pendiente (usuario)
+next: 5-implement   # iter. 2: T14 (compra manual); smoke en Excel pendiente (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # iter. 2: T13 (pestaña Documento soporte); smoke en Excel 
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: T13 (iter. 2)
+- [ ] 5-implement      current task: T14 (iter. 2)
 - [ ] 6-test           (iter. 1: pasa tras FIX-1…6; smoke en Excel pendiente)
 - [ ] 7-release
 - [~] 8-maintain
@@ -61,3 +61,5 @@ next: 5-implement   # iter. 2: T13 (pestaña Documento soporte); smoke en Excel 
 2026-10-17 | 5-implement | T10: soporte.generar en un BEGIN IMMEDIATE (todo o nada); rechaza proveedor sin registrar, compra ya documentada y vencida sin confirmar; linea con copia fija y origen; 13 checks; suites verdes. fecha_limite no se guarda en BD (T11 la toma de los grupos)
 2026-10-17 | 5-implement | T11: soporte_excel.libro (RESUMEN + una hoja por documento con campos art. 4); Sonnet no escribió los checks → reintento Opus añadió 4; suites verdes. Ojo T12: docs leídos de BD traen fecha_limite None (recalcular con soporte.fecha_limite)
 2026-10-17 | 5-implement | T12: rutas soporte/semanas, generar, excel y proveedores; before_request 403 a POST con Host/Origin no locales (toda la app); config de contable.json; excel recalcula fecha_limite; 17 checks; suites verdes. Abierto: semanas lista también las ya documentadas (T13)
+2026-10-17 | 5-implement | T13: pestaña ③ Documento soporte (semanas con estado, registrar proveedor, generar, Excel); semanas trae `documentado` y se ocultan; verificada en preview escritorio y 375×812 (arreglo: #m3 se desbordaba a 770 px); suites verdes
+2026-10-17 | 5-implement | Hallazgos del preview con datos reales (para 6-test): semanas agrupadas por la fecha OCR de la factura → semanas 2018-W39/2024-W52 «vencidas hace 2100 d» (años mal leídos); «Sin Texto» aparece como tercero (es_encabezado no lo filtra en semanas)
