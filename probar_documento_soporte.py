@@ -370,4 +370,38 @@ r = cl.post("/api/soporte/generar", json={"semanas": [sel], "confirmar_vencidos"
 dj = r.get_json().get("documentos", []) if r.status_code == 200 else []
 chk(r.status_code == 200 and [(d["numero"], d["total"]) for d in dj] == [("CTG-2", 3000)], f"FIX-7: generar la misma semana da CTG-2 solo con la nueva: {r.get_json()}")
 
+# ── T14 · compra manual (R4, N2): queda en libro.json como factura «manual», sale en DATOS OCR y en las semanas ──
+from parser_module.contable import construir as construir_asientos
+CM = {"tercero": "Carlos Cordero", "fecha": "2026-09-22", "descripcion": "Verduras pagadas por transferencia", "valor": 15000, "medio": "Transferencia"}
+r = cl.post("/api/soporte/compra", json=CM, headers=AJENO)
+chk(r.status_code == 403, f"T1: POST compra manual con Origin ajeno → 403 ({r.status_code})")
+for malo, motivo in (({"valor": 0}, "valor 0"), ({"valor": "x"}, "valor no numérico"), ({"valor": 10**12}, "valor absurdo"), ({"fecha": "2026-02-30"}, "fecha inexistente"),
+                     ({"tercero": "  "}, "sin proveedor"), ({"tercero": "Sin Texto"}, "proveedor rótulo"), ({"descripcion": ""}, "sin descripción"),
+                     ({"descripcion": "x" * 300}, "descripción larga"), ({"medio": "Bitcoin"}, "medio desconocido")):
+    r = cl.post("/api/soporte/compra", json={**CM, **malo}, headers=LOC)
+    chk(r.status_code == 400 and r.get_json().get("error"), f"R4: compra manual con {motivo} → 400: {r.get_json()}")
+chk("2026-09-22" not in json.loads(web.RUTA_LIBRO.read_text(encoding="utf8")), "las compras rechazadas no escribieron en libro.json")
+r = cl.post("/api/soporte/compra", json=CM, headers=LOC)
+chk(r.status_code == 200, f"flujo feliz: compra manual → 200 ({r.get_json()})")
+lj = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8"))
+dm = [d for d in lj.get("2026-09-22", {}).get("documentos", []) if d.get("origen") == "manual"]
+chk(len(dm) == 1 and dm[0]["tipo"] == "factura" and dm[0]["valor"] == 15000 and dm[0]["fecha"] == "2026-09-22" and dm[0]["tercero"] == "Carlos Cordero",
+    f"libro.json: el día 2026-09-22 guarda la factura manual: {dm and {k: dm[0][k] for k in ('tipo', 'origen', 'valor', 'fecha', 'tercero')}}")
+sm4 = [x for x in cl.get("/api/soporte/semanas").get_json()["semanas"] if x["semana"] == "2026-W39"]
+chk(len(sm4) == 1 and sm4[0]["total"] == 15000 and sm4[0]["registrado"] and [c["origen"] for c in sm4[0]["compras"]] == ["manual"]
+    and sm4[0]["compras"][0]["descripcion"] == CM["descripcion"], f"R4: la compra manual queda en el acumulado de su semana (W39) con origen «manual»: {sm4}")
+dia22 = lj["2026-09-22"]
+rd = construir_asientos("2026-09-22", dia22["documentos"], dia22.get("banco"), {}, dia22.get("cierre"))
+fm = [x for x in rd["datos"] if x["archivo"] == "manual"]
+chk(len(fm) == 1 and fm[0]["estado"] == "ok" and fm[0]["valor"] == 15000 and fm[0]["tercero"] == "Carlos Cordero" and fm[0]["medio"] == "Transferencia",
+    f"R9: la compra manual sale en DATOS OCR con archivo «manual»: {fm}")
+chk((dia22["debito"], dia22["credito"]) == (rd["debito"], rd["credito"]) and rd["debito"] > 0, f"el día guardado queda recalculado (sin aviso de FIX-6): {dia22['debito']} / {rd['debito']}")
+from parser_module.contable.documentos import _base as base_doc
+lj["2026-09-14"]["documentos"] = [{**base_doc("factura", ""), **d} for d in lj["2026-09-14"]["documentos"]]   # papeles leídos traen todos los campos de _base
+web.RUTA_LIBRO.write_text(json.dumps(lj), encoding="utf8")
+r = cl.post("/api/soporte/compra", json={**CM, "fecha": "2026-09-14", "valor": 4000}, headers=LOC)
+lj = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8"))
+ids14 = [d["id"] for d in lj["2026-09-14"]["documentos"]]
+chk(r.status_code == 200 and ids14[:3] == ["f1", "f2", "f3"] and len(ids14) == 4, f"en un día que ya existe la compra se agrega sin tocar los papeles leídos: {ids14}")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

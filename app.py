@@ -441,6 +441,36 @@ def sop_generar():
         finally: con.close()
 
 
+MEDIOS_COMPRA = ("Efectivo", "Transferencia", "Nequi", "Daviplata", "QR", "Bre-B", "Tarjeta", "PSE", "Crédito personal")
+
+
+@app.post("/api/soporte/compra")
+def sop_compra():
+    """R4: compra que el OCR no tiene (p. ej. pagada por transferencia). Se guarda en libro.json como factura con origen «manual»
+    en el día de su fecha, así sale en DATOS OCR, en el libro y en las semanas: una sola fuente de compras (03 §5, N2)."""
+    j = request.get_json(silent=True)
+    if not isinstance(j, dict): return jsonify(error="Falta la compra"), 400
+    fecha, tercero, desc, medio = (str(j.get(k) or "").strip() for k in ("fecha", "tercero", "descripcion", "medio"))
+    try: valor = int(j.get("valor"))   # valor_compra_pesos: total pagado al proveedor (art. 4 Res. 167/2021, valor de la operación)
+    except (TypeError, ValueError): valor = 0
+    try: date.fromisoformat(fecha); fok = bool(ISO.match(fecha))
+    except ValueError: fok = False
+    error = ("Fecha inválida" if not fok else "Falta el proveedor" if not tercero or provs.es_encabezado(tercero) else "Proveedor demasiado largo" if len(tercero) > 200
+             else "Falta la descripción" if not desc else "Descripción demasiado larga (máx. 200)" if len(desc) > 200
+             else "El valor debe ser un número entre 1 y 10.000.000.000" if not 0 < valor <= 10**10 else "Medio de pago desconocido" if medio not in MEDIOS_COMPRA else "")
+    if error: return jsonify(error=error), 400
+    d = {**_base_doc("factura", ""), "fecha": fecha, "tercero": tercero, "detalle": desc, "descripcion": desc, "valor": valor, "medio": medio, "origen": "manual"}
+    r = CLASIF.clasificar(tercero, desc, "")
+    d["cuenta"], d["conf"], d["motivo"] = r["cuenta"], r["conf"], r["motivo"]
+    with LOCK:
+        lib = _leer_libro(); dia = lib.get(fecha) or dict(fecha=fecha, banco={}, cierre={})
+        r = construir_asientos(fecha, dia.get("documentos", []) + [d], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
+        lib[fecha] = {**dia, "documentos": r["documentos"], "cruces": r["cruces"], "filas": r["filas"], "pendientes": r["pendientes"], "debito": r["debito"],
+                      "credito": r["credito"], "diferencia": r["diferencia"], "guardado": datetime.now().isoformat(timespec="seconds")}   # recalculado: sin aviso de FIX-6
+        _guardar_libro(lib)
+    return jsonify(ok=True, documento=d)
+
+
 @app.get("/api/soporte/excel")
 def sop_excel():
     try: ids = [int(x) for x in request.args["ids"].split(",") if x] if request.args.get("ids") else None

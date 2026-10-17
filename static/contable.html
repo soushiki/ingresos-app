@@ -109,6 +109,14 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
  <div class="wrap" style="max-height:52vh"><table id="tws" style="min-width:760px"><thead><tr><th></th><th>Proveedor</th><th>Semana</th><th>Compras</th><th>Total</th><th>Fecha límite</th><th>Estado</th><th></th></tr></thead><tbody id="s_tb"></tbody></table>
   <div id="s_vacio" class="m" style="padding:26px;text-align:center">No hay compras pendientes de documento soporte. Las facturas del libro contable aparecen aquí.</div></div>
  <div class="card" id="s_res" style="display:none"></div>
+ <div class="card"><h2>Compra manual</h2>
+  <p class="m" style="margin:0 0 8px">Una compra que no está en los papeles (por ejemplo, pagada por transferencia). Queda en el libro del día de su fecha y en la semana de su proveedor.</p>
+  <div class="pf"><div><label>Proveedor</label><input type="text" id="c_ter" maxlength="200" list="c_provs"><datalist id="c_provs"></datalist></div>
+   <div><label>Fecha de la compra</label><span id="c_fw"></span></div>
+   <div><label>Descripción</label><input type="text" id="c_desc" maxlength="200"></div>
+   <div><label>Valor</label><input type="text" id="c_val" inputmode="numeric" maxlength="16"></div>
+   <div><label>Medio de pago</label><select id="c_medio"></select></div></div>
+  <div class="bar" style="margin-top:8px"><button id="c_ok">Guardar compra</button><span class="m" id="c_msg"></span></div></div>
  <div class="card"><h2 id="p_tit">Registrar proveedor</h2>
   <p class="m" style="margin:0 0 8px">Sin dirección, municipio y número de ID válidos no se puede generar el documento.</p>
   <div class="pf"><div><label>Tipo de ID</label><select id="p_tipo"><option>CC</option><option>NIT</option><option>CE</option><option>TI</option><option>RC</option><option>TE</option><option>PA</option><option>PEP</option><option>PPT</option></select></div>
@@ -276,7 +284,7 @@ async function cargarSoporte(){try{const [a,b]=await Promise.all([fetch("/api/so
 function renderSoporte(){const ver=$("s_todas").checked,L=SEM.map((g,i)=>[g,i]).filter(([g])=>ver||!g.documentado);$("s_vacio").style.display=L.length?"none":"block";
  $("s_tb").innerHTML=L.map(([g,i])=>`<tr class="${g.documentado?"hecho":""}"><td>${g.documentado||!g.registrado?"":`<input type="checkbox" class="sk" data-i="${i}">`}</td><td>${g.elegir?`<span class="m">${esc(g.tercero||"(sin nombre)")} · ${esc(g.compras[0].origen)}</span> <span class="tag">elegir proveedor</span><br><span class="m">El papel no trae el nombre: corrige el tercero en el día ${fmtF(g.compras[0].dia)}</span>`:esc(g.tercero)+(g.registrado?"":' <span class="tag">sin registrar</span>')}</td><td>${esc(g.semana)}<br><span class="m">${fmtF(g.lunes)} – ${fmtF(g.domingo)}</span>${(g.avisos||[]).length?`<ul class="av">${g.avisos.map(a=>`<li>⚠ ${esc(a)}</li>`).join("")}</ul>`:""}</td><td class="num">${g.compras.length}</td><td class="num">${fmt(g.total)}</td><td>${fmtF(g.fecha_limite)}</td>`+
   `<td>${g.documentado?`<span class="est hecho">${esc(g.documentado)}</span>`:`<span class="est ${esc(g.estado)}">${esc(ESTL[g.estado]||g.estado)}</span> <span class="m">${g.dias_restantes<0?"hace "+(-g.dias_restantes)+" d":g.dias_restantes+" d"}</span>`}</td><td>${!g.registrado&&!g.documentado&&!g.elegir?`<button class="g" data-reg="${i}">Registrar</button>`:""}</td></tr>`).join("");
- $("p_tb").innerHTML=PROVS.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(p.tipo_id)} ${esc(p.num_id)}</td><td>${esc(p.municipio)}</td><td><button class="g" data-ed="${p.id}">✎</button></td></tr>`).join("");sopBoton()}
+ $("p_tb").innerHTML=PROVS.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(p.tipo_id)} ${esc(p.num_id)}</td><td>${esc(p.municipio)}</td><td><button class="g" data-ed="${p.id}">✎</button></td></tr>`).join("");$("c_provs").innerHTML=PROVS.map(p=>`<option value="${esc(p.nombre)}">`).join("");sopBoton()}
 function sopBoton(){$("s_gen").disabled=!document.querySelector("#s_tb .sk:checked")}
 $("s_todas").onchange=renderSoporte;$("s_tb").addEventListener("change",sopBoton);
 $("s_tb").addEventListener("click",e=>{const i=e.target.dataset.reg;if(i===undefined)return;const g=SEM[+i];$("p_nombre").value=g.tercero;$("p_alias").value=g.tercero;$("p_tit").textContent="Registrar proveedor: "+g.tercero;$("p_num").focus();$("p_nombre").scrollIntoView({block:"center"})});
@@ -284,6 +292,13 @@ $("p_tb").addEventListener("click",e=>{const p=PROVS.find(x=>x.id==e.target.data
 $("p_cl").onclick=()=>{["p_num","p_nombre","p_dir","p_mun","p_correo","p_alias"].forEach(k=>$(k).value="");$("p_tit").textContent="Registrar proveedor";$("p_msg").textContent=""};
 $("p_ok").onclick=async()=>{const b=$("p_ok");b.disabled=true;try{const r=await jpost("/api/proveedores",{tipo_id:$("p_tipo").value,num_id:$("p_num").value,nombre:$("p_nombre").value,direccion:$("p_dir").value,municipio:$("p_mun").value,correo:$("p_correo").value,alias_ocr:$("p_alias").value});
  if(!r.ok){const m=await errDe(r);$("p_msg").textContent=m;$("p_msg").className="bad";return toast(m,6000)}$("p_msg").textContent="";$("p_cl").onclick();toast("Proveedor guardado");await cargarSoporte()}catch(e){toast("No se pudo guardar el proveedor")}finally{b.disabled=false}};
+/* R4: compra manual → libro.json (factura, origen «manual»); el servidor valida todo */
+$("c_fw").innerHTML=fechaHtml("",'id="c_fecha"');$("c_medio").innerHTML=MEDIOS.filter(m=>m!=="Rappi").map(m=>`<option ${m==="Transferencia"?"selected":""}>${m}</option>`).join("");
+$("c_ok").onclick=async()=>{const b=$("c_ok"),fecha=parseFecha($("c_fecha").value),valor=+$("c_val").value.replace(/\D/g,"");
+ const mal=m=>{$("c_msg").textContent=m;$("c_msg").className="bad";toast(m,5000)};if(!fecha)return mal("Escribe la fecha de la compra (dd/mm/aaaa)");
+ b.disabled=true;try{const r=await jpost("/api/soporte/compra",{tercero:$("c_ter").value,fecha,descripcion:$("c_desc").value,valor,medio:$("c_medio").value});
+ if(!r.ok)return mal(await errDe(r));$("c_msg").textContent="";["c_ter","c_desc","c_val"].forEach(k=>$(k).value="");toast(`Compra de ${fmt(valor)} guardada en el día ${fmtF(fecha)}`);await cargarSoporte();await cargarLibro()}
+ catch(e){toast("No se pudo guardar la compra")}finally{b.disabled=false}};
 $("s_gen").onclick=async()=>{const el=[...document.querySelectorAll("#s_tb .sk:checked")].map(c=>SEM[+c.dataset.i]);if(!el.length)return;const venc=el.filter(g=>g.estado==="vencida");
  if(venc.length&&!confirm(`${venc.length} ${venc.length===1?"semana está vencida":"semanas están vencidas"} (pasó la fecha límite). ¿Generar de todos modos?`))return;
  const b=$("s_gen");b.disabled=true;try{const r=await jpost("/api/soporte/generar",{semanas:el.map(g=>({semana:g.semana,proveedor_id:g.proveedor_id,tercero:g.tercero})),confirmar_vencidos:venc.length>0});
