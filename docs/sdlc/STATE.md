@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # it. 4: falta T21 (LEEME-contador); smokes it. 1–3 pendientes (usuario)
+next: 6-test   # it. 4 completa (D1, T18–T21); smokes it. 1–3 pendientes (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # it. 4: falta T21 (LEEME-contador); smokes it. 1–3 pendie
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: T21 (it. 4)
+- [ ] 5-implement      current task: — (it. 4 completa)
 - [ ] 6-test           (iter. 1, 2 y 3 pasan; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
@@ -85,3 +85,4 @@ next: 5-implement   # it. 4: falta T21 (LEEME-contador); smokes it. 1–3 pendie
 2026-10-17 | 5-implement | T18: exportar.crudo/huella (ADR-004: formato, version 1, sha256, solo documentos/banco/cierre/guardado), GET /api/contable/crudo (rango, 400/404, Host), botón «Datos crudos (.json)» en ②; 30 días reales ida y vuelta iguales; arreglado desborde de ② a 375 px (como #m3); 10 checks; suites verdes
 2026-10-17 | 5-implement | T19: exportar.leer_crudo (JSON/formato/versión/sha256 rechazan todo; por día fecha, tipo, 0–10^10, textos ≤5.000, ≤2.000 docs, repetidos) + POST /api/contable/crudo (nuevos/iguales/conflictos/bloqueados R7/inválidos R10, reemplazar marcados, una escritura) + «⬆ Importar datos crudos» en ②; 30 días reales → mismas filas y semanas; 14 checks; suites verdes
 2026-10-17 | 5-implement | T20: SIN_OCR=1 (no busca a Ollama, foto → error claro; PDF con texto sí) y /api/estado.sin_ocr (también con Ollama apagado); ① cambia «Leer» por «⬆ Importar datos» + aviso; arreglado desborde de ① a 375 px; 8 checks (subproceso con Ollama apagado → importa → CTG-1); suites verdes
+2026-10-17 | 5-implement | T21: LEEME-contador.md (Python con PATH, copiar sin datos/, pip, .env SIN_OCR=1, iniciar.bat, trabajo semanal, copia de soporte.db, tabla de fallas); probado en copia limpia (git archive + venv nuevo): arranca sin OCR, importa 30 días reales, 17 semanas en ③. Iteración 4 completa → 6-test
