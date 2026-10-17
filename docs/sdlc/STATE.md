@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 6-test   # iter. 2 (T7–T13); luego iter. 3 desde T14; it. 4 (OCR separado) después; smoke en Excel pendiente (usuario)
+next: 5-implement   # FIX-8…10; luego 6-test de iter. 2 y iter. 3 desde T14; it. 4 (OCR separado) después; smoke en Excel pendiente (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,8 +13,8 @@ next: 6-test   # iter. 2 (T7–T13); luego iter. 3 desde T14; it. 4 (OCR separad
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: — (iter. 2 completa; iter. 3 empieza en T14)
-- [ ] 6-test           (iter. 1: pasa tras FIX-1…6; smoke en Excel pendiente)
+- [ ] 5-implement      current task: FIX-8 (defectos de 6-test iter. 2)
+- [ ] 6-test           (iter. 1 pasa; iter. 2 no pasa: FIX-7…10; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
 
@@ -65,3 +65,6 @@ next: 6-test   # iter. 2 (T7–T13); luego iter. 3 desde T14; it. 4 (OCR separad
 2026-10-17 | 5-implement | Hallazgos del preview con datos reales (para 6-test): semanas agrupadas por la fecha OCR de la factura → semanas 2018-W39/2024-W52 «vencidas hace 2100 d» (años mal leídos); «Sin Texto» aparece como tercero (es_encabezado no lo filtra en semanas)
 2026-10-17 | 5-implement | Iteración 2 completa (T7–T13) → 6-test
 2026-10-17 | 4-plan | Pedido del usuario: separar la lectura OCR (el PC del contador no la corre) → it. 4 en 04-plan (D1 + T18–T21), después de la it. 3
+2026-10-17 | 6-test | Iter. 2 no pasa: suites verdes y 85 checks, pero 3 defectos de Must (semana documentada + compra nueva bloqueada, «Sin Texto» agrupado, 5/17 fechas OCR con año mal) + Host sin revisar en GET → FIX-7…10 → 06-test-report.md
+2026-10-17 | 6-test | FIX-9 decidido: fecha OCR a >7 días del día → usa la del día y avisa con las dos (tolerancia configurable)
+2026-10-17 | 5-implement | FIX-7: compras ya documentadas forman su grupo con `documentado`; lo nuevo de la semana se numera aparte (CTG-2 solo con b); generar/ruta prefieren lo no documentado; 8 checks; suites verdes

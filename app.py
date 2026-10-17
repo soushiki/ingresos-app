@@ -384,19 +384,8 @@ def _doc_json(d) -> dict:
                 total=d.total, estado=d.estado, lineas=[asdict(l) for l in d.lineas])
 
 
-def _documentado(con, g) -> str | None:
-    """Número («CTG-1») del documento no anulado que ya cubre todas las compras del grupo, o None si falta alguna (R3)."""
-    nums = set()
-    for co in g.compras:
-        r = con.execute("SELECT d.prefijo, d.numero FROM linea l JOIN documento d ON d.id = l.documento_id "
-                        "WHERE l.origen_fecha = ? AND l.origen_doc_id = ? AND d.estado != 'anulado'", (co.dia, co.id)).fetchone()
-        if r is None: return None
-        nums.add(f"{r['prefijo']}-{r['numero']}")
-    return ", ".join(sorted(nums)) or None
-
-
-def _grupo_json(g, con=None) -> dict:
-    return dict(documentado=_documentado(con, g) if con is not None else None,proveedor_id=g.proveedor.id if g.proveedor else None, tercero=g.tercero, semana=g.semana, lunes=g.lunes, domingo=g.domingo,
+def _grupo_json(g) -> dict:
+    return dict(documentado=g.documentado or None, proveedor_id=g.proveedor.id if g.proveedor else None, tercero=g.tercero, semana=g.semana, lunes=g.lunes, domingo=g.domingo,
                 total=g.total, fecha_limite=g.fecha_limite, estado=g.estado, dias_restantes=g.dias_restantes, registrado=g.proveedor is not None,
                 compras=[asdict(c) for c in g.compras])
 
@@ -424,7 +413,7 @@ def sop_semanas():
     try:
         try: gs = soporte.semanas(_leer_libro(), con, _sop_cfg(), desde=desde, hasta=hasta)
         except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
-        return jsonify(semanas=[_grupo_json(g, con) for g in gs])
+        return jsonify(semanas=[_grupo_json(g) for g in gs])
     finally: con.close()
 
 
@@ -439,9 +428,10 @@ def sop_generar():
             try: gs = soporte.semanas(_leer_libro(), con, _sop_cfg())   # los grupos se recalculan en el servidor: el cliente solo elige
             except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
             elegidos = []
-            for x in sel:
-                g = next((g for g in gs if g.semana == x.get("semana") and ((g.proveedor and g.proveedor.id == x.get("proveedor_id"))
-                                                                           or (not g.proveedor and x.get("proveedor_id") is None and g.tercero == x.get("tercero")))), None)
+            for x in sel:   # lo no documentado de la semana primero; si todo está documentado, generar responde R3 (FIX-7)
+                g = next((g for g in sorted(gs, key=lambda g: bool(g.documentado)) if g.semana == x.get("semana")
+                          and ((g.proveedor and g.proveedor.id == x.get("proveedor_id"))
+                               or (not g.proveedor and x.get("proveedor_id") is None and g.tercero == x.get("tercero")))), None)
                 if g is None: return jsonify(error=f"No existe la semana {x.get('semana')!s:.20} de ese proveedor"), 400
                 elegidos.append(g)
             try: docs = soporte.generar(con, elegidos, bool(j.get("confirmar_vencidos")))

@@ -44,6 +44,7 @@ class Grupo:
     fecha_limite: str = ""
     estado: str = EN_PLAZO
     dias_restantes: int = 0            # días hábiles que faltan hasta el límite (<0 si ya venció)
+    documentado: str = ""              # «CTG-1» si estas compras ya están en ese documento no anulado (R3)
 
 
 def config(c: dict | None) -> dict:
@@ -99,9 +100,20 @@ def compras_del_libro(libro: dict) -> list[Compra]:
     return out
 
 
+def documento_de(con: sqlite3.Connection, dia: str, doc_id: str) -> str:
+    """Número («CTG-1») del documento no anulado que ya tiene la compra, o "" (R3)."""
+    r = con.execute("SELECT d.prefijo, d.numero FROM linea l JOIN documento d ON d.id = l.documento_id "
+                    "WHERE l.origen_fecha = ? AND l.origen_doc_id = ? AND d.estado != 'anulado'", (dia, doc_id)).fetchone()
+    return f"{r['prefijo']}-{r['numero']}" if r else ""
+
+
 def semanas(libro: dict, con: sqlite3.Connection | None = None, cfg: dict | None = None, hoy: date | None = None,
             desde: str = "", hasta: str = "") -> list[Grupo]:
-    """Grupos proveedor-semana de las compras entre `desde` y `hasta` (AAAA-MM-DD, opcionales); lo más urgente primero."""
+    """Grupos proveedor-semana de las compras entre `desde` y `hasta` (AAAA-MM-DD, opcionales); lo más urgente primero.
+
+    Con `con`, las compras ya documentadas van en un grupo por documento (`documentado`) y las demás de la misma
+    semana forman su propio grupo, que se numera aparte (R3).
+    """
     c = config(cfg)
     hoy = hoy or date.today()
     grupos: dict[tuple, Grupo] = {}
@@ -110,14 +122,16 @@ def semanas(libro: dict, con: sqlite3.Connection | None = None, cfg: dict | None
         f = date.fromisoformat(co.fecha)
         p = prov.resolver(con, co.tercero) if con is not None and co.tercero and not prov.es_encabezado(co.tercero) else None
         iso = f.isocalendar(); semana = f"{iso[0]}-W{iso[1]:02d}"
-        llave = (("p", p.id) if p else ("t", prov.normalizar(co.tercero)), semana)
+        hecho = documento_de(con, co.dia, co.id) if con is not None else ""
+        llave = (("p", p.id) if p else ("t", prov.normalizar(co.tercero)), semana, hecho)
         g = grupos.get(llave)
         if g is None:
             lunes = f - timedelta(days=f.weekday())
             lim = fecha_limite(f, c["regla_plazo"], c["festivos"])
             est, n = estado(hoy, lim, c["aviso_dias"], c["festivos"])
             g = grupos[llave] = Grupo(p, p.nombre if p else co.tercero, semana, lunes.isoformat(),
-                                      (lunes + timedelta(days=6)).isoformat(), fecha_limite=lim.isoformat(), estado=est, dias_restantes=n)
+                                      (lunes + timedelta(days=6)).isoformat(), fecha_limite=lim.isoformat(), estado=est, dias_restantes=n,
+                                      documentado=hecho)
         g.compras.append(co); g.total += co.valor
     orden = {VENCIDA: 0, VENCE_PRONTO: 1, EN_PLAZO: 2}
     return sorted(grupos.values(), key=lambda g: (orden[g.estado], g.fecha_limite, g.tercero))
@@ -178,9 +192,8 @@ def generar(con: sqlite3.Connection, grupos: list[Grupo], confirmar_vencidos: bo
     docs = []
     with sdb.transaccion(con):
         for dia, did in llaves:   # dentro del BEGIN IMMEDIATE: otro proceso no puede colarse entre la revisión y el INSERT
-            r = con.execute("SELECT d.prefijo, d.numero FROM linea l JOIN documento d ON d.id = l.documento_id "
-                            "WHERE l.origen_fecha = ? AND l.origen_doc_id = ? AND d.estado != 'anulado'", (dia, did)).fetchone()
-            if r: raise NoSeGenera(f"R3: la compra {did} del {dia} ya está en {r['prefijo']}-{r['numero']}")
+            hecho = documento_de(con, dia, did)
+            if hecho: raise NoSeGenera(f"R3: la compra {did} del {dia} ya está en {hecho}")
         for g in grupos:
             prefijo, numero = sdb.reservar_numero(con, "DS")
             lineas = [Linea(co.fecha, co.dia, co.id, _descripcion(co), co.valor) for co in sorted(g.compras, key=lambda c: (c.fecha, c.id))]

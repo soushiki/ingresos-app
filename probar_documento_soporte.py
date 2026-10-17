@@ -221,6 +221,27 @@ chk(agotado and n_doc() == antes and not con.execute("SELECT count(*) FROM linea
     "N1: rango agotado a mitad del lote → error y no queda ningún documento ni línea a medias")
 con.close()
 
+# ── FIX-7 · semana ya documentada + compra nueva (R3) ───────────────────────
+con = sdb.abrir(tmp / "fix7.db")
+prov.guardar(con, {"tipo_id": "CC", "num_id": "1047000111", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
+L7 = dia("2026-09-14", fac("a", "2026-09-14", 10000))
+k1 = sop.generar(con, sop.semanas(L7, con, hoy=date(2026, 9, 15)), hoy=date(2026, 9, 15))
+L7["2026-09-16"] = {"fecha": "2026-09-16", "documentos": [fac("b", "2026-09-16", 4000)]}
+g7 = sop.semanas(L7, con, hoy=date(2026, 9, 16))
+nuevos, hechos = [g for g in g7 if not g.documentado], [g for g in g7 if g.documentado]
+chk(len(nuevos) == 1 and [c.id for c in nuevos[0].compras] == ["b"] and nuevos[0].total == 4000,
+    f"R3: la compra nueva de una semana ya documentada forma su propio grupo: {[(g.documentado, [c.id for c in g.compras]) for g in g7]}")
+chk(len(hechos) == 1 and hechos[0].documentado == "CTG-1" and [c.id for c in hechos[0].compras] == ["a"], "R3: lo ya documentado sigue saliendo con documentado = CTG-1")
+k2 = sop.generar(con, nuevos, hoy=date(2026, 9, 16))
+chk([(k1[0].numero, [l.origen_doc_id for l in k1[0].lineas]), (k2[0].numero, [l.origen_doc_id for l in k2[0].lineas])] == [(1, ["a"]), (2, ["b"])],
+    f"R3: CTG-1 con a, luego generar da CTG-2 solo con b: {[(d.numero, d.total) for d in k1 + k2]}")
+g7 = sop.semanas(L7, con, hoy=date(2026, 9, 16))
+chk(sorted(g.documentado for g in g7) == ["CTG-1", "CTG-2"] and all(g.documentado for g in g7), "R3: con las dos documentadas, cada grupo sale con su número")
+try: sop.generar(con, g7, hoy=date(2026, 9, 16)); msg = ""
+except sop.NoSeGenera as e: msg = str(e)
+chk("R3" in msg and con.execute("SELECT ultimo FROM rango").fetchone()[0] == 2, f"R3: un grupo documentado no se numera otra vez: «{msg}»")
+con.close()
+
 # varios procesos generan la misma semana a la vez: sale un solo documento
 R3 = tmp / "conc_gen.db"; c0 = sdb.abrir(R3)
 prov.guardar(c0, {"tipo_id": "CC", "num_id": "1047000111", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
@@ -310,5 +331,13 @@ rs = [tuple(c.value for c in f) for f in wb["RESUMEN"].iter_rows()] if wb else [
 chk(r.status_code == 200 and wb.sheetnames == ["RESUMEN", "CTG-1"] and rs[1][0] == "CTG-1" and rs[1][4] and rs[1][3] == 20000,
     f"GET /api/soporte/excel → 200, hojas RESUMEN y CTG-1, con fecha límite recalculada: {rs[1:]}")
 chk(cl.get("/api/soporte/excel?ids=999").status_code == 404 and cl.get("/api/soporte/excel?ids=x").status_code == 400, "excel: ids sin documentos → 404, mal escritos → 400")
+lj = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8"))
+lj["2026-09-14"]["documentos"].append({"id": "f3", "tipo": "factura", "fecha": "2026-09-16", "valor": 3000, "tercero": "Carlos Cordero", "origen": "foto3.jpg"})
+web.RUTA_LIBRO.write_text(json.dumps(lj), encoding="utf8")
+sm3 = cl.get("/api/soporte/semanas").get_json()["semanas"]
+chk(sorted((x["documentado"] or "", x["total"]) for x in sm3) == [("", 3000), ("CTG-1", 20000)], f"FIX-7: la compra nueva sale aparte de la semana CTG-1: {[(x['documentado'], x['total']) for x in sm3]}")
+r = cl.post("/api/soporte/generar", json={"semanas": [sel], "confirmar_vencidos": True}, headers=LOC)
+dj = r.get_json().get("documentos", []) if r.status_code == 200 else []
+chk(r.status_code == 200 and [(d["numero"], d["total"]) for d in dj] == [("CTG-2", 3000)], f"FIX-7: generar la misma semana da CTG-2 solo con la nueva: {r.get_json()}")
 
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
