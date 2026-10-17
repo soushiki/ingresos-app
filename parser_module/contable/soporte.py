@@ -45,6 +45,7 @@ class Grupo:
     estado: str = EN_PLAZO
     dias_restantes: int = 0            # días hábiles que faltan hasta el límite (<0 si ya venció)
     documentado: str = ""              # «CTG-1» si estas compras ya están en ese documento no anulado (R3)
+    elegir: bool = False               # el tercero leído es un rótulo («Sin Texto») o está vacío: una compra por grupo (R2)
 
 
 def config(c: dict | None) -> dict:
@@ -120,10 +121,12 @@ def semanas(libro: dict, con: sqlite3.Connection | None = None, cfg: dict | None
     for co in compras_del_libro(libro):
         if (desde and co.fecha < desde) or (hasta and co.fecha > hasta): continue
         f = date.fromisoformat(co.fecha)
-        p = prov.resolver(con, co.tercero) if con is not None and co.tercero and not prov.es_encabezado(co.tercero) else None
+        elegir = prov.es_encabezado(co.tercero)   # «Sin Texto» no es un proveedor: no se suma con otros «Sin Texto» (R2)
+        p = prov.resolver(con, co.tercero) if con is not None and not elegir else None
         iso = f.isocalendar(); semana = f"{iso[0]}-W{iso[1]:02d}"
         hecho = documento_de(con, co.dia, co.id) if con is not None else ""
-        llave = (("p", p.id) if p else ("t", prov.normalizar(co.tercero)), semana, hecho)
+        quien = ("p", p.id) if p else ("c", co.dia, co.id) if elegir else ("t", prov.normalizar(co.tercero))
+        llave = (quien, semana, hecho)
         g = grupos.get(llave)
         if g is None:
             lunes = f - timedelta(days=f.weekday())
@@ -131,7 +134,7 @@ def semanas(libro: dict, con: sqlite3.Connection | None = None, cfg: dict | None
             est, n = estado(hoy, lim, c["aviso_dias"], c["festivos"])
             g = grupos[llave] = Grupo(p, p.nombre if p else co.tercero, semana, lunes.isoformat(),
                                       (lunes + timedelta(days=6)).isoformat(), fecha_limite=lim.isoformat(), estado=est, dias_restantes=n,
-                                      documentado=hecho)
+                                      documentado=hecho, elegir=elegir)
         g.compras.append(co); g.total += co.valor
     orden = {VENCIDA: 0, VENCE_PRONTO: 1, EN_PLAZO: 2}
     return sorted(grupos.values(), key=lambda g: (orden[g.estado], g.fecha_limite, g.tercero))

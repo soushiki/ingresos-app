@@ -387,7 +387,7 @@ def _doc_json(d) -> dict:
 def _grupo_json(g) -> dict:
     return dict(documentado=g.documentado or None, proveedor_id=g.proveedor.id if g.proveedor else None, tercero=g.tercero, semana=g.semana, lunes=g.lunes, domingo=g.domingo,
                 total=g.total, fecha_limite=g.fecha_limite, estado=g.estado, dias_restantes=g.dias_restantes, registrado=g.proveedor is not None,
-                compras=[asdict(c) for c in g.compras])
+                elegir=g.elegir, compras=[asdict(c) for c in g.compras])
 
 
 def _documentos(con, ids: list[int] | None = None) -> list:

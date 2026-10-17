@@ -148,6 +148,10 @@ chk(g38[0].lunes == "2026-09-14" and g38[0].domingo == "2026-09-20", "R3: la sem
 chk(sum(len(g.compras) for g in gs) == 4, "R10: duplicados, valor 0 y gastos de caja no entran como compras")
 sin = sop.semanas(lib(fac("a", "2026-09-14", 100, "Tienda X"), fac("b", "2026-09-15", 200, "Tienda Y")), con, hoy=date(2026, 9, 10))
 chk(len(sin) == 2 and all(g.proveedor is None for g in sin), "R1: terceros sin registrar quedan en grupos aparte, sin proveedor")
+enc2 = sop.semanas(lib(fac("a", "2026-09-14", 100, "Sin Texto"), fac("b", "2026-09-15", 200, "SIN TEXTO"), fac("c", "2026-09-15", 300, "")), con, hoy=date(2026, 9, 10))
+chk(len(enc2) == 3 and all(g.proveedor is None and g.elegir and len(g.compras) == 1 for g in enc2),
+    f"FIX-8/R2: cada compra con tercero ilegible («Sin Texto», vacío) queda en su grupo «elegir proveedor»: {[(g.tercero, g.total, g.elegir) for g in enc2]}")
+chk(not any(g.elegir for g in sin), "FIX-8: un tercero legible sin registrar no se marca «elegir»")
 chk(len(sop.semanas(L, con, hoy=date(2026, 9, 10), desde="2026-09-21")) == 1, "el filtro desde/hasta recorta las compras")
 
 # plazos: semana del 14 al 20 de sep 2026; el viernes es el 18
