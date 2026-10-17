@@ -97,6 +97,15 @@ chk(rs.status_code == 200 and [d["id"] for d in gl.get("documentos", [])] == ["s
     f"día con solo una factura sin valor → se guarda con su pendiente ({rs.status_code})")
 rv = appmod.app.test_client().post("/api/contable/libro", json={"fecha": "2026-09-15", "documentos": []})
 chk(rv.status_code == 400, "día sin papeles ni pendientes → sigue rechazado")
+# FIX-6 (R9): el export recalcula; si un día ya no da lo que se confirmó, AVISOS lo dice con las dos cifras
+def avisos_export():
+    from openpyxl import load_workbook as lw
+    w = lw(io.BytesIO(appmod.app.test_client().get("/api/contable/excel").data))
+    return [str(c.value or "") for c in w["AVISOS"]["A"]] if "AVISOS" in w.sheetnames else []
+chk(not any("cambió" in a for a in avisos_export()), "día recalculado igual a lo confirmado → sin aviso de cambio")
+lib_ = appmod._leer_libro(); lib_["2026-09-14"]["debito"] = 999; appmod._guardar_libro(lib_)
+av6 = [a for a in avisos_export() if "cambió" in a]
+chk(len(av6) == 1 and "2026-09-14" in av6[0] and "999" in av6[0], f"día que cambió desde que se confirmó → aviso con lo guardado y lo de hoy: {av6}")
 dias = [r, r3, r4, r5, r6, r7]
 contados = [d["id"] for x in dias for d in x["documentos"] if d.get("contar") and d["tipo"] != "cierre"]
 en_libro = {p["id"] for x in dias for p in x["pendientes"]} | {i for x in dias for f_ in x["filas"] for i in f_["docs"]}

@@ -343,7 +343,10 @@ def cont_excel():
     c = _cont_cfg()
     rs = {k: construir_asientos(k, v.get("documentos", []), v.get("banco", {}), c, v.get("cierre")) for k, v in lib.items()}   # R9/ADR-002: filas y DATOS OCR del mismo cálculo
     dias, datos = {k: r["filas"] for k, r in rs.items()}, {k: r["datos"] for k, r in rs.items()}
-    return send_file(io.BytesIO(libro_a_excel(dias, c.get("negocio", ""), c.get("nit", ""), datos)), mimetype=XLSX, as_attachment=True,
+    cambios = [f"{k}: cambió desde que se confirmó ({lib[k].get('guardado', 's/f')}): guardado débito {lib[k].get('debito', 0):,} · crédito {lib[k].get('credito', 0):,}; "
+               f"hoy débito {r['debito']:,} · crédito {r['credito']:,}. Revisa el día o vuelve a confirmarlo".replace(",", ".")
+               for k, r in sorted(rs.items()) if (lib[k].get("debito"), lib[k].get("credito")) != (r["debito"], r["credito"])]   # FIX-6: se recalcula con la config de hoy
+    return send_file(io.BytesIO(libro_a_excel(dias, c.get("negocio", ""), c.get("nit", ""), datos, cambios)), mimetype=XLSX, as_attachment=True,
                      download_name=f"reporte_contable_{datetime.now():%Y%m%d}.xlsx")
 
 

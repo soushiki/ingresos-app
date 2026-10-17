@@ -69,12 +69,13 @@ def hoja_datos(wb, datos: dict) -> dict:
     return inicio
 
 
-def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | None = None) -> bytes:
+def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | None = None, avisos: list | None = None) -> bytes:
     """dias: {'2026-09-12': [fila, …]} con filas de asientos.construir(); datos: {'2026-09-12': construir()['datos']} para la hoja DATOS OCR.
-    Con datos, cada importe es una fórmula sobre DATOS OCR (ADR-002); filas y datos de un día deben salir del mismo construir()."""
+    Con datos, cada importe es una fórmula sobre DATOS OCR (ADR-002); filas y datos de un día deben salir del mismo construir().
+    avisos: líneas extra para la hoja AVISOS (p. ej. días que cambiaron desde que se confirmaron)."""
     wb = Workbook(); wb.remove(wb.active)
     inicio = hoja_datos(wb, datos) if datos else {}
-    por_mes, avisos = defaultdict(list), []
+    por_mes, avisos = defaultdict(list), list(avisos or [])
     for f in sorted(dias):
         for j, x in enumerate(dias[f]):   # R10: una fila sin código de cuenta no entra a MOVIMIENTOS; se avisa
             if str(x.get("codigo") or "").strip(): por_mes[f[:7]].append(dict(x, _j=j))
