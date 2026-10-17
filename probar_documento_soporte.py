@@ -604,4 +604,25 @@ chk(r.status_code == 200 and (r2.get_json().get("documento") or {}).get("numero"
 xl = load_workbook(io.BytesIO(cl.get("/api/soporte/excel").data))
 chk({"NA-1", "NA-2", "CTG-1"} <= set(xl.sheetnames), f"GET excel trae las notas: {xl.sheetnames}")
 
+# ── T17 · rendimiento (N4): 50 documentos ≤2 s, Excel soporte ≤2 s, Excel del libro de un mes ≤5 s ──
+import time, shutil
+c17 = sdb.abrir(tmp / "rend.db")
+for i in range(25): prov.guardar(c17, {"tipo_id": "CC", "num_id": f"10470{i:05d}", "nombre": f"Proveedor {i}", "direccion": f"Calle {i}", "municipio": "Cartagena"})
+L17 = {}
+for dd in range(14, 28):   # 2 semanas (W38, W39) × 25 proveedores = 50 grupos; los días pares compran todos, los impares uno de cada tres
+    f = f"2026-09-{dd}"
+    L17[f] = {"fecha": f, "documentos": [fac(f"{i}-{dd}", f, 1000 + i, f"Proveedor {i}") for i in range(25) if dd % 2 == 0 or i % 3 == 0]}
+t0 = time.perf_counter(); g17 = sop.semanas(L17, c17, hoy=date(2026, 9, 15)); d17 = sop.generar(c17, g17, confirmar_vencidos=True, hoy=date(2026, 9, 15)); t_gen = time.perf_counter() - t0
+chk(len(d17) == 50 and t_gen <= 2, f"N4: 50 documentos ({sum(len(g.compras) for g in g17)} compras) agrupados y generados en {t_gen:.2f} s (≤2 s)")
+t0 = time.perf_counter(); x17 = sxl.libro(sop.documentos(c17)); t_xs = time.perf_counter() - t0
+chk(len(load_workbook(io.BytesIO(x17)).sheetnames) == 51 and t_xs <= 2, f"N4: Excel soporte de 50 documentos en {t_xs:.2f} s (≤2 s)")
+c17.close()
+REAL = Path(__file__).parent / "datos" / "libro.json"
+if REAL.exists():
+    web.RUTA_LIBRO = T12 / "libro_real.json"; shutil.copy(REAL, web.RUTA_LIBRO)   # copia: la prueba no toca los datos del usuario
+    dias17 = json.loads(REAL.read_text(encoding="utf8")); mes = max(k[:7] for k in dias17); nd = sum(k.startswith(mes) for k in dias17)
+    t0 = time.perf_counter(); r = cl.get(f"/api/contable/excel?desde={mes}-01&hasta={mes}-31"); t_mes = time.perf_counter() - t0
+    chk(r.status_code == 200 and t_mes <= 5, f"N4: Excel del libro de {mes} ({nd} días reales: construir + DATOS OCR + fórmulas) en {t_mes:.2f} s (≤5 s)")
+else: print("· N4: sin datos/libro.json, se omite el Excel del libro de un mes")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
