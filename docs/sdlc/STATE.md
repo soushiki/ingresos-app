@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 7-release   # v1.0.0 preparada; falta: smokes it. 1–4 (usuario) → ok → commit docs, merge a main, tag, push
+next: 8-maintain   # v1.0.0 publicada; abiertos: 2 menores del crudo (valor negativo a mano, id repetido)
 
 ## Stages
 - [x] 0-triage
@@ -15,7 +15,7 @@ next: 7-release   # v1.0.0 preparada; falta: smokes it. 1–4 (usuario) → ok �
 - [x] 4-plan
 - [x] 5-implement      current task: —
 - [x] 6-test           (iter. 1–4 pasan; smokes pendientes, usuario)
-- [ ] 7-release      (runbook + CHANGELOG + VERSION listos; deploy bloqueado por smokes)
+- [x] 7-release      (v1.0.0, 2026-10-17)
 - [~] 8-maintain
 
 (Mark skipped stages `- [~]`.)
@@ -91,3 +91,4 @@ next: 7-release   # v1.0.0 preparada; falta: smokes it. 1–4 (usuario) → ok �
 2026-10-17 | 5-implement | FIX-14: MAX_TEXTO 5.000 → 20.000 (texto de 6.000 entra); RecursionError de json.loads → CrudoInvalido (anidado 100.000 niveles → 400 sin escribir); ADR-004 anotado; 2 checks; suites verdes → 6-test
 2026-10-17 | 6-test | Re-test iter. 4: pasa; FIX-13/14 cerrados, suite verde, 30 días reales + día con faltante van y vuelven; sin defectos nuevos → 7-release (smokes it. 1–4 pendientes)
 2026-10-17 | 7-release | v1.0.0 preparada: runbook 07-release.md, CHANGELOG.md, VERSION; pre-flight verde (8/8, sin secretos, debug off, 127.0.0.1). Merge/tag/push esperan smokes y ok del usuario
+2026-10-17 | 7-release | v1.0.0 publicada: smokes it. 1–4 ok (usuario); main = 3c7e316, tag v1.0.0, push. 01b/01c fuera del repo público (cifras reales)

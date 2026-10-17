@@ -36,4 +36,4 @@ la pestaña ③ muestra las mismas semanas que antes de actualizar.
 **Monitoreo RED**: no aplica (un usuario, local). La línea base de rendimiento son los checks N4 (T17).
 
 ## Releases
-2026-10-17 | v1.0.0 | Preparada: suite verde (8/8), sin secretos en main..HEAD, debug off, solo 127.0.0.1, errores sin traceback. Sin cabeceras de seguridad (aceptado: local; Host/Origin revisados). **Bloqueada** por los smokes it. 1–4 (usuario) y el ok para merge/tag/push.
+2026-10-17 | v1.0.0 | **Publicada**: smokes it. 1–4 pasan (usuario); suite 8/8, sin secretos ni IDs reales en ba14629..3c7e316 (solo IDs de prueba), debug off, solo 127.0.0.1. main fast-forward a 3c7e316, tag v1.0.0, push a origin. Fuera del repo (público): 01b/01c (cifras reales) y .claude/. Sin cabeceras de seguridad (aceptado: local, Host/Origin revisados). Actualizar los PC: runbook «Actualizar un PC».
