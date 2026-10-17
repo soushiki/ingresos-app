@@ -136,7 +136,11 @@ con.close()
 con = sdb.abrir(tmp / "semanas.db")
 pc = prov.guardar(con, {"tipo_id": "CC", "num_id": "1047000111", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
 def fac(i, f, v, t="Carlos Cordero", **k): return {"id": i, "tipo": "factura", "fecha": f, "valor": v, "tercero": t, "contar": True, "origen": f"p{i}", **k}
-def lib(*ds): return {"x": {"fecha": "2026-09-01", "documentos": list(ds)}}
+def lib(*ds):
+    """Un día del libro por fecha de compra (la fecha del papel coincide con la del día)."""
+    out = {}
+    for d in ds: out.setdefault(d["fecha"], {"fecha": d["fecha"], "documentos": []})["documentos"].append(d)
+    return out
 L = lib(fac("a", "2026-09-14", 10000), fac("b", "2026-09-16", 25000, "CARLOS  cordero"), fac("c", "2026-09-20", 5000),
         fac("d", "2026-09-21", 7000), fac("z", "2026-09-15", 0), fac("v", "2026-09-15", 900, "Otro", dup_de="a"),
         {"id": "g", "tipo": "gasto_caja", "fecha": "2026-09-15", "valor": 999, "tercero": "Caja"})
@@ -153,6 +157,19 @@ chk(len(enc2) == 3 and all(g.proveedor is None and g.elegir and len(g.compras) =
     f"FIX-8/R2: cada compra con tercero ilegible («Sin Texto», vacío) queda en su grupo «elegir proveedor»: {[(g.tercero, g.total, g.elegir) for g in enc2]}")
 chk(not any(g.elegir for g in sin), "FIX-8: un tercero legible sin registrar no se marca «elegir»")
 chk(len(sop.semanas(L, con, hoy=date(2026, 9, 10), desde="2026-09-21")) == 1, "el filtro desde/hasta recorta las compras")
+# FIX-9 · fecha OCR dudosa: a más de `tolerancia_fecha_dias` del día → la del día, con aviso (R6, R10)
+mala = sop.semanas({"2026-09-18": {"fecha": "2026-09-18", "documentos": [fac("m", "2018-09-26", 4000), fac("k", "2026-09-16", 1000)]}}, con, hoy=date(2026, 9, 14))
+chk(len(mala) == 1 and mala[0].semana == "2026-W38" and [c.fecha for c in mala[0].compras] == ["2026-09-18", "2026-09-16"],
+    f"FIX-9: papel 2018-09-26 en el día 2026-09-18 → cae en 2026-W38 con la fecha del día; la de 2 días de diferencia se respeta: {[(g.semana, [c.fecha for c in g.compras]) for g in mala]}")
+chk(len(mala[0].avisos) == 1 and "2018-09-26" in mala[0].avisos[0] and "2026-09-18" in mala[0].avisos[0] and mala[0].compras[0].fecha_papel == "2018-09-26",
+    f"FIX-9: el grupo avisa con las dos fechas: {mala[0].avisos}")
+ocho = {"2026-09-18": {"fecha": "2026-09-18", "documentos": [fac("o", "2026-09-10", 1000)]}}
+chk(sop.semanas(ocho, con, hoy=date(2026, 9, 14))[0].compras[0].fecha == "2026-09-18", "FIX-9: 8 días de diferencia > 7 (default) → fecha del día")
+chk(sop.semanas(ocho, con, {"tolerancia_fecha_dias": 10}, hoy=date(2026, 9, 14))[0].compras[0].fecha == "2026-09-10"
+    and not sop.semanas(ocho, con, {"tolerancia_fecha_dias": 10}, hoy=date(2026, 9, 14))[0].avisos, "FIX-9: tolerancia_fecha_dias configurable (10 → se respeta la del papel, sin aviso)")
+try: sop.config({"tolerancia_fecha_dias": -1}); malo = False
+except ValueError: malo = True
+chk(malo, "FIX-9: tolerancia_fecha_dias negativa → error claro")
 
 # plazos: semana del 14 al 20 de sep 2026; el viernes es el 18
 chk(sop.fecha_limite(date(2026, 9, 16), "misma_semana", set()) == date(2026, 9, 18), "R6: sin festivos el límite es el viernes de la semana")

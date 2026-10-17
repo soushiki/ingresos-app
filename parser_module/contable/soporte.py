@@ -6,6 +6,8 @@ Fuentes de los valores (docs/sdlc/03-design.md sección 6):
   DUR 1625/2016 art. 1.6.1.4.12; Res. 227/2025 sin verificar). `semana_siguiente`: el de la semana siguiente.
 - Días hábiles: lunes a viernes menos los festivos de Colombia (Ley 51/1983) que el usuario lista en `festivos`.
 - `aviso_dias`: días hábiles antes del límite en que la semana pasa a «vence_pronto» (interno).
+- `tolerancia_fecha_dias`: si la fecha leída del papel está a más de estos días del día del libro, el OCR la leyó mal
+  (año o mes cambiado): la compra usa la fecha del día y el grupo avisa con las dos (interno, decisión del usuario FIX-9).
 - Numeración (`generar`): consecutivo del rango DS autorizado, sin repetir ni reutilizar (Res. 167/2021 art. 4 y 5; ADR-003).
 """
 from __future__ import annotations
@@ -15,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from parser_module.contable import proveedores as prov, soporte_db as sdb
 
-DEFECTO = {"regla_plazo": "misma_semana", "aviso_dias": 2, "festivos": []}
+DEFECTO = {"regla_plazo": "misma_semana", "aviso_dias": 2, "tolerancia_fecha_dias": 7, "festivos": []}
 REGLAS = ("misma_semana", "semana_siguiente")
 EN_PLAZO, VENCE_PRONTO, VENCIDA = "en_plazo", "vence_pronto", "vencida"
 
@@ -30,6 +32,7 @@ class Compra:
     numero: str = ""
     dia: str = ""        # llave del día en libro.json (origen_fecha de la línea, N2)
     descripcion: str = ""
+    fecha_papel: str = ""  # la fecha leída del papel cuando se descartó por dudosa (FIX-9); "" si es la misma `fecha`
 
 
 @dataclass
@@ -46,6 +49,7 @@ class Grupo:
     dias_restantes: int = 0            # días hábiles que faltan hasta el límite (<0 si ya venció)
     documentado: str = ""              # «CTG-1» si estas compras ya están en ese documento no anulado (R3)
     elegir: bool = False               # el tercero leído es un rótulo («Sin Texto») o está vacío: una compra por grupo (R2)
+    avisos: list[str] = field(default_factory=list)   # fechas del papel descartadas por dudosas (FIX-9)
 
 
 def config(c: dict | None) -> dict:
@@ -53,6 +57,8 @@ def config(c: dict | None) -> dict:
     c = {**DEFECTO, **{k: v for k, v in (c or {}).items() if k in DEFECTO}}
     if c["regla_plazo"] not in REGLAS: raise ValueError(f"regla_plazo debe ser una de {REGLAS}, no {c['regla_plazo']!r}")
     if not isinstance(c["aviso_dias"], int) or c["aviso_dias"] < 0: raise ValueError("aviso_dias debe ser un entero >= 0")
+    t = c["tolerancia_fecha_dias"]
+    if not isinstance(t, int) or isinstance(t, bool) or t < 0: raise ValueError("tolerancia_fecha_dias debe ser un entero >= 0")
     c["festivos"] = {date.fromisoformat(f) for f in c["festivos"]}
     return c
 
@@ -86,18 +92,30 @@ def estado(hoy: date, limite: date, aviso_dias: int, festivos) -> tuple[str, int
     return (VENCE_PRONTO if n <= aviso_dias else EN_PLAZO), n
 
 
-def compras_del_libro(libro: dict) -> list[Compra]:
-    """Las facturas de compra con fecha y valor. Las duplicadas, las que no cuentan y las de valor 0 se saltan."""
+def _fecha(s) -> date | None:
+    try: return date.fromisoformat(s or "")
+    except (TypeError, ValueError): return None
+
+
+def compras_del_libro(libro: dict, tolerancia_fecha_dias: int = DEFECTO["tolerancia_fecha_dias"]) -> list[Compra]:
+    """Las facturas de compra con fecha y valor. Las duplicadas, las que no cuentan y las de valor 0 se saltan.
+
+    Si la fecha del papel está a más de `tolerancia_fecha_dias` del día del libro, se usa la del día (FIX-9).
+    """
     out = []
     for k, dia in libro.items():
+        del_dia = _fecha(dia.get("fecha") or k)
         for d in dia.get("documentos", []):
             if d.get("tipo") != "factura" or not d.get("contar", True) or d.get("dup_de"): continue
-            try: fecha = date.fromisoformat(d.get("fecha") or dia.get("fecha") or "")
-            except ValueError: continue
+            fecha, papel = _fecha(d.get("fecha")), ""
+            if fecha and del_dia and abs((fecha - del_dia).days) > tolerancia_fecha_dias: fecha, papel = del_dia, d["fecha"]
+            if fecha is None and d.get("fecha") and del_dia: papel = str(d["fecha"])   # ilegible: también se avisa
+            fecha = fecha or del_dia
+            if fecha is None: continue
             valor = int(d.get("valor") or 0)
             if valor > 0:
                 out.append(Compra(d["id"], fecha.isoformat(), valor, (d.get("tercero") or "").strip(), d.get("origen", ""), d.get("numero", ""),
-                                  dia.get("fecha") or k, (d.get("descripcion") or "").strip()))
+                                  dia.get("fecha") or k, (d.get("descripcion") or "").strip(), papel))
     return out
 
 
@@ -118,7 +136,7 @@ def semanas(libro: dict, con: sqlite3.Connection | None = None, cfg: dict | None
     c = config(cfg)
     hoy = hoy or date.today()
     grupos: dict[tuple, Grupo] = {}
-    for co in compras_del_libro(libro):
+    for co in compras_del_libro(libro, c["tolerancia_fecha_dias"]):
         if (desde and co.fecha < desde) or (hasta and co.fecha > hasta): continue
         f = date.fromisoformat(co.fecha)
         elegir = prov.es_encabezado(co.tercero)   # «Sin Texto» no es un proveedor: no se suma con otros «Sin Texto» (R2)
@@ -136,6 +154,7 @@ def semanas(libro: dict, con: sqlite3.Connection | None = None, cfg: dict | None
                                       (lunes + timedelta(days=6)).isoformat(), fecha_limite=lim.isoformat(), estado=est, dias_restantes=n,
                                       documentado=hecho, elegir=elegir)
         g.compras.append(co); g.total += co.valor
+        if co.fecha_papel: g.avisos.append(f"{co.origen or co.id}: el papel dice {co.fecha_papel}; se usa la fecha del día {co.fecha}")
     orden = {VENCIDA: 0, VENCE_PRONTO: 1, EN_PLAZO: 2}
     return sorted(grupos.values(), key=lambda g: (orden[g.estado], g.fecha_limite, g.tercero))
 
