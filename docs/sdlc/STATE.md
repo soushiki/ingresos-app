@@ -1,0 +1,58 @@
+# SDLC state
+
+project: ingresos_app · documento soporte
+goal: Desde los gastos que la app ya registra, preparar los documentos soporte de compras a proveedores no obligados a facturar, acumulados por proveedor y semana, listos para que contabilidad los revise y los transmita a la DIAN.
+size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
+exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
+regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
+next: 5-implement   # iter. 2: T8 (proveedores.py); smoke en Excel pendiente (usuario)
+
+## Stages
+- [x] 0-triage
+- [x] 1-research   (light: requisitos del documento soporte y cómo lo emite Vendty o la solución gratuita DIAN)
+- [x] 2-requirements   (gate: user approval)
+- [x] 3-design         (gate: user approval)
+- [x] 4-plan
+- [ ] 5-implement      current task: T8 (iter. 2)
+- [ ] 6-test           (iter. 1: pasa tras FIX-1…6; smoke en Excel pendiente)
+- [ ] 7-release
+- [~] 8-maintain
+
+(Mark skipped stages `- [~]`.)
+
+## Decisiones de triage (confirmadas 2026-10-16)
+- Alternativa más barata: llenar a mano el modelo Excel de Actualícese (VA23) o usar la solución gratuita de la DIAN. La app se justifica porque ya tiene los gastos, terceros y valores: evita volver a digitar.
+- Alcance propuesto: la app arma y numera los documentos (Excel por proveedor-semana + resumen); NO firma ni transmite a la DIAN.
+- Proveedor «no obligado»: marca por tercero con su cédula/NIT y datos, guardada una vez y reutilizada.
+
+## Insumos para requisitos (usuario, 2026-10-16)
+- Emisión: solución gratuita DIAN (transcripción manual desde el Excel de la app).
+- Numeración DIAN: prefijo CTG, rango 1–10000. Vigencia: se asume vigente hasta nuevo aviso (autorización a 2 años; sin fecha en la app).
+- Nota de ajuste: la app también la prepara (con número propio, sin reutilizar el original). No transmite.
+- Reporte contable manual corregido y analizado → `01b-reporte-contable.md` (cuadra; formato de columnas MOVIMIENTOS = referencia de exportación).
+- App vs manual (sept.) → `01c-app-vs-manual.md`: app capta 64 % de ingresos, ~4 % de gastos, 10 % de compras; 9 cambios priorizados. Decidir en requisitos qué entra antes del documento soporte.
+- Pedido del usuario: el Excel trae una hoja «DATOS OCR» (una fila por papel leído, con archivo de origen, estado y aviso) y MOVIMIENTOS se calcula desde ella con fórmulas, así lo mal leído o faltante se ve y se corrige a mano. Nota para diseño: preferir fórmulas (SUMIFS por día/medio/cuenta) a macros (.xlsm, bloqueadas por seguridad); openpyxl escribe fórmulas y Excel calcula al abrir.
+
+## Log
+<!-- YYYY-MM-DD | stage | one-line result -->
+2026-10-16 | 0-triage | Tamaño M, exposed no, regulated yes; alcance: preparar, no transmitir. Confirmado por el usuario.
+2026-10-16 | 1-research | Salida Excel propio + contador de numeración local; sin carga masiva DIAN confirmada; 7 riesgos → 01-research.md
+2026-10-16 | 2-requirements | Aprobado: R1–R10 (R9 DATOS OCR y R10 cuenta puente van primero), semana lun–dom, nota de ajuste con contador aparte → 02-requirements.md
+2026-10-16 | 3-design | Aprobado: fase A (DATOS OCR+puente) luego B (soporte en SQLite, numeración reservada); plazo configurable, default misma semana → 03-design.md, adr/001-003
+2026-10-16 | 4-plan | 3 iteraciones, 17 tareas (≈19–20 h): A (R10, R9) → B de punta a punta → ciclo de vida → 04-plan.md
+2026-10-16 | 5-implement | T1: tope de propina+domicilio al efectivo probado (check nuevo en probar_contable.py); suites verdes
+2026-10-16 | 5-implement | T2: cuentas puente (venta sin medio, gasto sin cuenta) + pendientes; filas con `docs`; 5 checks nuevos. probar_pdf.py ya fallaba antes (cierre en papel)
+2026-10-16 | 5-implement | T3: guarda de exportación; fila sin código → 0 en MOVIMIENTOS + hoja AVISOS; 2 checks nuevos
+2026-10-16 | 5-implement | T4: spike ADR-002 confirmado; 30 días/408 asientos con fórmula = construir(); DATOS OCR pasa a 1 fila por papel y medio. Falta abrirlo en Excel
+2026-10-16 | 5-implement | T5: hoja DATOS OCR (asientos.datos_ocr, primera hoja del export); 921 papeles reales → todos con fila (68 ventas ilegibles como «pendiente»); probar_datos_ocr.py 13 checks
+2026-10-16 | 5-implement | T6: MOVIMIENTOS con fórmulas (SUMIFS/ref/MIN) hacia DATOS OCR; 8 checks nuevos; 30 días reales evaluados = construir(). Iteración 1 completa → 6-test
+2026-10-16 | 6-test | Iter. 1 no pasa todavía: suites verdes (probar_pdf ya fallaba antes), la revisión da 4 defectos R9/R10 + 1 decisión + 1 DEBT → FIX-1…6 en 04-plan; smoke en Excel pendiente → 06-test-report.md
+2026-10-16 | 5-implement | FIX-1: día con solo pendientes (facturas sin valor) se guarda; libro guarda `pendientes`; botón Confirmar ya no lo bloquea; 2 checks nuevos
+2026-10-16 | 5-implement | FIX-2: filas «dato» (factura, extracto, Rappi) = IF(estado="ok"; valor; 0); evaluador del test con IF y «=»; 2 checks nuevos
+2026-10-16 | 5-implement | FIX-3: caja menor agrupa por cuenta efectiva (sin cuenta = puente_gasto) → 1 fila, 1 SUMIFS; 2 checks nuevos; débito = crédito en Excel
+2026-10-16 | 5-implement | FIX-4: efectivo 0 con propina/domicilio en efectivo → aviso con las cifras (sin filas de caja; la fila de DATOS OCR queda); 1 check nuevo
+2026-10-17 | 5-implement | FIX-5: test desactualizado (la venta sola ya da 5 filas); el check ahora exige filas con cierre = filas sin cierre; todas las suites verdes
+2026-10-17 | 5-implement | FIX-6: el usuario eligió recalcular + avisar; AVISOS lista los días cuyo débito/crédito cambió desde que se confirmaron; 2 checks nuevos; suites verdes
+2026-10-17 | 6-test | Re-test iter. 1: pasa; suite completa verde (probar_pdf incluido), revisión de FIX-1…6 sin defectos nuevos; smoke en Excel pendiente (usuario); DEBT-1 abierto → 06-test-report.md
+2026-10-17 | 5-implement | DEBT-1: construir() arma las filas desde DATOS OCR (una sola clasificación); salida idéntica en 60 días-variante reales; 2 checks nuevos; suites verdes
+2026-10-17 | 5-implement | T7: soporte_db.py (esquema 03 §4, user_version, semilla DS CTG 1–10000, reservar_numero en BEGIN IMMEDIATE); 16 checks en probar_documento_soporte.py; suites verdes
