@@ -258,4 +258,54 @@ det = [f for f in filas if f[0] in ("2026-09-14", "2026-09-16", "2026-09-20")]
 chk(len(det) == 3 and sum(f[2] for f in det) == 40000 and filas[-2][1:3] == ("IVA", 0) and filas[-1][1:3] == ("Total", 40000),
     f"art. 4: detalle de la operación (3 líneas con papel de origen), IVA y total: {filas[-2:]}")
 
+
+# ── T12 · rutas /api/soporte/* y /api/proveedores ───────────────────────────
+import json, app as web
+T12 = Path(tempfile.mkdtemp())
+web.RUTA_SOPORTE, web.RUTA_LIBRO, web.RUTA_CONT = T12 / "soporte.db", T12 / "libro.json", T12 / "contable.json"
+web.RUTA_LIBRO.write_text(json.dumps({"2026-09-14": {"fecha": "2026-09-14", "documentos": [
+    {"id": "f1", "tipo": "factura", "fecha": "2026-09-14", "valor": 12000, "tercero": "Carlos Cordero", "origen": "foto1.jpg"},
+    {"id": "f2", "tipo": "factura", "fecha": "2026-09-15", "valor": 8000, "tercero": "Carlos Cordero", "origen": "foto2.jpg"}]}}), encoding="utf8")
+cl = web.app.test_client()
+AJENO = {"Origin": "http://evil.example.com"}
+r = cl.post("/api/proveedores", json=BASE, headers=AJENO)
+chk(r.status_code == 403, f"T1: POST con Origin ajeno a /api/proveedores → 403 ({r.status_code})")
+r = cl.post("/api/soporte/generar", json={"semanas": []}, headers=AJENO)
+chk(r.status_code == 403, f"T1: POST con Origin ajeno a /api/soporte/generar → 403 ({r.status_code})")
+r = cl.post("/api/proveedores", json=BASE, headers={"Host": "evil.example.com"})
+chk(r.status_code == 403, f"T1: POST con Host ajeno (DNS rebinding) → 403 ({r.status_code})")
+c0 = sdb.abrir(web.RUTA_SOPORTE)
+chk(c0.execute("SELECT count(*) FROM proveedor").fetchone()[0] == 0 and c0.execute("SELECT ultimo FROM rango").fetchone()[0] == 0,
+    "T1: los POST rechazados no escribieron nada"); c0.close()
+LOC = {"Origin": "http://localhost"}
+r = cl.post("/api/proveedores", json={**BASE, "direccion": ""}, headers=LOC)
+chk(r.status_code == 400 and "dirección" in r.get_json()["error"], f"R1: proveedor sin dirección → 400 con el motivo: {r.get_json()}")
+r = cl.post("/api/proveedores", json={**BASE, "alias_ocr": "Carlos Cordero"}, headers=LOC)
+pid = r.get_json()["proveedor"]["id"] if r.status_code == 200 else None
+chk(r.status_code == 200 and pid, f"flujo feliz: guardar proveedor → 200 (id {pid})")
+chk([p["nombre"] for p in cl.get("/api/proveedores").get_json()["proveedores"]] == ["Carlos Cordero"], "GET /api/proveedores lista el guardado")
+r = cl.get("/api/soporte/semanas")
+sm = r.get_json()["semanas"] if r.status_code == 200 else []
+chk(len(sm) == 1 and sm[0]["total"] == 20000 and sm[0]["registrado"] and sm[0]["proveedor_id"] == pid and len(sm[0]["compras"]) == 2,
+    f"GET /api/soporte/semanas: 1 grupo de 20000 con 2 compras: {[(x['semana'], x['total']) for x in sm]}")
+chk(cl.get("/api/soporte/semanas?desde=mal").status_code == 400, "semanas: fecha mal escrita → 400")
+sel = {"semana": sm[0]["semana"], "proveedor_id": pid}
+r = cl.post("/api/soporte/generar", json={"semanas": [sel]}, headers=LOC)
+chk(r.status_code == 409 and "R6" in r.get_json()["error"], f"R6: semana vencida sin confirmar → 409: {r.get_json()}")
+r = cl.post("/api/soporte/generar", json={"semanas": [{"semana": "2020-W01", "proveedor_id": pid}]}, headers=LOC)
+chk(r.status_code == 400, "semana que no existe → 400")
+r = cl.post("/api/soporte/generar", json={"semanas": [sel], "confirmar_vencidos": True}, headers=LOC)
+dj = r.get_json()["documentos"] if r.status_code == 200 else []
+chk(r.status_code == 200 and len(dj) == 1 and dj[0]["numero"] == "CTG-1" and dj[0]["total"] == 20000, f"flujo feliz: generar → 200, CTG-1 por 20000: {dj and dj[0]['numero']}")
+r = cl.post("/api/soporte/generar", json={"semanas": [sel], "confirmar_vencidos": True}, headers=LOC)
+c0 = sdb.abrir(web.RUTA_SOPORTE)
+chk(r.status_code == 409 and c0.execute("SELECT count(*) FROM documento").fetchone()[0] == 1 and c0.execute("SELECT ultimo FROM rango").fetchone()[0] == 1,
+    f"R3: generar otra vez no duplica ni gasta número ({r.status_code}): {r.get_json()}"); c0.close()
+r = cl.get("/api/soporte/excel")
+wb = load_workbook(io.BytesIO(r.data)) if r.status_code == 200 else None
+rs = [tuple(c.value for c in f) for f in wb["RESUMEN"].iter_rows()] if wb else []
+chk(r.status_code == 200 and wb.sheetnames == ["RESUMEN", "CTG-1"] and rs[1][0] == "CTG-1" and rs[1][4] and rs[1][3] == 20000,
+    f"GET /api/soporte/excel → 200, hojas RESUMEN y CTG-1, con fecha límite recalculada: {rs[1:]}")
+chk(cl.get("/api/soporte/excel?ids=999").status_code == 404 and cl.get("/api/soporte/excel?ids=x").status_code == 400, "excel: ids sin documentos → 404, mal escritos → 400")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

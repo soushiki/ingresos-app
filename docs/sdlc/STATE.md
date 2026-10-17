@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # iter. 2: T12 (rutas API); smoke en Excel pendiente (usuario)
+next: 5-implement   # iter. 2: T13 (pestaña Documento soporte); smoke en Excel pendiente (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # iter. 2: T12 (rutas API); smoke en Excel pendiente (usuari
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: T12 (iter. 2)
+- [ ] 5-implement      current task: T13 (iter. 2)
 - [ ] 6-test           (iter. 1: pasa tras FIX-1…6; smoke en Excel pendiente)
 - [ ] 7-release
 - [~] 8-maintain
@@ -60,3 +60,4 @@ next: 5-implement   # iter. 2: T12 (rutas API); smoke en Excel pendiente (usuari
 2026-10-17 | 5-implement | T9: soporte.py (semanas por proveedor y semana ISO, fecha_limite con festivos, estados en_plazo/vence_pronto/vencida; terceros sin registrar aparte); 18 checks; suites verdes
 2026-10-17 | 5-implement | T10: soporte.generar en un BEGIN IMMEDIATE (todo o nada); rechaza proveedor sin registrar, compra ya documentada y vencida sin confirmar; linea con copia fija y origen; 13 checks; suites verdes. fecha_limite no se guarda en BD (T11 la toma de los grupos)
 2026-10-17 | 5-implement | T11: soporte_excel.libro (RESUMEN + una hoja por documento con campos art. 4); Sonnet no escribió los checks → reintento Opus añadió 4; suites verdes. Ojo T12: docs leídos de BD traen fecha_limite None (recalcular con soporte.fecha_limite)
+2026-10-17 | 5-implement | T12: rutas soporte/semanas, generar, excel y proveedores; before_request 403 a POST con Host/Origin no locales (toda la app); config de contable.json; excel recalcula fecha_limite; 17 checks; suites verdes. Abierto: semanas lista también las ya documentadas (T13)

@@ -19,6 +19,10 @@ from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS
+from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs
+from dataclasses import asdict
+from datetime import date
+from urllib.parse import urlsplit
 
 BASE = Path(__file__).parent
 DATOS = BASE / "datos"; DATOS.mkdir(exist_ok=True)
@@ -348,6 +352,126 @@ def cont_excel():
                for k, r in sorted(rs.items()) if (lib[k].get("debito"), lib[k].get("credito")) != (r["debito"], r["credito"])]   # FIX-6: se recalcula con la config de hoy
     return send_file(io.BytesIO(libro_a_excel(dias, c.get("negocio", ""), c.get("nit", ""), datos, cambios)), mimetype=XLSX, as_attachment=True,
                      download_name=f"reporte_contable_{datetime.now():%Y%m%d}.xlsx")
+
+
+# ═════════════ DOCUMENTO SOPORTE (Res. DIAN 167/2021): compras → semanas por proveedor → documentos numerados ═════════════
+RUTA_SOPORTE = DATOS / "soporte.db"
+
+
+@app.before_request
+def _revisar_origen():
+    """T1 de 03: otra página web no puede hacer POST/DELETE a localhost (CSRF) ni por DNS rebinding. Host y Origin deben ser locales."""
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        permitidos = {"127.0.0.1", "localhost"}
+        if (request.host.rsplit(":", 1)[0] if not request.host.startswith("[") else request.host) not in permitidos:
+            return jsonify(error="Host no permitido"), 403
+        o = request.headers.get("Origin")
+        if o is not None and (urlsplit(o).netloc != request.host or urlsplit(o).scheme not in ("http", "https")):
+            return jsonify(error="Origen no permitido"), 403
+
+
+def _sop_con():
+    return soporte_db.abrir(RUTA_SOPORTE)
+
+
+def _sop_cfg() -> dict:
+    c = _cont_cfg()
+    return {k: c[k] for k in soporte.DEFECTO if k in c}
+
+
+def _doc_json(d) -> dict:
+    return dict(id=d.id, numero=f"{d.prefijo}-{d.numero}", proveedor=d.proveedor.nombre, semana=d.semana, fecha_generacion=d.fecha_generacion,
+                total=d.total, estado=d.estado, lineas=[asdict(l) for l in d.lineas])
+
+
+def _grupo_json(g) -> dict:
+    return dict(proveedor_id=g.proveedor.id if g.proveedor else None, tercero=g.tercero, semana=g.semana, lunes=g.lunes, domingo=g.domingo,
+                total=g.total, fecha_limite=g.fecha_limite, estado=g.estado, dias_restantes=g.dias_restantes, registrado=g.proveedor is not None,
+                compras=[asdict(c) for c in g.compras])
+
+
+def _documentos(con, ids: list[int] | None = None) -> list:
+    """Lee documentos de la base; `fecha_limite` no se guarda, se recalcula con la config de hoy."""
+    c = soporte.config(_sop_cfg())
+    docs = []
+    for r in con.execute("SELECT * FROM documento WHERE clase = 'DS' ORDER BY id"):
+        if ids is not None and r["id"] not in ids: continue
+        p = provs.obtener(con, r["proveedor_id"])
+        ls = [soporte.Linea(l["fecha_compra"], l["origen_fecha"], l["origen_doc_id"], l["descripcion"], l["valor"])
+              for l in con.execute("SELECT * FROM linea WHERE documento_id = ? ORDER BY fecha_compra, origen_doc_id", (r["id"],))]
+        y, w = r["semana_iso"].split("-W")
+        lim = soporte.fecha_limite(date.fromisocalendar(int(y), int(w), 1), c["regla_plazo"], c["festivos"]).isoformat()
+        docs.append(soporte.Documento(r["id"], r["prefijo"], r["numero"], p, r["semana_iso"], r["fecha_generacion"], r["total"], ls, lim, r["estado"], r["iva"]))
+    return docs
+
+
+@app.get("/api/soporte/semanas")
+def sop_semanas():
+    desde, hasta = request.args.get("desde", ""), request.args.get("hasta", "")
+    if any(x and not ISO.match(x) for x in (desde, hasta)): return jsonify(error="Fecha inválida"), 400
+    con = _sop_con()
+    try:
+        try: gs = soporte.semanas(_leer_libro(), con, _sop_cfg(), desde=desde, hasta=hasta)
+        except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
+        return jsonify(semanas=[_grupo_json(g) for g in gs])
+    finally: con.close()
+
+
+@app.post("/api/soporte/generar")
+def sop_generar():
+    j = request.get_json(silent=True) or {}
+    sel = j.get("semanas")
+    if not isinstance(sel, list) or not sel or len(sel) > 200 or not all(isinstance(x, dict) for x in sel): return jsonify(error="Elija al menos una semana"), 400
+    with LOCK:
+        con = _sop_con()
+        try:
+            try: gs = soporte.semanas(_leer_libro(), con, _sop_cfg())   # los grupos se recalculan en el servidor: el cliente solo elige
+            except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
+            elegidos = []
+            for x in sel:
+                g = next((g for g in gs if g.semana == x.get("semana") and ((g.proveedor and g.proveedor.id == x.get("proveedor_id"))
+                                                                           or (not g.proveedor and x.get("proveedor_id") is None and g.tercero == x.get("tercero")))), None)
+                if g is None: return jsonify(error=f"No existe la semana {x.get('semana')!s:.20} de ese proveedor"), 400
+                elegidos.append(g)
+            try: docs = soporte.generar(con, elegidos, bool(j.get("confirmar_vencidos")))
+            except soporte.NoSeGenera as e: return jsonify(error=str(e)), 409
+            except soporte_db.RangoAgotado as e: return jsonify(error=str(e)), 409
+            return jsonify(documentos=[_doc_json(d) for d in docs])
+        finally: con.close()
+
+
+@app.get("/api/soporte/excel")
+def sop_excel():
+    try: ids = [int(x) for x in request.args["ids"].split(",") if x] if request.args.get("ids") else None
+    except ValueError: return jsonify(error="ids inválidos"), 400
+    con = _sop_con()
+    try:
+        try: docs = _documentos(con, ids)
+        except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
+    finally: con.close()
+    if not docs: return jsonify(error="No hay documentos para exportar"), 404
+    return send_file(io.BytesIO(soporte_excel.libro(docs)), mimetype=XLSX, as_attachment=True, download_name=f"documento_soporte_{datetime.now():%Y%m%d}.xlsx")
+
+
+@app.get("/api/proveedores")
+def prov_listar():
+    con = _sop_con()
+    try: return jsonify(proveedores=[asdict(provs.obtener(con, r[0])) for r in con.execute("SELECT id FROM proveedor ORDER BY nombre")])
+    finally: con.close()
+
+
+@app.post("/api/proveedores")
+def prov_guardar():
+    j = request.get_json(silent=True)
+    if not isinstance(j, dict): return jsonify(error="Falta el proveedor"), 400
+    with LOCK:
+        con = _sop_con()
+        try:
+            p = provs.guardar(con, j)
+            if j.get("alias_ocr"): provs.asociar(con, str(j["alias_ocr"]), p.id, bool(j.get("reasignar")))
+            return jsonify(proveedor=asdict(p))
+        except provs.DatosIncompletos as e: return jsonify(error=str(e)), 400
+        finally: con.close()
 
 
 if __name__ == "__main__":
