@@ -59,6 +59,11 @@ r5 = construir("2026-09-12", [vm])
 ef5 = [(x["codigo"], x["debito"], x["credito"]) for x in r5["filas"] if x["medio"] == "Efectivo" and (x["debito"] or x["credito"])]
 chk(ef5 == [("11050501", 10000, 0), ("28150502", 0, 10000)] and r5["diferencia"] == 0 and any("no alcanza" in a for a in r5["avisos"]),
     f"efectivo 10.000 < propina 17.800 + domicilio 5.000: propina tope 10.000, domicilio 0, el día cuadra y se avisa: {ef5}")
+# efectivo 0 (mal leído) con propina y domicilio en efectivo: no hay filas de caja, pero se avisa con las cifras (FIX-4)
+r6 = construir("2026-09-12", [dict(vm, id="mal0", efectivo=0)])
+chk(not [x for x in r6["filas"] if x["medio"] == "Efectivo" and (x["debito"] or x["credito"])] and r6["diferencia"] == 0
+    and any("efectivo es 0" in a and "17.800" in a and "5.000" in a for a in r6["avisos"]),
+    f"efectivo 0 con propina 17.800 + domicilio 5.000 en efectivo: sin filas de caja y se avisa: {r6['avisos']}")
 
 # recaudos del banco: las cifras de tu día 12/09
 r2 = construir("2026-09-12", [], {"llave": 730550, "tarjetas": 146500, "qr": 1091950})

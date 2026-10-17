@@ -234,6 +234,8 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             if dom: jd = fila(DOMICILIOS, "Consumidor Final", "Ordenes: " + abreviar_recibos(d["numero"] for d in ventas if R[d["id"]]["cash_dom"]), cre=dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta",
                               fx=["min", S("domicilio", bloque="venta", cuenta=EFECTIVO), ["-", *F(je, jp)]])
             fila(RESTAURANTE, "Consumidor Final", "Recaudos en efectivo", cre=efe - pro - dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="venta", fx=["-", *F(je, jp, jd)])
+        elif pro or dom:   # sin efectivo no hay filas de caja; la fila de DATOS OCR sí queda (valor 0) para corregir el efectivo allí
+            avisos.append(f"El efectivo es 0 pero hay propina ({pro:,}) y domicilio ({dom:,}) en efectivo: no se contabilizan; corrige el efectivo".replace(",", "."))
 
     # 2b) ventas que no entraron en efectivo: tarjeta y transferencias/QR/Nequi/Bre-B → banco (salvo que hayas escrito el extracto),
     #     Rappi → ingresos por cobrar, crédito personal (fiado) → cuenta por cobrar al cliente. La propina y el domicilio pagados así
