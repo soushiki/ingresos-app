@@ -109,6 +109,9 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
  <div class="wrap" style="max-height:52vh"><table id="tws" style="min-width:760px"><thead><tr><th></th><th>Proveedor</th><th>Semana</th><th>Compras</th><th>Total</th><th>Fecha límite</th><th>Estado</th><th></th></tr></thead><tbody id="s_tb"></tbody></table>
   <div id="s_vacio" class="m" style="padding:26px;text-align:center">No hay compras pendientes de documento soporte. Las facturas del libro contable aparecen aquí.</div></div>
  <div class="card" id="s_res" style="display:none"></div>
+ <div class="card" id="d_card" style="display:none"><h2>Documentos numerados</h2>
+  <p class="m" style="margin:0 0 8px">Cuando lo transcribas en la solución gratuita de la DIAN, márcalo «transmitido» (con el CUDS si lo tienes): ya no se podrán cambiar sus compras. Un documento con error se anula; su número queda gastado.</p>
+  <div class="wrap" style="max-height:40vh"><table id="d_t" style="min-width:640px"><thead><tr><th>Número</th><th>Proveedor</th><th>Semana</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody id="d_tb"></tbody></table></div></div>
  <div class="card"><h2>Compra manual</h2>
   <p class="m" style="margin:0 0 8px">Una compra que no está en los papeles (por ejemplo, pagada por transferencia). Queda en el libro del día de su fecha y en la semana de su proveedor.</p>
   <div class="pf"><div><label>Proveedor</label><input type="text" id="c_ter" maxlength="200" list="c_provs"><datalist id="c_provs"></datalist></div>
@@ -256,8 +259,8 @@ $("conf").onclick=async()=>{const dd=dudosos();
  if(dd.length&&!confirm(`${dd.length} gasto(s) tienen la cuenta sin confirmar (amarillo).\n\n¿Pasarlos así?`))return;
  for(const d of docs)if(d.cuenta_manual&&d.contar)await fetch("/api/contable/aprender",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cuenta:d.cuenta,tercero:d.tipo==="factura"?d.tercero:"",detalle:d.detalle})});
  const post=rep=>fetch("/api/contable/libro",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fecha,banco,cierre,documentos:docs.map(d=>({...d,texto:(d.texto||"").slice(0,1500)})),reemplazar:rep})});
- let r=await post(false);if(r.status===409){if(!confirm(`Ya hay un día confirmado con la fecha ${fmtF(fecha)}.\n¿Reemplazarlo por este?`))return;r=await post(true)}
- const j=await r.json();if(!r.ok)return toast(j.error||"No se pudo confirmar");toast(`✔ El día ${fmtF(fecha)} pasó al libro (${j.dias} ${j.dias===1?"día":"días"})`,4500);
+ let r=await post(false);if(r.status===409&&(await r.clone().json()).conflicto){if(!confirm(`Ya hay un día confirmado con la fecha ${fmtF(fecha)}.\n¿Reemplazarlo por este?`))return;r=await post(true)}
+ const j=await r.json();if(!r.ok)return j.bloqueos?alert(j.error+":\n\n"+j.bloqueos.join("\n")):toast(j.error||"No se pudo confirmar");toast(`✔ El día ${fmtF(fecha)} pasó al libro (${j.dias} ${j.dias===1?"día":"días"})`,4500);
  dias.splice(act,1);if(!dias.length)dias.push(nuevoDiaObj());act=Math.min(act,dias.length-1);$("msg").textContent="";syncUI();await cargarLibro()};
 /* ══════ módulo ②: libro ══════ */
 async function cargarLibro(){LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length;renderLibro()}
@@ -268,23 +271,33 @@ function renderLibro(){const a=fval("f1"),b=fval("f2"),L=LIBRO.filter(d=>(!a||d.
  const filas=L.flatMap(d=>d.filas),deb=filas.reduce((s,f)=>s+f.debito,0),cre=filas.reduce((s,f)=>s+f.credito,0),ing=filas.filter(f=>f.codigo[0]==="4").reduce((s,f)=>s+f.credito-f.debito,0),gas=filas.filter(f=>f.codigo&&f.codigo[0]==="5").reduce((s,f)=>s+f.debito-f.credito,0),r=ing-gas;
  $("res2").innerHTML=L.length?`<div class="tot" style="margin:0"><span>${L.length} ${L.length===1?"día":"días"}</span><span>Débito ${fmt(deb)}</span><span>Crédito ${fmt(cre)}</span>${deb===cre?'<span class="ok">✓ cuadra</span>':`<span class="bad">⚠ dif. ${fmt(deb-cre)}</span>`}<span class="sp"></span><span>Ingresos ${fmt(ing)}</span><span>Gastos ${fmt(gas)}</span><span class="${r>=0?"ok":"bad"}">${r>=0?"▲ Ganancia":"▼ Pérdida"} ${fmt(Math.abs(r))}</span></div><p class="m" style="margin:6px 0 0;font-size:12px">El resultado no descuenta el costo de los insumos consumidos (quedan como activo): falta el inventario final del mes.</p>`:"<span class='m'>Sin datos en este rango.</span>"}
 $("tbl").addEventListener("click",async e=>{const ab=e.target.dataset.ab,bo=e.target.dataset.bo;
- if(bo&&confirm(`¿Borrar el día ${fmtF(bo)} del libro?`)){await fetch("/api/contable/libro/"+bo,{method:"DELETE"});await cargarLibro()}
+ if(bo&&confirm(`¿Borrar el día ${fmtF(bo)} del libro?`)){const r=await fetch("/api/contable/libro/"+bo,{method:"DELETE"});if(!r.ok){const j=await r.json().catch(()=>({}));alert((j.error||"No se pudo borrar")+(j.bloqueos?":\n\n"+j.bloqueos.join("\n"):""))}await cargarLibro()}
  if(ab){const d=LIBRO.find(x=>x.fecha===ab);if(dias.some(x=>x.fecha===ab)&&!confirm(`El día ${fmtF(ab)} ya está en análisis. ¿Reemplazarlo por el del libro?`))return;
   const n=nuevoDiaObj(d.fecha);n.docs=d.documentos.map(x=>({...x,foto:null,origen:x.origen||"libro",manual_contar:true}));n.banco={...BANCO0,...d.banco};n.cierre=d.cierre||{};
   const i=dias.findIndex(x=>x.fecha===ab);if(i>=0)dias[i]=n;else if(dias.length===1&&!dias[0].docs.length&&!dias[0].fotos.length)dias[0]=n;else dias.push(n);act=dias.indexOf(n);irTab(1);syncUI();recalcular();toast("Día reabierto: corrígelo y vuelve a confirmarlo")}});
 $("fclr").onclick=()=>{$("f1").value="";$("f2").value="";renderLibro()};
 $("xl2").onclick=async()=>{const r=await fetch(`/api/contable/excel?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudo generar el Excel");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"reporte_contable.xlsx";a.click()};
 /* ══════ módulo ③: documento soporte ══════ */
-let SEM=[],PROVS=[];const ESTL={en_plazo:"En plazo",vence_pronto:"Vence pronto",vencida:"Vencida"};
+let SEM=[],PROVS=[],DOCS=[];const ESTL={en_plazo:"En plazo",vence_pronto:"Vence pronto",vencida:"Vencida"},ESTD={generado:"Generado",transmitido:"Transmitido",anulado:"Anulado"};
 const jpost=(u,b)=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
 async function errDe(r){try{return (await r.json()).error||"Error"}catch(_){return "Error "+r.status}}
-async function cargarSoporte(){try{const [a,b]=await Promise.all([fetch("/api/soporte/semanas"),fetch("/api/proveedores")]);
- if(!a.ok)return toast(await errDe(a),5000);SEM=(await a.json()).semanas;PROVS=b.ok?(await b.json()).proveedores:[];
+async function cargarSoporte(){try{const [a,b,c]=await Promise.all([fetch("/api/soporte/semanas"),fetch("/api/proveedores"),fetch("/api/soporte/documentos")]);
+ if(!a.ok)return toast(await errDe(a),5000);SEM=(await a.json()).semanas;PROVS=b.ok?(await b.json()).proveedores:[];DOCS=c.ok?(await c.json()).documentos:[];
  $("b3").textContent=SEM.filter(g=>!g.documentado).length;renderSoporte()}catch(e){toast("No se pudo leer el documento soporte")}}
 function renderSoporte(){const ver=$("s_todas").checked,L=SEM.map((g,i)=>[g,i]).filter(([g])=>ver||!g.documentado);$("s_vacio").style.display=L.length?"none":"block";
  $("s_tb").innerHTML=L.map(([g,i])=>`<tr class="${g.documentado?"hecho":""}"><td>${g.documentado||!g.registrado?"":`<input type="checkbox" class="sk" data-i="${i}">`}</td><td>${g.elegir?`<span class="m">${esc(g.tercero||"(sin nombre)")} · ${esc(g.compras[0].origen)}</span> <span class="tag">elegir proveedor</span><br><span class="m">El papel no trae el nombre: corrige el tercero en el día ${fmtF(g.compras[0].dia)}</span>`:esc(g.tercero)+(g.registrado?"":' <span class="tag">sin registrar</span>')}</td><td>${esc(g.semana)}<br><span class="m">${fmtF(g.lunes)} – ${fmtF(g.domingo)}</span>${(g.avisos||[]).length?`<ul class="av">${g.avisos.map(a=>`<li>⚠ ${esc(a)}</li>`).join("")}</ul>`:""}</td><td class="num">${g.compras.length}</td><td class="num">${fmt(g.total)}</td><td>${fmtF(g.fecha_limite)}</td>`+
   `<td>${g.documentado?`<span class="est hecho">${esc(g.documentado)}</span>`:`<span class="est ${esc(g.estado)}">${esc(ESTL[g.estado]||g.estado)}</span> <span class="m">${g.dias_restantes<0?"hace "+(-g.dias_restantes)+" d":g.dias_restantes+" d"}</span>`}</td><td>${!g.registrado&&!g.documentado&&!g.elegir?`<button class="g" data-reg="${i}">Registrar</button>`:""}</td></tr>`).join("");
- $("p_tb").innerHTML=PROVS.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(p.tipo_id)} ${esc(p.num_id)}</td><td>${esc(p.municipio)}</td><td><button class="g" data-ed="${p.id}">✎</button></td></tr>`).join("");$("c_provs").innerHTML=PROVS.map(p=>`<option value="${esc(p.nombre)}">`).join("");sopBoton()}
+ $("p_tb").innerHTML=PROVS.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(p.tipo_id)} ${esc(p.num_id)}</td><td>${esc(p.municipio)}</td><td><button class="g" data-ed="${p.id}">✎</button></td></tr>`).join("");$("c_provs").innerHTML=PROVS.map(p=>`<option value="${esc(p.nombre)}">`).join("");renderDocsSop();sopBoton()}
+/* R7: generado → transmitido (CUDS opcional) o → anulado (motivo); el servidor decide si se puede */
+function renderDocsSop(){$("d_card").style.display=DOCS.length?"":"none";
+ $("d_tb").innerHTML=[...DOCS].reverse().map(d=>`<tr class="${d.estado==="anulado"?"hecho":""}"><td><b>${esc(d.numero)}</b></td><td>${esc(d.proveedor)}</td><td>${esc(d.semana)}</td><td class="num">${fmt(d.total)}</td>`+
+  `<td><span class="est ${d.estado==="generado"?"en_plazo":"hecho"}">${esc(ESTD[d.estado]||d.estado)}</span>${d.estado==="anulado"&&d.motivo?`<br><span class="m">${esc(d.motivo)}</span>`:""}${d.cuds?`<br><span class="m" title="${esc(d.cuds)}">CUDS ${esc(d.cuds.slice(0,10))}…</span>`:""}</td>`+
+  `<td class="sc">${d.estado==="generado"?`<button class="g" data-tx="${d.id}">Transmitido</button><button class="g" data-an="${d.id}">Anular</button>`:""}<button class="g" data-xl="${d.id}" title="Excel de este documento">⬇</button></td></tr>`).join("")}
+$("d_tb").addEventListener("click",async e=>{const t=e.target,d=DOCS.find(x=>x.id==(t.dataset.tx||t.dataset.an||t.dataset.xl));if(!d)return;
+ if(t.dataset.xl)return bajarXl(String(d.id));let r;
+ if(t.dataset.tx){const cuds=prompt(`${d.numero} · ${d.proveedor}\nMarcar como transmitido a la DIAN. Después no se podrán cambiar sus compras.\n\nCUDS (opcional, 96 caracteres):`,"");if(cuds===null)return;r=await jpost(`/api/soporte/${d.id}/transmitido`,{cuds:cuds.trim()})}
+ else{const motivo=prompt(`Anular ${d.numero} · ${d.proveedor}\nEl número queda gastado y sus compras vuelven a quedar pendientes.\n\nMotivo:`,"");if(motivo===null)return;r=await jpost(`/api/soporte/${d.id}/anular`,{motivo})}
+ if(!r.ok)return toast(await errDe(r),7000);toast(t.dataset.tx?`${d.numero} marcado transmitido`:`${d.numero} anulado`);await cargarSoporte()});
 function sopBoton(){$("s_gen").disabled=!document.querySelector("#s_tb .sk:checked")}
 $("s_todas").onchange=renderSoporte;$("s_tb").addEventListener("change",sopBoton);
 $("s_tb").addEventListener("click",e=>{const i=e.target.dataset.reg;if(i===undefined)return;const g=SEM[+i];$("p_nombre").value=g.tercero;$("p_alias").value=g.tercero;$("p_tit").textContent="Registrar proveedor: "+g.tercero;$("p_num").focus();$("p_nombre").scrollIntoView({block:"center"})});

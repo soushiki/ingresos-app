@@ -35,6 +35,14 @@ MIGRACIONES = [
     -- Autorización de numeración DIAN del negocio: prefijo CTG, 1–10000.
     INSERT INTO rango(clase, prefijo, desde, hasta, ultimo, activo) VALUES ('DS', 'CTG', 1, 10000, 0, 1);
     """,
+    # T15: copia de los datos del vendedor del día de generación (art. 4 Res. 167/2021); editar el proveedor después
+    # no cambia un documento ya numerado. Los documentos que ya existían se llenan con los datos de hoy (lo único que hay).
+    """
+    ALTER TABLE documento ADD COLUMN proveedor_json TEXT;
+    UPDATE documento SET proveedor_json = (SELECT json_object('id', p.id, 'tipo_id', p.tipo_id, 'num_id', p.num_id, 'nombre', p.nombre,
+        'direccion', p.direccion, 'municipio', p.municipio, 'correo', p.correo, 'no_obligado', p.no_obligado = 1)
+        FROM proveedor p WHERE p.id = documento.proveedor_id);
+    """,
 ]
 
 

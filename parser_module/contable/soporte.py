@@ -9,11 +9,14 @@ Fuentes de los valores (docs/sdlc/03-design.md sección 6):
 - `tolerancia_fecha_dias`: si la fecha leída del papel está a más de estos días del día del libro, el OCR la leyó mal
   (año o mes cambiado): la compra usa la fecha del día y el grupo avisa con las dos (interno, decisión del usuario FIX-9).
 - Numeración (`generar`): consecutivo del rango DS autorizado, sin repetir ni reutilizar (Res. 167/2021 art. 4 y 5; ADR-003).
+- Ciclo de vida (R7): generado → transmitido (con el CUDS que da la solución gratuita DIAN: SHA-384, 96 hexadecimales,
+  Res. 167/2021 art. 4 y Anexo técnico) o generado → anulado (con motivo; el número queda gastado, ADR-003). Lo transmitido
+  no cambia: `bloqueos` impide editar sus compras en el libro y se corrige con nota de ajuste (R8).
 """
 from __future__ import annotations
-import sqlite3
+import json, re, sqlite3
 from datetime import datetime, timezone
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
 from parser_module.contable import proveedores as prov, soporte_db as sdb
 
@@ -181,6 +184,8 @@ class Documento:
     fecha_limite: str = ""             # del grupo, para el RESUMEN; no se guarda
     estado: str = "generado"
     iva: int = 0
+    motivo: str = ""                   # por qué se anuló
+    cuds: str = ""                     # código único que dio la DIAN al transmitirlo (opcional)
 
 
 class NoSeGenera(Exception):
@@ -220,10 +225,93 @@ def generar(con: sqlite3.Connection, grupos: list[Grupo], confirmar_vencidos: bo
             prefijo, numero = sdb.reservar_numero(con, "DS")
             lineas = [Linea(co.fecha, co.dia, co.id, _descripcion(co), co.valor) for co in sorted(g.compras, key=lambda c: (c.fecha, c.id))]
             total = sum(l.valor for l in lineas)
-            did = con.execute("INSERT INTO documento(clase, prefijo, numero, proveedor_id, semana_iso, fecha_generacion, total, iva, creado) "
-                              "VALUES ('DS', ?, ?, ?, ?, ?, ?, 0, ?)",
-                              (prefijo, numero, g.proveedor.id, g.semana, hoy.isoformat(), total, creado)).lastrowid
+            did = con.execute("INSERT INTO documento(clase, prefijo, numero, proveedor_id, proveedor_json, semana_iso, fecha_generacion, total, iva, creado) "
+                              "VALUES ('DS', ?, ?, ?, ?, ?, ?, ?, 0, ?)",
+                              (prefijo, numero, g.proveedor.id, json.dumps(asdict(g.proveedor), ensure_ascii=False), g.semana, hoy.isoformat(),
+                               total, creado)).lastrowid
             con.executemany("INSERT INTO linea(documento_id, fecha_compra, origen_fecha, origen_doc_id, descripcion, valor) VALUES (?, ?, ?, ?, ?, ?)",
                             [(did, l.fecha_compra, l.origen_fecha, l.origen_doc_id, l.descripcion, l.valor) for l in lineas])
             docs.append(Documento(did, prefijo, numero, g.proveedor, g.semana, hoy.isoformat(), total, lineas, g.fecha_limite))
     return docs
+
+
+def _proveedor_fijo(con: sqlite3.Connection, r: sqlite3.Row) -> prov.Proveedor:
+    """Los datos del vendedor tal como estaban al generar (art. 4 Res. 167/2021); sin copia, los de hoy."""
+    if r["proveedor_json"]:
+        d = json.loads(r["proveedor_json"])
+        return prov.Proveedor(**{**d, "no_obligado": bool(d.get("no_obligado", True))})
+    return prov.obtener(con, r["proveedor_id"])
+
+
+def documentos(con: sqlite3.Connection, cfg: dict | None = None, ids: list[int] | None = None) -> list[Documento]:
+    """Documentos DS de la base, anulados incluidos (N1: su número sale en el RESUMEN). `fecha_limite` se recalcula con `cfg`."""
+    c = config(cfg)
+    out = []
+    for r in con.execute("SELECT * FROM documento WHERE clase = 'DS' ORDER BY id"):
+        if ids is not None and r["id"] not in ids: continue
+        ls = [Linea(l["fecha_compra"], l["origen_fecha"], l["origen_doc_id"], l["descripcion"], l["valor"])
+              for l in con.execute("SELECT * FROM linea WHERE documento_id = ? ORDER BY fecha_compra, origen_doc_id", (r["id"],))]
+        y, w = r["semana_iso"].split("-W")
+        lim = fecha_limite(date.fromisocalendar(int(y), int(w), 1), c["regla_plazo"], c["festivos"]).isoformat()
+        out.append(Documento(r["id"], r["prefijo"], r["numero"], _proveedor_fijo(con, r), r["semana_iso"], r["fecha_generacion"], r["total"], ls,
+                             lim, r["estado"], r["iva"], r["motivo"] or "", r["cuds"] or ""))
+    return out
+
+
+class NoSePuede(Exception):
+    """Cambio de estado no permitido (R7, ADR-003)."""
+
+
+CUDS = re.compile(r"[0-9a-f]{96}")
+
+
+def _estado_de(con: sqlite3.Connection, doc_id: int) -> sqlite3.Row:
+    r = con.execute("SELECT id, prefijo, numero, estado FROM documento WHERE id = ?", (doc_id,)).fetchone()
+    if r is None: raise NoSePuede(f"no existe el documento {doc_id}")
+    return r
+
+
+def marcar_transmitido(con: sqlite3.Connection, doc_id: int, cuds: str | None = None) -> None:
+    """generado → transmitido (R7). `cuds`: el que muestra la solución gratuita DIAN, SHA-384 en hexadecimal (96 caracteres)."""
+    cuds = (cuds or "").strip().lower()
+    if cuds and not CUDS.fullmatch(cuds): raise NoSePuede("El CUDS son 96 caracteres hexadecimales (0-9, a-f); déjelo vacío si no lo tiene")
+    with sdb.transaccion(con):
+        r = _estado_de(con, doc_id)
+        if r["estado"] != "generado": raise NoSePuede(f"R7: {r['prefijo']}-{r['numero']} está {r['estado']}; solo un documento generado se marca transmitido")
+        con.execute("UPDATE documento SET estado = 'transmitido', cuds = ? WHERE id = ? AND estado = 'generado'", (cuds or None, doc_id))
+
+
+def anular(con: sqlite3.Connection, doc_id: int, motivo: str) -> None:
+    """generado → anulado con motivo (ADR-003): el número queda gastado y sale en el RESUMEN; las compras quedan libres
+    para un documento nuevo con otro número. Lo transmitido no se anula: se corrige con nota de ajuste (R8)."""
+    motivo = (motivo or "").strip()
+    if not motivo: raise NoSePuede("Escriba el motivo de la anulación")
+    if len(motivo) > 200: raise NoSePuede("Motivo demasiado largo (máx. 200)")
+    with sdb.transaccion(con):
+        r = _estado_de(con, doc_id)
+        if r["estado"] == "transmitido": raise NoSePuede(f"ADR-003: transmitido no se anula ({r['prefijo']}-{r['numero']}); prepare una nota de ajuste")
+        if r["estado"] != "generado": raise NoSePuede(f"{r['prefijo']}-{r['numero']} ya está anulado")
+        con.execute("UPDATE documento SET estado = 'anulado', motivo = ? WHERE id = ? AND estado = 'generado'", (motivo, doc_id))
+
+
+def _pesos(v: int) -> str:
+    return f"{v:,}".replace(",", ".")
+
+
+def bloqueos(con: sqlite3.Connection, fecha: str, docs: list[dict]) -> list[str]:
+    """Lo llama el guardado del libro (R7): qué cambios de `docs` (los papeles nuevos del día `fecha`) tocan una compra que está
+    en un documento transmitido. Cambiar su valor o su tercero (a otro proveedor), quitarla o dejar de contarla está prohibido."""
+    nuevos = {d.get("id"): d for d in docs if isinstance(d, dict)}
+    out = []
+    for l in con.execute("SELECT l.origen_doc_id, l.valor, d.prefijo, d.numero, d.proveedor_id FROM linea l JOIN documento d ON d.id = l.documento_id "
+                         "WHERE l.origen_fecha = ? AND d.estado = 'transmitido' ORDER BY d.numero, l.id", (fecha,)):
+        n, num = nuevos.get(l["origen_doc_id"]), f"{l['prefijo']}-{l['numero']}"
+        if n is None or n.get("tipo") != "factura" or not n.get("contar", True) or n.get("dup_de"):
+            out.append(f"{num} (transmitido): la compra {l['origen_doc_id']} de {_pesos(l['valor'])} ya no está en el día; prepare una nota de ajuste")
+            continue
+        if int(n.get("valor") or 0) != l["valor"]:
+            out.append(f"{num} (transmitido): la compra {l['origen_doc_id']} vale {_pesos(l['valor'])}, no {_pesos(int(n.get('valor') or 0))}; prepare una nota de ajuste")
+        p = prov.resolver(con, (n.get("tercero") or "").strip())
+        if p is None or p.id != l["proveedor_id"]:
+            out.append(f"{num} (transmitido): la compra {l['origen_doc_id']} no puede cambiar de proveedor a «{(n.get('tercero') or '')[:60]}»")
+    return out

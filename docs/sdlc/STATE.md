@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # iter. 3 sigue con T15; it. 4 (OCR separado) después; smokes it. 1 (Excel) e it. 2 (pestaña ③) pendientes (usuario)
+next: 5-implement   # iter. 3 sigue con T16; it. 4 (OCR separado) después; smokes it. 1 (Excel) e it. 2 (pestaña ③) pendientes (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # iter. 3 sigue con T15; it. 4 (OCR separado) después; smok
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: T15
+- [ ] 5-implement      current task: T16
 - [ ] 6-test           (iter. 1 y 2 pasan; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
@@ -73,3 +73,4 @@ next: 5-implement   # iter. 3 sigue con T15; it. 4 (OCR separado) después; smok
 2026-10-17 | 5-implement | FIX-10: Host local revisado en todo método (GET con Host ajeno → 403 en proveedores, semanas, excel); acepta [::1]; 6 checks; suites verdes → 6-test
 2026-10-17 | 6-test | Re-test iter. 2: pasa; FIX-7…10 cerrados con sus checks, suite verde, datos reales sin años raros (17 grupos 2026, 5 elegir, 5 avisos); 1 menor de Host con «@» (no explotable) → 06-test-report.md
 2026-10-17 | 5-implement | T14: POST /api/soporte/compra (valida fecha, proveedor, descripción ≤200, valor 1–10^10, medio) guarda factura origen «manual» en el día y lo recalcula; tarjeta «Compra manual» en ③ (verificada a 375 px, sin guardar en datos reales); 15 checks; suites verdes
+2026-10-17 | 5-implement | T15: transmitido (CUDS 96 hex opcional), anular (motivo; ADR-003), bloqueos() en guardar/borrar día (409); vendedor fijo al generar (migración 2); tarjeta «Documentos numerados» en ③ verificada en copia y 375 px; 37 checks; suites verdes

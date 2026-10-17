@@ -327,6 +327,8 @@ def cont_confirmar():
     with LOCK:
         lib = _leer_libro()
         if fecha in lib and not j.get("reemplazar"): return jsonify(conflicto=[fecha]), 409
+        b = _bloqueos(fecha, r["documentos"])
+        if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
         lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=j.get("banco", {}), cierre=j.get("cierre") or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
                           diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
         _guardar_libro(lib)
@@ -336,6 +338,8 @@ def cont_confirmar():
 @app.delete("/api/contable/libro/<fecha>")
 def cont_borrar(fecha):
     with LOCK:
+        b = _bloqueos(fecha, [])
+        if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
         lib = _leer_libro(); lib.pop(fecha, None); _guardar_libro(lib)
     return jsonify(ok=True)
 
@@ -381,7 +385,7 @@ def _sop_cfg() -> dict:
 
 def _doc_json(d) -> dict:
     return dict(id=d.id, numero=f"{d.prefijo}-{d.numero}", proveedor=d.proveedor.nombre, semana=d.semana, fecha_generacion=d.fecha_generacion,
-                total=d.total, estado=d.estado, lineas=[asdict(l) for l in d.lineas])
+                total=d.total, estado=d.estado, motivo=d.motivo, cuds=d.cuds, fecha_limite=d.fecha_limite, lineas=[asdict(l) for l in d.lineas])
 
 
 def _grupo_json(g) -> dict:
@@ -390,19 +394,47 @@ def _grupo_json(g) -> dict:
                 elegir=g.elegir, avisos=g.avisos, compras=[asdict(c) for c in g.compras])
 
 
-def _documentos(con, ids: list[int] | None = None) -> list:
-    """Lee documentos de la base; `fecha_limite` no se guarda, se recalcula con la config de hoy."""
-    c = soporte.config(_sop_cfg())
-    docs = []
-    for r in con.execute("SELECT * FROM documento WHERE clase = 'DS' ORDER BY id"):
-        if ids is not None and r["id"] not in ids: continue
-        p = provs.obtener(con, r["proveedor_id"])
-        ls = [soporte.Linea(l["fecha_compra"], l["origen_fecha"], l["origen_doc_id"], l["descripcion"], l["valor"])
-              for l in con.execute("SELECT * FROM linea WHERE documento_id = ? ORDER BY fecha_compra, origen_doc_id", (r["id"],))]
-        y, w = r["semana_iso"].split("-W")
-        lim = soporte.fecha_limite(date.fromisocalendar(int(y), int(w), 1), c["regla_plazo"], c["festivos"]).isoformat()
-        docs.append(soporte.Documento(r["id"], r["prefijo"], r["numero"], p, r["semana_iso"], r["fecha_generacion"], r["total"], ls, lim, r["estado"], r["iva"]))
-    return docs
+def _bloqueos(fecha: str, docs: list) -> list[str]:
+    """R7: lo transmitido no cambia. Sin soporte.db no hay nada transmitido (no se crea la base solo por guardar un día)."""
+    if not RUTA_SOPORTE.exists(): return []
+    con = _sop_con()
+    try: return soporte.bloqueos(con, fecha, docs)
+    finally: con.close()
+
+
+@app.get("/api/soporte/documentos")
+def sop_documentos():
+    con = _sop_con()
+    try:
+        try: return jsonify(documentos=[_doc_json(d) for d in soporte.documentos(con, _sop_cfg())])
+        except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
+    finally: con.close()
+
+
+@app.post("/api/soporte/<int:doc_id>/transmitido")
+def sop_transmitido(doc_id):
+    j = request.get_json(silent=True) or {}
+    cuds = j.get("cuds") or ""
+    if not isinstance(cuds, str) or len(cuds) > 200: return jsonify(error="CUDS inválido"), 400
+    with LOCK:
+        con = _sop_con()
+        try: soporte.marcar_transmitido(con, doc_id, cuds)
+        except soporte.NoSePuede as e: return jsonify(error=str(e)), 409
+        finally: con.close()
+    return jsonify(ok=True)
+
+
+@app.post("/api/soporte/<int:doc_id>/anular")
+def sop_anular(doc_id):
+    j = request.get_json(silent=True) or {}
+    motivo = j.get("motivo")
+    if not isinstance(motivo, str): return jsonify(error="Escriba el motivo de la anulación"), 400
+    with LOCK:
+        con = _sop_con()
+        try: soporte.anular(con, doc_id, motivo)
+        except soporte.NoSePuede as e: return jsonify(error=str(e)), 409
+        finally: con.close()
+    return jsonify(ok=True)
 
 
 @app.get("/api/soporte/semanas")
@@ -477,7 +509,7 @@ def sop_excel():
     except ValueError: return jsonify(error="ids inválidos"), 400
     con = _sop_con()
     try:
-        try: docs = _documentos(con, ids)
+        try: docs = soporte.documentos(con, _sop_cfg(), ids)
         except ValueError as e: return jsonify(error=f"contable.json: {e}"), 400
     finally: con.close()
     if not docs: return jsonify(error="No hay documentos para exportar"), 404

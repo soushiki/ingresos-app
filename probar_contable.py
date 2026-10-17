@@ -90,7 +90,7 @@ chk([(p["id"], p["valor"]) for p in r7["pendientes"]] == [("sinvalor", 0)] and a
 chk([x["codigo"] for x in r7["filas"]] == [PG, "11200501"], "factura sin cuenta → puente_gasto contra Bancos")
 # FIX-1 (R10): un día con solo facturas sin valor se guarda en el libro (los pendientes no quedan fuera)
 import tempfile, pathlib, app as appmod
-appmod.RUTA_LIBRO = pathlib.Path(tempfile.mkdtemp()) / "libro.json"
+_t = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_SOPORTE = _t / "libro.json", _t / "soporte.db"   # T15: guardar el día abre soporte.db (R7)
 rs = appmod.app.test_client().post("/api/contable/libro", json={"fecha": "2026-09-14", "documentos": [fs]})
 gl = appmod._leer_libro().get("2026-09-14", {})
 chk(rs.status_code == 200 and [d["id"] for d in gl.get("documentos", [])] == ["sinvalor"] and [p["id"] for p in gl.get("pendientes", [])] == ["sinvalor"],

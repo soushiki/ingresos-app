@@ -404,4 +404,107 @@ lj = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8"))
 ids14 = [d["id"] for d in lj["2026-09-14"]["documentos"]]
 chk(r.status_code == 200 and ids14[:3] == ["f1", "f2", "f3"] and len(ids14) == 4, f"en un día que ya existe la compra se agrega sin tocar los papeles leídos: {ids14}")
 
+# ── T15 · ciclo de vida: transmitido, anulado, bloqueos (R7, N1) y datos del vendedor fijos ──
+c15 = sdb.abrir(tmp / "t15.db")
+pc = prov.guardar(c15, {"tipo_id": "CC", "num_id": "1047000333", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
+prov.guardar(c15, {"tipo_id": "CC", "num_id": "1047000444", "nombre": "Rosa Pérez", "direccion": "Bazurto 4", "municipio": "Cartagena"})
+L15 = {**dia("2026-09-14", fac("a", "2026-09-14", 10000), fac("r", "2026-09-14", 8000, "Rosa Pérez")), **dia("2026-09-21", fac("n", "2026-09-21", 3000))}
+H15 = date(2026, 9, 15)
+g15 = [g for g in sop.semanas(L15, c15, hoy=H15) if g.semana == "2026-W38"]
+d15 = sop.generar(c15, g15, hoy=H15)
+dc = next(d for d in d15 if d.proveedor.nombre == "Carlos Cordero"); dr = next(d for d in d15 if d.proveedor.nombre == "Rosa Pérez")
+prov.guardar(c15, {"tipo_id": "CC", "num_id": "1047000333", "nombre": "Carlos A. Cordero", "direccion": "Calle Nueva 9", "municipio": "Turbaco"})
+lc = next(d for d in sop.documentos(c15) if d.id == dc.id)
+chk((lc.proveedor.nombre, lc.proveedor.direccion, lc.proveedor.municipio) == ("Carlos Cordero", "Cra 1 # 2-3", "Cartagena") and lc.proveedor.id == pc.id,
+    f"art. 4: el documento conserva los datos del vendedor del día de generación aunque el proveedor se edite después: {lc.proveedor}")
+h15 = load_workbook(io.BytesIO(sxl.libro(sop.documentos(c15, ids=[dc.id]))))[sxl.nombre_hoja(dc)]
+cp = {f[0].value: f[1].value for f in h15.iter_rows() if f[0].value}
+chk(cp.get("Nombre del vendedor") == "Carlos Cordero" and cp.get("Municipio") == "Cartagena", f"el Excel sale con los datos fijos del vendedor: {cp.get('Nombre del vendedor')}, {cp.get('Municipio')}")
+# migración 2: documentos de antes de la copia se llenan con los datos de ese momento
+viejo = sdb.MIGRACIONES; sdb.MIGRACIONES = viejo[:1]
+cm = sdb.abrir(tmp / "mig.db"); sdb.MIGRACIONES = viejo
+pm = prov.guardar(cm, {"tipo_id": "CC", "num_id": "1047000555", "nombre": "Ana Díaz", "direccion": "Getsemaní 1", "municipio": "Cartagena"})
+cm.execute("INSERT INTO documento(clase, prefijo, numero, proveedor_id, semana_iso, fecha_generacion, total, creado) VALUES ('DS','CTG',1,?,'2026-W38','2026-09-15',100,'x')", (pm.id,))
+sdb.migrar(cm)
+dm = sop.documentos(cm)
+chk(cm.execute("PRAGMA user_version").fetchone()[0] == len(sdb.MIGRACIONES) and dm[0].proveedor.nombre == "Ana Díaz" and dm[0].proveedor.no_obligado is True,
+    f"migración 2 (expand + llenado): un documento viejo queda con la copia del vendedor: {dm[0].proveedor}"); cm.close()
+
+def no_se(f, *a):
+    try: f(*a); return ""
+    except sop.NoSePuede as e: return str(e)
+chk(no_se(sop.marcar_transmitido, c15, dc.id, "abc") and sop.documentos(c15, ids=[dc.id])[0].estado == "generado", "R7: un CUDS mal formado se rechaza y no cambia el estado")
+CUDS = "AB" * 48
+chk(no_se(sop.marcar_transmitido, c15, dc.id, CUDS) == "", "R7: marcar transmitido con CUDS de 96 hexadecimales")
+lt = sop.documentos(c15, ids=[dc.id])[0]
+chk((lt.estado, lt.cuds) == ("transmitido", CUDS.lower()), f"queda transmitido con su CUDS: {lt.estado} {lt.cuds[:8]}…")
+chk("generado" in no_se(sop.marcar_transmitido, c15, dc.id), "R7: transmitido dos veces → error")
+chk("ADR-003: transmitido no se anula" in no_se(sop.anular, c15, dc.id, "error"), "ADR-003: anular un transmitido → error (se corrige con nota de ajuste)")
+chk(no_se(sop.marcar_transmitido, c15, 9999) != "", "R7: documento inexistente → error")
+chk(no_se(sop.marcar_transmitido, c15, dr.id, None) == "" and sop.documentos(c15, ids=[dr.id])[0].estado == "transmitido"
+    and sop.documentos(c15, ids=[dr.id])[0].cuds == "", "R7: el CUDS es opcional")
+
+# bloqueos: lo transmitido no cambia desde el libro
+F14 = L15["2026-09-14"]["documentos"]
+chk(sop.bloqueos(c15, "2026-09-14", F14) == [], "R7: guardar el día sin tocar las compras transmitidas → sin bloqueos")
+chk(sop.bloqueos(c15, "2026-09-14", [{**F14[0], "descripcion": "otra", "cuenta": "51"}, F14[1]]) == [], "R7: cambiar otros campos (cuenta, descripción) no bloquea")
+b = sop.bloqueos(c15, "2026-09-14", [{**F14[0], "valor": 12000}, F14[1]])
+chk(len(b) == 1 and sxl.nombre_hoja(dc) in b[0] and "10.000" in b[0] and "nota de ajuste" in b[0], f"R7: editar el valor de una compra transmitida → bloqueado: {b}")
+b = sop.bloqueos(c15, "2026-09-14", [{**F14[0], "tercero": "Rosa Pérez"}, F14[1]])
+chk(len(b) == 1 and "proveedor" in b[0], f"R7: cambiar el tercero a otro proveedor → bloqueado: {b}")
+chk(sop.bloqueos(c15, "2026-09-14", [{**F14[0], "tercero": "  CARLOS CORDERO "}, F14[1]]) == [], "el mismo proveedor escrito distinto (alias normalizado) no bloquea")
+chk(len(sop.bloqueos(c15, "2026-09-14", [F14[1]])) == 1, "R7: quitar la compra del día → bloqueado")
+chk(len(sop.bloqueos(c15, "2026-09-14", [{**F14[0], "contar": False}, F14[1]])) == 1, "R7: dejar de contar la compra → bloqueado")
+chk(len(sop.bloqueos(c15, "2026-09-14", [])) == 2, "R7: borrar el día → bloquea las 2 compras transmitidas")
+
+# anular: el número queda gastado, sale en el RESUMEN y no vuelve (N1, ADR-003)
+g21 = [g for g in sop.semanas(L15, c15, hoy=date(2026, 9, 22)) if g.semana == "2026-W39"]
+dn = sop.generar(c15, g21, hoy=date(2026, 9, 22))[0]
+chk(sop.bloqueos(c15, "2026-09-21", [{**L15["2026-09-21"]["documentos"][0], "valor": 1}]) == [], "un documento solo generado (no transmitido) no bloquea el libro")
+chk("motivo" in no_se(sop.anular, c15, dn.id, "  "), "anular sin motivo → error")
+chk(no_se(sop.anular, c15, dn.id, "Valor mal leído") == "", "anular un generado con motivo")
+chk("anulado" in no_se(sop.anular, c15, dn.id, "otra vez") and "anulado" in no_se(sop.marcar_transmitido, c15, dn.id), "un anulado no se anula otra vez ni se transmite")
+g21b = [g for g in sop.semanas(L15, c15, hoy=date(2026, 9, 22)) if g.semana == "2026-W39" and not g.documentado]
+chk(len(g21b) == 1 and g21b[0].compras[0].id == "n", "las compras de un anulado quedan libres para un documento nuevo")
+dn2 = sop.generar(c15, g21b, hoy=date(2026, 9, 22))[0]
+nums = [d.numero for d in sop.documentos(c15)]
+chk(dn2.numero == dn.numero + 1 and len(set(nums)) == len(nums), f"N1: el documento nuevo toma el siguiente número, el anulado no vuelve: {dn.numero} anulado → {dn2.numero}; todos {nums}")
+wb15 = load_workbook(io.BytesIO(sxl.libro(sop.documentos(c15))))
+rs15 = {f[0].value: f[5].value for f in wb15["RESUMEN"].iter_rows(min_row=2)}
+chk(rs15.get(f"CTG-{dn.numero}") == "anulado" and rs15.get(f"CTG-{dn2.numero}") == "generado" and rs15.get(sxl.nombre_hoja(dc)) == "transmitido",
+    f"N1: el anulado aparece en el RESUMEN como «anulado»: {rs15}")
+chk(sop.documentos(c15, ids=[dn.id])[0].motivo == "Valor mal leído", "el motivo de la anulación queda guardado")
+
+# rutas
+T15 = Path(tempfile.mkdtemp())
+web.RUTA_SOPORTE, web.RUTA_LIBRO, web.RUTA_CONT = T15 / "soporte.db", T15 / "libro.json", T15 / "contable.json"
+FA = {**base_doc("factura", ""), "id": "fa", "fecha": "2026-09-14", "valor": 12000, "tercero": "Carlos Cordero", "origen": "foto1.jpg", "medio": "Efectivo"}
+r = cl.post("/api/contable/libro", json={"fecha": "2026-09-14", "documentos": [FA]}, headers=LOC)
+chk(r.status_code == 200 and not web.RUTA_SOPORTE.exists(), f"sin soporte.db, guardar el día funciona y no crea la base ({r.status_code})")
+r = cl.post("/api/proveedores", json=BASE, headers=LOC)
+r = cl.post("/api/soporte/generar", json={"semanas": [{"semana": "2026-W38", "proveedor_id": r.get_json()["proveedor"]["id"]}], "confirmar_vencidos": True}, headers=LOC)
+did = r.get_json()["documentos"][0]["id"]
+r = cl.post(f"/api/soporte/{did}/transmitido", json={"cuds": "x"}, headers=LOC)
+chk(r.status_code == 409 and "CUDS" in r.get_json()["error"], f"POST transmitido con CUDS malo → 409: {r.get_json()}")
+r = cl.post(f"/api/soporte/{did}/transmitido", json={"cuds": CUDS}, headers=AJENO)
+chk(r.status_code == 403, f"T1: POST transmitido con Origin ajeno → 403 ({r.status_code})")
+r = cl.post(f"/api/soporte/{did}/transmitido", json={"cuds": CUDS}, headers=LOC)
+chk(r.status_code == 200, f"POST transmitido → 200 ({r.get_json()})")
+dj = cl.get("/api/soporte/documentos").get_json()["documentos"]
+chk(len(dj) == 1 and dj[0]["estado"] == "transmitido" and dj[0]["cuds"] == CUDS.lower() and dj[0]["numero"] == "CTG-1", f"GET documentos lista estado y CUDS: {dj and {k: dj[0][k] for k in ('numero', 'estado')}}")
+antes = web.RUTA_LIBRO.read_text(encoding="utf8")
+r = cl.post("/api/contable/libro", json={"fecha": "2026-09-14", "documentos": [{**FA, "valor": 15000}], "reemplazar": True}, headers=LOC)
+chk(r.status_code == 409 and len(r.get_json().get("bloqueos", [])) == 1 and web.RUTA_LIBRO.read_text(encoding="utf8") == antes,
+    f"R7: reemplazar el día con el valor de una compra transmitida cambiado → 409 y libro.json intacto: {r.get_json()}")
+r = cl.delete("/api/contable/libro/2026-09-14", headers=LOC)
+chk(r.status_code == 409 and "2026-09-14" in json.loads(web.RUTA_LIBRO.read_text(encoding="utf8")), f"R7: borrar un día con compras transmitidas → 409 ({r.status_code})")
+r = cl.post("/api/contable/libro", json={"fecha": "2026-09-14", "documentos": [{**FA, "cuenta": "51359501"}], "reemplazar": True}, headers=LOC)
+chk(r.status_code == 200, f"reemplazar el día sin tocar valor ni tercero de lo transmitido → 200 ({r.get_json()})")
+r = cl.post(f"/api/soporte/{did}/anular", json={"motivo": "x"}, headers=LOC)
+chk(r.status_code == 409 and "ADR-003" in r.get_json()["error"], f"POST anular un transmitido → 409: {r.get_json()}")
+r = cl.post("/api/soporte/9999/anular", json={"motivo": "x"}, headers=LOC)
+chk(r.status_code == 409, f"POST anular inexistente → 409 ({r.status_code})")
+r = cl.post(f"/api/soporte/{did}/anular", json={}, headers=LOC)
+chk(r.status_code == 400, f"POST anular sin motivo → 400 ({r.status_code})")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
