@@ -204,7 +204,7 @@ $("cie").addEventListener("input",e=>{const k=e.target.dataset.c;if(!k)return;ci
 $("cie").addEventListener("focusout",e=>{const k=e.target.dataset.c;if(k&&cierre[k]!==undefined)e.target.value=cierre[k]?fmt(cierre[k]):""});
 const dudosos=()=>docs.filter(d=>d.contar&&GASTOS.includes(d.tipo)&&(!d.cuenta||(d.conf<0.75&&!d.cuenta_manual)));
 function botones(){const busy=dias.flatMap(d=>d.fotos).some(f=>f.estado==="leyendo"||f.estado==="pendiente");$("scan").disabled=!dias.flatMap(d=>d.fotos).some(f=>f.estado==="pendiente"||f.estado==="error")||!!ctl;$("stop").disabled=!ctl;
- $("conf").disabled=!(fechaValida(fecha)&&res&&res.filas.length&&!busy)}
+ $("conf").disabled=!(fechaValida(fecha)&&res&&(res.filas.length||(res.pendientes||[]).length)&&!busy)}
 $("scan").onclick=procesar;$("stop").onclick=()=>ctl&&ctl.abort();
 $("nuevo").onchange=e=>{if(!e.target.value)return;docs.push(nuevoDoc(e.target.value));e.target.value="";renderDocs();recalcular()};
 $("vaciar").onclick=()=>{if((docs.length||fotos.length)&&!confirm("¿Vaciar los papeles de este día? (lo ya confirmado en el libro no se borra)"))return;dias[act]=nuevoDiaObj();$("msg").textContent="";syncUI()};

@@ -83,6 +83,15 @@ r7 = construir("2026-09-12", [fs, fc])
 chk([(p["id"], p["valor"]) for p in r7["pendientes"]] == [("sinvalor", 0)] and any("pendiente" in a for a in r7["avisos"]) and r7["diferencia"] == 0,
     "factura sin valor → queda en pendientes con valor 0 y aviso (no se inventa un asiento)")
 chk([x["codigo"] for x in r7["filas"]] == [PG, "11200501"], "factura sin cuenta → puente_gasto contra Bancos")
+# FIX-1 (R10): un día con solo facturas sin valor se guarda en el libro (los pendientes no quedan fuera)
+import tempfile, pathlib, app as appmod
+appmod.RUTA_LIBRO = pathlib.Path(tempfile.mkdtemp()) / "libro.json"
+rs = appmod.app.test_client().post("/api/contable/libro", json={"fecha": "2026-09-14", "documentos": [fs]})
+gl = appmod._leer_libro().get("2026-09-14", {})
+chk(rs.status_code == 200 and [d["id"] for d in gl.get("documentos", [])] == ["sinvalor"] and [p["id"] for p in gl.get("pendientes", [])] == ["sinvalor"],
+    f"día con solo una factura sin valor → se guarda con su pendiente ({rs.status_code})")
+rv = appmod.app.test_client().post("/api/contable/libro", json={"fecha": "2026-09-15", "documentos": []})
+chk(rv.status_code == 400, "día sin papeles ni pendientes → sigue rechazado")
 dias = [r, r3, r4, r5, r6, r7]
 contados = [d["id"] for x in dias for d in x["documentos"] if d.get("contar") and d["tipo"] != "cierre"]
 en_libro = {p["id"] for x in dias for p in x["pendientes"]} | {i for x in dias for f_ in x["filas"] for i in f_["docs"]}

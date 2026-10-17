@@ -319,11 +319,11 @@ def cont_confirmar():
     j = request.get_json(silent=True) or {}; fecha = str(j.get("fecha", ""))
     if not ISO.match(fecha): return jsonify(error="Falta la fecha del día"), 400
     r = construir_asientos(fecha, j.get("documentos", []), j.get("banco", {}), _cont_cfg(), j.get("cierre"))
-    if not r["filas"]: return jsonify(error="El día no tiene asientos"), 400
+    if not r["filas"] and not r["pendientes"]: return jsonify(error="El día no tiene asientos"), 400   # R10: los pendientes también se guardan
     with LOCK:
         lib = _leer_libro()
         if fecha in lib and not j.get("reemplazar"): return jsonify(conflicto=[fecha]), 409
-        lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=j.get("banco", {}), cierre=j.get("cierre") or {}, cruces=r["cruces"], filas=r["filas"], debito=r["debito"], credito=r["credito"],
+        lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=j.get("banco", {}), cierre=j.get("cierre") or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
                           diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
         _guardar_libro(lib)
     return jsonify(ok=True, dias=len(lib), diferencia=r["diferencia"])
