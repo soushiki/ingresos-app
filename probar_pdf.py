@@ -61,5 +61,6 @@ chk(r["cruces"] and all(x["ok"] for x in r["cruces"]), f"cierre = comanda #85531
 r2 = construir("2026-09-12", vv, {}, None, {**cierre, "venta_efectivo": 182200, "total_vendido": 278000})
 chk(any(not x["ok"] and x["diferencia"] == 100000 for x in r2["cruces"]) and any("no coincide" in a for a in r2["avisos"]), "si al cierre le sobran 100.000, avisa que falta una comanda")
 r3 = construir("2026-09-12", docs + vv, {}, None, None)
-chk(r3["cierre"]["venta_efectivo"] == 363500 and len(r3["filas"]) == 3, "el cierre leído de un papel alimenta los cruces y no genera asientos propios")
+r4 = construir("2026-09-12", vv, {}, None, None)
+chk(r3["cierre"]["venta_efectivo"] == 363500 and r3["filas"] == r4["filas"], f"el cierre leído de un papel alimenta los cruces y no genera asientos propios ({len(r3['filas'])} filas = las de las comandas solas)")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
