@@ -168,4 +168,74 @@ except ValueError: malo = True
 chk(malo, "regla_plazo desconocida → error claro")
 con.close()
 
+# ── T10 · generar: una transacción, consecutivo, sin duplicar (R3, R6, N1, N2) ─
+con = sdb.abrir(tmp / "generar.db")
+pa = prov.guardar(con, {"tipo_id": "CC", "num_id": "1047000111", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
+pb = prov.guardar(con, {"tipo_id": "CC", "num_id": "1047000222", "nombre": "Rosa Pérez", "direccion": "Bazurto 4", "municipio": "Cartagena"})
+def dia(f, *ds): return {f: {"fecha": f, "documentos": list(ds)}}
+LG = {**dia("2026-09-14", fac("a", "2026-09-14", 10000, numero="F-1"), fac("r", "2026-09-14", 8000, "Rosa Pérez")),
+      **dia("2026-09-16", fac("b", "2026-09-16", 25000)), **dia("2026-09-20", fac("c", "2026-09-20", 5000))}
+con.execute("UPDATE rango SET ultimo = 57 WHERE clase = 'DS'")
+gs = sop.semanas(LG, con, hoy=date(2026, 9, 15))
+docs = sop.generar(con, gs, hoy=date(2026, 9, 15))
+chk(sorted((d.prefijo, d.numero) for d in docs) == [("CTG", 58), ("CTG", 59)], f"R3: con el último en CTG-57 salen CTG-58 y CTG-59: {[(d.prefijo, d.numero) for d in docs]}")
+dc = [d for d in docs if d.proveedor.id == pa.id][0]
+chk(len(dc.lineas) == 3 and dc.total == 40000 and dc.semana == "2026-W38", "R3: 3 compras del proveedor en la semana → 1 documento con 3 líneas y total 40000")
+fila = con.execute("SELECT total, fecha_generacion, estado, proveedor_id FROM documento WHERE id = ?", (dc.id,)).fetchone()
+chk(tuple(fila) == (40000, "2026-09-15", "generado", pa.id), f"el documento queda en la base con fecha de generación y proveedor: {tuple(fila)}")
+ls = [tuple(r) for r in con.execute("SELECT fecha_compra, origen_fecha, origen_doc_id, valor, descripcion FROM linea WHERE documento_id = ? ORDER BY fecha_compra", (dc.id,))]
+chk([l[:4] for l in ls] == [("2026-09-14", "2026-09-14", "a", 10000), ("2026-09-16", "2026-09-16", "b", 25000), ("2026-09-20", "2026-09-20", "c", 5000)]
+    and "F-1" in ls[0][4], f"N2: cada línea guarda fecha, día y id del papel de origen, valor fijo y descripción: {ls[0]}")
+LG["2026-09-16"]["documentos"][0]["valor"] = 99999   # editar libro.json después no cambia la copia
+chk(con.execute("SELECT valor FROM linea WHERE origen_doc_id = 'b'").fetchone()[0] == 25000, "N2: la línea es una copia fija; editar libro.json no la cambia")
+LG["2026-09-16"]["documentos"][0]["valor"] = 25000
+n_doc = lambda: con.execute("SELECT count(*) FROM documento").fetchone()[0]
+ultimo = lambda: con.execute("SELECT ultimo FROM rango WHERE clase = 'DS'").fetchone()[0]
+try: sop.generar(con, gs, hoy=date(2026, 9, 15)); msg = ""
+except sop.NoSeGenera as e: msg = str(e)
+chk(msg and "CTG-5" in msg and n_doc() == 2 and ultimo() == 59, f"R3: generar 2 veces no duplica ni gasta números: «{msg}»")
+otra = sop.semanas(dia("2026-09-21", fac("d", "2026-09-21", 7000)), con, hoy=date(2026, 9, 22))
+mezcla = [*otra, *[g for g in sop.semanas(LG, con, hoy=date(2026, 9, 15)) if g.proveedor.id == pb.id]]
+try: sop.generar(con, mezcla, hoy=date(2026, 9, 22)); msg = ""
+except sop.NoSeGenera as e: msg = str(e)
+chk(msg and n_doc() == 2 and ultimo() == 59, "una transacción: si una compra del lote ya está documentada, no se numera ninguna")
+con.execute("UPDATE documento SET estado = 'anulado', motivo = 'prueba' WHERE id = ?", (dc.id,))
+d2 = sop.generar(con, [g for g in sop.semanas(LG, con, hoy=date(2026, 9, 15)) if g.proveedor.id == pa.id], hoy=date(2026, 9, 15))
+chk([(x.prefijo, x.numero) for x in d2] == [("CTG", 60)], f"ADR-003: con el documento anulado sus compras se documentan con un número nuevo: {[(x.prefijo, x.numero) for x in d2]}")
+sin = sop.semanas(dia("2026-09-22", fac("t", "2026-09-22", 300, "Tienda Nueva")), con, hoy=date(2026, 9, 22))
+try: sop.generar(con, sin, hoy=date(2026, 9, 22)); msg = ""
+except sop.NoSeGenera as e: msg = str(e)
+chk("Tienda Nueva" in msg and ultimo() == 60, f"R1: un tercero sin registrar no se numera: «{msg}»")
+venc = sop.semanas(dia("2026-09-21", fac("d", "2026-09-21", 7000)), con, hoy=date(2026, 10, 5))
+try: sop.generar(con, venc, hoy=date(2026, 10, 5)); msg = ""
+except sop.NoSeGenera as e: msg = str(e)
+chk(venc[0].estado == sop.VENCIDA and "vencid" in msg and ultimo() == 60, f"R6: una semana vencida no se numera sin confirmar: «{msg}»")
+dv = sop.generar(con, venc, confirmar_vencidos=True, hoy=date(2026, 10, 5))
+chk([(x.numero, x.total) for x in dv] == [(61, 7000)], "R6: con confirmar_vencidos=True la vencida sí se numera")
+con.execute("UPDATE rango SET ultimo = hasta WHERE clase = 'DS'")
+dos = sop.semanas(dia("2026-09-23", fac("e", "2026-09-23", 100), fac("f", "2026-09-23", 200, "Rosa Pérez")), con, hoy=date(2026, 9, 23))
+antes = n_doc()
+try: sop.generar(con, dos, hoy=date(2026, 9, 23)); agotado = False
+except sdb.RangoAgotado: agotado = True
+chk(agotado and n_doc() == antes and not con.execute("SELECT count(*) FROM linea WHERE origen_doc_id IN ('e','f')").fetchone()[0],
+    "N1: rango agotado a mitad del lote → error y no queda ningún documento ni línea a medias")
+con.close()
+
+# varios procesos generan la misma semana a la vez: sale un solo documento
+R3 = tmp / "conc_gen.db"; c0 = sdb.abrir(R3)
+prov.guardar(c0, {"tipo_id": "CC", "num_id": "1047000111", "nombre": "Carlos Cordero", "direccion": "Cra 1 # 2-3", "municipio": "Cartagena"})
+gc = [g for g in sop.semanas(LG, c0, hoy=date(2026, 9, 15)) if g.proveedor]; c0.close(); res = []
+def gen():
+    c = sdb.abrir(R3)
+    try: res.append(len(sop.generar(c, gc, hoy=date(2026, 9, 15))))
+    except sop.NoSeGenera: res.append(0)
+    finally: c.close()
+hs = [threading.Thread(target=gen) for _ in range(4)]
+for h in hs: h.start()
+for h in hs: h.join()
+c0 = sdb.abrir(R3)
+chk(sorted(res) == [0, 0, 0, 1] and c0.execute("SELECT count(*) FROM documento").fetchone()[0] == 1,
+    f"4 hilos generan la misma semana a la vez → 1 documento, los demás rechazados: {res}")
+c0.close()
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

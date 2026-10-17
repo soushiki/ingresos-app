@@ -6,12 +6,14 @@ Fuentes de los valores (docs/sdlc/03-design.md sección 6):
   DUR 1625/2016 art. 1.6.1.4.12; Res. 227/2025 sin verificar). `semana_siguiente`: el de la semana siguiente.
 - Días hábiles: lunes a viernes menos los festivos de Colombia (Ley 51/1983) que el usuario lista en `festivos`.
 - `aviso_dias`: días hábiles antes del límite en que la semana pasa a «vence_pronto» (interno).
+- Numeración (`generar`): consecutivo del rango DS autorizado, sin repetir ni reutilizar (Res. 167/2021 art. 4 y 5; ADR-003).
 """
 from __future__ import annotations
 import sqlite3
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from parser_module.contable import proveedores as prov
+from parser_module.contable import proveedores as prov, soporte_db as sdb
 
 DEFECTO = {"regla_plazo": "misma_semana", "aviso_dias": 2, "festivos": []}
 REGLAS = ("misma_semana", "semana_siguiente")
@@ -26,6 +28,8 @@ class Compra:
     tercero: str        # texto leído del papel
     origen: str         # papel de origen (N2)
     numero: str = ""
+    dia: str = ""        # llave del día en libro.json (origen_fecha de la línea, N2)
+    descripcion: str = ""
 
 
 @dataclass
@@ -83,14 +87,15 @@ def estado(hoy: date, limite: date, aviso_dias: int, festivos) -> tuple[str, int
 def compras_del_libro(libro: dict) -> list[Compra]:
     """Las facturas de compra con fecha y valor. Las duplicadas, las que no cuentan y las de valor 0 se saltan."""
     out = []
-    for dia in libro.values():
+    for k, dia in libro.items():
         for d in dia.get("documentos", []):
             if d.get("tipo") != "factura" or not d.get("contar", True) or d.get("dup_de"): continue
             try: fecha = date.fromisoformat(d.get("fecha") or dia.get("fecha") or "")
             except ValueError: continue
             valor = int(d.get("valor") or 0)
             if valor > 0:
-                out.append(Compra(d["id"], fecha.isoformat(), valor, (d.get("tercero") or "").strip(), d.get("origen", ""), d.get("numero", "")))
+                out.append(Compra(d["id"], fecha.isoformat(), valor, (d.get("tercero") or "").strip(), d.get("origen", ""), d.get("numero", ""),
+                                  dia.get("fecha") or k, (d.get("descripcion") or "").strip()))
     return out
 
 
@@ -116,3 +121,74 @@ def semanas(libro: dict, con: sqlite3.Connection | None = None, cfg: dict | None
         g.compras.append(co); g.total += co.valor
     orden = {VENCIDA: 0, VENCE_PRONTO: 1, EN_PLAZO: 2}
     return sorted(grupos.values(), key=lambda g: (orden[g.estado], g.fecha_limite, g.tercero))
+
+
+@dataclass
+class Linea:
+    fecha_compra: str
+    origen_fecha: str
+    origen_doc_id: str
+    descripcion: str
+    valor: int
+
+
+@dataclass
+class Documento:
+    id: int
+    prefijo: str
+    numero: int
+    proveedor: prov.Proveedor
+    semana: str
+    fecha_generacion: str
+    total: int
+    lineas: list[Linea]
+    fecha_limite: str = ""             # del grupo, para el RESUMEN; no se guarda
+    estado: str = "generado"
+    iva: int = 0
+
+
+class NoSeGenera(Exception):
+    """El lote no se numera: proveedor sin registrar, compra ya documentada o semana vencida sin confirmar."""
+
+
+def _descripcion(co: Compra) -> str:
+    return co.descripcion or (f"Factura {co.numero}" if co.numero else "Compra") + (f" ({co.origen})" if co.origen else "")
+
+
+def generar(con: sqlite3.Connection, grupos: list[Grupo], confirmar_vencidos: bool = False, hoy: date | None = None) -> list[Documento]:
+    """Numera un documento DS por grupo, todo en una transacción BEGIN IMMEDIATE (ADR-003, N1): o salen todos o ninguno.
+
+    Rechaza el lote si un grupo no tiene proveedor registrado (R1), si una compra ya está en otro documento
+    no anulado (R3, nada se documenta dos veces) o si hay semanas vencidas y `confirmar_vencidos` es False (R6).
+    Cada `linea` guarda una copia fija del valor y la referencia al papel de libro.json (N2).
+    """
+    hoy = hoy or date.today()
+    grupos = [g for g in grupos if g.compras]
+    sin = [g.tercero or "(sin nombre)" for g in grupos if g.proveedor is None]
+    if sin: raise NoSeGenera(f"R1: registre al proveedor antes de generar: {', '.join(sin)}")
+    venc = [f"{g.tercero} {g.semana}" for g in grupos if g.estado == VENCIDA]
+    if venc and not confirmar_vencidos:
+        raise NoSeGenera(f"R6: semanas vencidas, confirme para numerarlas: {', '.join(venc)}")
+    llaves = [(co.dia, co.id) for g in grupos for co in g.compras]
+    if len(set(llaves)) != len(llaves): raise NoSeGenera("R3: una compra aparece en dos grupos del mismo lote")
+    for co in (co for g in grupos for co in g.compras):
+        if not isinstance(co.valor, int) or co.valor <= 0: raise NoSeGenera(f"compra {co.id}: el valor debe ser un entero > 0")
+        if not co.dia or not co.id: raise NoSeGenera(f"compra {co.id!r}: falta la referencia al papel (N2)")
+    creado = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    docs = []
+    with sdb.transaccion(con):
+        for dia, did in llaves:   # dentro del BEGIN IMMEDIATE: otro proceso no puede colarse entre la revisión y el INSERT
+            r = con.execute("SELECT d.prefijo, d.numero FROM linea l JOIN documento d ON d.id = l.documento_id "
+                            "WHERE l.origen_fecha = ? AND l.origen_doc_id = ? AND d.estado != 'anulado'", (dia, did)).fetchone()
+            if r: raise NoSeGenera(f"R3: la compra {did} del {dia} ya está en {r['prefijo']}-{r['numero']}")
+        for g in grupos:
+            prefijo, numero = sdb.reservar_numero(con, "DS")
+            lineas = [Linea(co.fecha, co.dia, co.id, _descripcion(co), co.valor) for co in sorted(g.compras, key=lambda c: (c.fecha, c.id))]
+            total = sum(l.valor for l in lineas)
+            did = con.execute("INSERT INTO documento(clase, prefijo, numero, proveedor_id, semana_iso, fecha_generacion, total, iva, creado) "
+                              "VALUES ('DS', ?, ?, ?, ?, ?, ?, 0, ?)",
+                              (prefijo, numero, g.proveedor.id, g.semana, hoy.isoformat(), total, creado)).lastrowid
+            con.executemany("INSERT INTO linea(documento_id, fecha_compra, origen_fecha, origen_doc_id, descripcion, valor) VALUES (?, ?, ?, ?, ?, ?)",
+                            [(did, l.fecha_compra, l.origen_fecha, l.origen_doc_id, l.descripcion, l.valor) for l in lineas])
+            docs.append(Documento(did, prefijo, numero, g.proveedor, g.semana, hoy.isoformat(), total, lineas, g.fecha_limite))
+    return docs
