@@ -194,10 +194,15 @@ def _motivo_dia(d) -> str:
     docs = d.get("documentos")
     if not isinstance(docs, list): return "«documentos» no es una lista"
     if len(docs) > MAX_DOCS: return f"{len(docs)} documentos (máx. {MAX_DOCS})"
+    ids = set()
     for i, x in enumerate(docs):
         if not isinstance(x, dict): return f"documento {i + 1}: no es un objeto"
         if x.get("tipo") not in TIPOS_CRUDO: return f"documento {i + 1}: tipo desconocido {str(x.get('tipo'))[:30]!r}"
         if not isinstance(x.get("id"), str) or not x["id"]: return f"documento {i + 1}: sin id"
+        if x["id"] in ids: return f"documento {i + 1}: id {x['id'][:40]!r} repetido en el día"   # M-2
+        if x["tipo"] != "cierre" and isinstance(x.get("valor"), (int, float)) and not isinstance(x["valor"], bool) and x["valor"] < 0:
+            return f"documento {i + 1}: valor negativo ({x['valor']}); solo el cierre lleva negativos (faltante)"   # M-1
+        ids.add(x["id"])
         if m := _malo(x, f"documento {i + 1}"): return m
     for k in ("banco", "cierre"):
         if not isinstance(d.get(k, {}), dict): return f"«{k}» no es un objeto"

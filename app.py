@@ -415,7 +415,7 @@ RUTA_SOPORTE = DATOS / "soporte.db"
 def _revisar_origen():
     """T1 de 03: otra página web no puede hacer POST/DELETE a localhost (CSRF). FIX-10: el Host se revisa en todo método,
     así una página por DNS rebinding tampoco lee proveedores (cédulas, direcciones) ni el Excel con GET."""
-    if urlsplit("//" + request.host).hostname not in {"127.0.0.1", "localhost", "::1"}:
+    if "@" in request.host or urlsplit("//" + request.host).hostname not in {"127.0.0.1", "localhost", "::1"}:   # M-3: user@host no pasa aunque Werkzeug cambie
         return jsonify(error="Host no permitido"), 403
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         o = request.headers.get("Origin")

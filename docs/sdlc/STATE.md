@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 8-maintain   # v1.0.0 publicada; abiertos: 2 menores del crudo (valor negativo a mano, id repetido)
+next: 8-maintain   # v1.0.1 commiteada (sin push ni tag); después 01c #9 (S, reproducir primero)
 
 ## Stages
 - [x] 0-triage
@@ -92,3 +92,5 @@ next: 8-maintain   # v1.0.0 publicada; abiertos: 2 menores del crudo (valor nega
 2026-10-17 | 6-test | Re-test iter. 4: pasa; FIX-13/14 cerrados, suite verde, 30 días reales + día con faltante van y vuelven; sin defectos nuevos → 7-release (smokes it. 1–4 pendientes)
 2026-10-17 | 7-release | v1.0.0 preparada: runbook 07-release.md, CHANGELOG.md, VERSION; pre-flight verde (8/8, sin secretos, debug off, 127.0.0.1). Merge/tag/push esperan smokes y ok del usuario
 2026-10-17 | 7-release | v1.0.0 publicada: smokes it. 1–4 ok (usuario); main = 3c7e316, tag v1.0.0, push. 01b/01c fuera del repo público (cifras reales)
+2026-10-17 | 8-maintain | 08-maintenance.md: 3 bugs XS (M-1 valor negativo, M-2 id repetido, M-3 Host «@»), 5 ítems de 01c, extracto (M), debt linter; pip-audit sin instalar → chequeo 2026-11-17
+2026-10-17 | 8-maintain | M-1 (valor negativo fuera del cierre), M-2 (id repetido en el día) y M-3 («@» en Host) cerrados test-first; 3 checks nuevos; suites verdes, libro real va y vuelve. Commit v1.0.1 (sin push)

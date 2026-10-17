@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1] — 2026-10-17
+Arreglos menores del import de datos crudos y del chequeo de Host.
+
+### Arreglado
+- Importar datos crudos rechaza un papel con `valor` negativo (solo el cierre lleva negativos: faltante) (M-1).
+- Importar datos crudos rechaza un día con dos papeles de igual `id` (M-2).
+- Un Host con «@» (user@host) se rechaza con 403 aunque cambie la versión de Werkzeug (M-3).
+
 ## [1.0.0] — 2026-10-17
 Primera versión con número. Documento soporte (Res. DIAN 167/2021) y app partida en dos PC.
 

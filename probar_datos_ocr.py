@@ -268,6 +268,13 @@ chk(not m13 and d13[0]["documentos"] == [cie13] and ji13["nuevos"] == ["2026-09-
 lib14 = {"2026-09-22": dict(fecha="2026-09-22", documentos=[dict(cie13, id="cierre-14", texto="línea de cierre\n" * 375)], banco={}, cierre={}, guardado="2026-09-23T08:00:00")}
 d14, m14 = leer_crudo(crudo(lib14))
 chk(not m14 and len(d14[0]["documentos"][0]["texto"]) == 6000, f"FIX-14: un texto de 6.000 caracteres no entra: {m14}")
+# M-1 · valor negativo en un papel que no es cierre se rechaza (el cierre sí puede: faltante, FIX-13); M-2 · id repetido en el día se rechaza
+fac = dict(id="f-1", tipo="factura", archivo="f.jpg", valor=50000, datos={}, avisos=[])
+dm, mm = leer_crudo(_arch(j19, dias=[dict(malo, fecha="2026-09-07", documentos=[dict(fac, valor=-50000)]),
+                                     dict(malo, fecha="2026-09-08", documentos=[fac, dict(fac, archivo="g.jpg")]),
+                                     dict(malo, fecha="2026-09-09", documentos=[fac, dict(fac, id="f-2")])]))
+chk([d["fecha"] for d in dm] == ["2026-09-09"] and [x["fecha"] for x in mm] == ["2026-09-07", "2026-09-08"]
+    and "negativo" in mm[0]["motivo"] and "repetido" in mm[1]["motivo"], f"M-1/M-2: valor negativo o id repetido no se rechaza: {mm}")
 hondo = b"[" * 100000 + b"]" * 100000
 msg = _rechaza(hondo)
 T14 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO = T14 / "libro.json"; r14 = imp(hondo)

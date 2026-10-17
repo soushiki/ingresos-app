@@ -328,6 +328,9 @@ chk(r.status_code == 403, f"T1: POST con Host ajeno (DNS rebinding) → 403 ({r.
 for u in ("/api/proveedores", "/api/soporte/excel", "/api/soporte/semanas"):
     r = cl.get(u, headers={"Host": "evil.example.com"})
     chk(r.status_code == 403, f"FIX-10: GET {u} con Host ajeno (DNS rebinding) → 403 ({r.status_code})")
+for h in ("evil.example.com@127.0.0.1:5000", "x@localhost"):
+    r = cl.get("/api/proveedores", headers={"Host": h})
+    chk(r.status_code == 403, f"M-3: Host con «@» ({h}) → 403 ({r.status_code})")
 r = cl.get("/api/proveedores", headers={"Host": "[::1]:5000"})
 chk(r.status_code == 200, f"FIX-10: GET con Host [::1] (IPv6 local) → 200 ({r.status_code})")
 r = cl.get("/api/proveedores", headers={"Host": "127.0.0.1:5000"})
