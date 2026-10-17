@@ -110,6 +110,14 @@ dias = [r, r3, r4, r5, r6, r7]
 contados = [d["id"] for x in dias for d in x["documentos"] if d.get("contar") and d["tipo"] != "cierre"]
 en_libro = {p["id"] for x in dias for p in x["pendientes"]} | {i for x in dias for f_ in x["filas"] for i in f_["docs"]}
 chk(set(contados) <= en_libro, f"ningún papel desaparece de construir: {sorted(set(contados) - en_libro) or 'todos están'}")
+# M-4: una comanda cuyo número no sigue la secuencia del día (85767 entre 85873…) → aviso: ¿de otro día o número mal leído?
+sec = [leer_texto(cmd(n, "PAGA CON VISA $40,000"))[0] for n in (85873, 85874, 85876, 85767)]
+r6 = construir("2026-09-27", sec)
+chk([a.split(":")[0] for a in r6["avisos"] if "secuencia" in a] == ["Comanda 85767"],
+    f"comanda 85767 fuera de la secuencia del día (85873–85876) → aviso: {[a for a in r6['avisos'] if 'secuencia' in a]}")
+chk(not any("secuencia" in a for a in r4["avisos"]) and not any("secuencia" in a for a in construir("2026-09-27", sec, cfg={"salto_comanda": 200})["avisos"]),
+    "comandas seguidas (90001–90005) sin aviso · el salto tolerado se configura (salto_comanda)")
+
 # Excel
 x = libro_a_excel({"2026-09-12": r["filas"] + r2["filas"]}, "Mi restaurante", "900.000.000-1")
 # guarda de exportación (R10): una fila sin código no llega a MOVIMIENTOS, sale como aviso

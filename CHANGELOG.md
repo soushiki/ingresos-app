@@ -1,5 +1,10 @@
 # Changelog
 
+## [Sin publicar]
+
+### Arreglado
+- Una comanda cuyo número queda a más de `salto_comanda` (30, configurable en contable.json) de las demás comandas del día genera un aviso: suele ser un papel de otro día con la fecha reimpresa o un número mal leído (M-4).
+
 ## [1.0.1] — 2026-10-17
 Arreglos menores del import de datos crudos y del chequeo de Host.
 

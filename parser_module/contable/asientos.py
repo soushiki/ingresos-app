@@ -16,7 +16,7 @@ RECAUDO_DESC = {m: d for _, d, m in RECAUDOS_BANCO} | {"App": "Ventas por Rappi"
                                                        "Daviplata": "Recaudos a través de Daviplata"}
 # puente_*: adonde va lo que no se pudo leer (venta sin medio, gasto sin cuenta), para que nada se descarte en silencio (R10).
 # Códigos PUC 138095 «Deudores varios – otros» y 519595 «Gastos diversos – otros»; cámbialos en contable.json si tu contador usa otros.
-CFG = {"reporta_efectivo": "Yorly", "reporta_banco": "Sergio", "cuenta_recaudo": "", "puente_ingreso": "13809501", "puente_gasto": "51959501"}
+CFG = {"reporta_efectivo": "Yorly", "reporta_banco": "Sergio", "cuenta_recaudo": "", "puente_ingreso": "13809501", "puente_gasto": "51959501", "salto_comanda": 30}
 PUENTES = {"13809501": "Puente ingreso: venta sin medio de pago", "51959501": "Puente gasto: gasto sin cuenta"}
 
 
@@ -88,6 +88,14 @@ def faltantes(docs: list, c: dict) -> list:
     if not (ini and fin and 0 < fin - ini < 500): return []
     hay = {int(d["numero"]) for d in docs if d.get("tipo") == "venta" and str(d.get("numero", "")).isdigit()}
     return [n for n in range(ini, fin + 1) if n not in hay]
+
+
+def fuera_de_secuencia(docs: list, salto: int) -> list:
+    """M-4: comandas cuyo número queda a más de `salto` de cualquier otra comanda del día (con 3 o más números distintos).
+    Suele ser un papel de otro día que trae otra fecha escrita (reimpresión) o un número mal leído (65310 por 85310)."""
+    ns = sorted({int(d["numero"]) for d in docs if d.get("tipo") == "venta" and str(d.get("numero", "")).isdigit()})
+    if len(ns) < 3: return []
+    return [n for i, n in enumerate(ns) if min(abs(n - m) for m in ns[max(i - 1, 0):i] + ns[i + 1:i + 2]) > salto]
 
 
 def cruzar(docs: list, c: dict) -> tuple:
@@ -302,6 +310,10 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     cruces, faltan = cruzar([d for d in todos if d["tipo"] != "cierre"], cie)
     if faltan: avisos.insert(0, "Faltan comandas del cierre: " + ", ".join(map(str, faltan)))
     if faltan: avisos.append("Falta la comanda " + ", ".join(map(str, faltan)) + " (está en el rango del cierre)")
+    raros = fuera_de_secuencia(docs, int(cfg["salto_comanda"]))
+    if raros:
+        ns = sorted({int(d["numero"]) for d in docs if d["tipo"] == "venta" and str(d.get("numero", "")).isdigit()} - set(raros))
+        avisos.append(f"Comanda{'s' if len(raros) > 1 else ''} {', '.join(map(str, raros))}: no sigue{'n' if len(raros) > 1 else ''} la secuencia del día ({ns[0]}–{ns[-1]}); ¿es de otro día (fecha reimpresa) o se leyó mal el número?")
     if any(not x["ok"] for x in cruces): avisos.append(f"El cierre del POS no coincide con tus papeles en {sum(not x['ok'] for x in cruces)} concepto(s): ¿falta alguna comanda o se leyó mal?")
     deb, cre = sum(f["debito"] for f in filas), sum(f["credito"] for f in filas)
     if deb != cre: avisos.insert(0, f"El día no cuadra: débito {deb:,} · crédito {cre:,} (diferencia {deb - cre:,})".replace(",", "."))
