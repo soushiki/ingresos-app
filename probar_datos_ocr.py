@@ -146,6 +146,16 @@ w3 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-13": r3["filas"]}, datos={
 s3, m3 = movimientos(w3)
 chk(evaluar(w3, s3.title, "F7", {}) == evaluar(w3, s3.title, "G7", {}) and [(int(d), int(c)) for _, d, c in m3] == [(f_["debito"], f_["credito"]) for f_ in r3["filas"]],
     "y en Excel débito = crédito (no se suma doble)")
+# DEBT-1: construir() no clasifica por su cuenta; sus filas salen de DATOS OCR (cambiar una fila allí cambia el libro)
+import parser_module.contable.asientos as A
+orig = A.datos_ocr
+def otra_cuenta(*a_, **k_):
+    ds = orig(*a_, **k_); next(x for x in ds if x["bloque"] == "caja")["cuenta"] = "52959501"; return ds
+A.datos_ocr = otra_cuenta
+try: r4 = construir("2026-09-13", [copy.deepcopy(a)])
+finally: A.datos_ocr = orig
+chk([f_["codigo"] for f_ in r4["filas"] if f_["debito"]] == ["52959501"], "DEBT-1: la cuenta de la fila de caja sale de DATOS OCR")
+chk(construir("2026-09-13", [copy.deepcopy(a)])["filas"][0]["codigo"] == PG, "y sin el cambio vuelve a la cuenta puente")
 av = load_workbook(io.BytesIO(x))["AVISOS"]
 chk(any("grupo nuevo" in (c.value or "") for c in av["A"]), "AVISOS explica que un grupo nuevo no agrega fila en MOVIMIENTOS")
 
