@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+from parser_module.contable.exportar import texto
 from parser_module.contable.soporte import Documento
 
 NEGRITA = Font(bold=True)
@@ -41,6 +42,9 @@ def libro(docs: list[Documento]) -> bytes:
         hoja.append(["", "IVA", d.iva]); hoja.append(["", "Total", d.total])
         for f in (hoja.max_row - 1, hoja.max_row): hoja.cell(f, 2).font = NEGRITA
         for col, w in zip("ABCD", (30, 40, 16, 28)): hoja.column_dimensions[col].width = w
+    for ws in wb.worksheets:   # FIX-12: este libro no lleva fórmulas propias; todo texto que empiece por = + - @ queda como texto
+        for f in ws.iter_rows():
+            for c in f: texto(c)
     for c in res[1]: c.font = NEGRITA; c.fill = FONDO
     for col, w in zip("ABCDEFG", (14, 32, 12, 14, 14, 14, 14)): res.column_dimensions[col].width = w
     for row in res.iter_rows(min_row=2, min_col=4, max_col=4):

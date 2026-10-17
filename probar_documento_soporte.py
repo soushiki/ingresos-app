@@ -300,6 +300,15 @@ det = [f for f in filas if f[0] in ("2026-09-14", "2026-09-16", "2026-09-20")]
 chk(len(det) == 3 and sum(f[2] for f in det) == 40000 and filas[-2][1:3] == ("IVA", 0) and filas[-1][1:3] == ("Total", 40000),
     f"art. 4: detalle de la operación (3 líneas con papel de origen), IVA y total: {filas[-2:]}")
 
+# FIX-12 · descripción, nombre, motivo o concepto que empiezan por = + - @ quedan como texto (CWE-1236)
+import copy as _copy
+d12 = _copy.deepcopy(d2[0]); d12.lineas[0].descripcion = '=HYPERLINK("x")'; d12.concepto = "+1+1"; d12.clase = "NA"; d12.ajusta_a = "CTG-1"
+d12.proveedor = prov.Proveedor(**{**d12.proveedor.__dict__, "nombre": "-2+3", "direccion": "@SUM(1)"})
+w12 = load_workbook(io.BytesIO(sxl.libro([d12])))
+c12 = [c for w in w12.worksheets for f in w.iter_rows() for c in f if c.value in ('=HYPERLINK("x")', "+1+1", "-2+3", "@SUM(1)")]
+chk(len(c12) >= 5 and all(c.data_type == "s" and c.quotePrefix for c in c12),
+    f"FIX-12: descripción, concepto, nombre y dirección que empiezan por = + - @ quedan como texto: {[(c.parent.title, c.coordinate, c.data_type) for c in c12]}")
+chk(isinstance(w12["RESUMEN"]["D2"].value, int), "FIX-12: los valores numéricos siguen siendo números")
 
 # ── T12 · rutas /api/soporte/* y /api/proveedores ───────────────────────────
 import json, app as web

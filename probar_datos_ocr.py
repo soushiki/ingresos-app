@@ -159,6 +159,15 @@ chk(construir("2026-09-13", [copy.deepcopy(a)])["filas"][0]["codigo"] == PG, "y 
 av = load_workbook(io.BytesIO(x))["AVISOS"]
 chk(any("grupo nuevo" in (c.value or "") for c in av["A"]), "AVISOS explica que un grupo nuevo no agrega fila en MOVIMIENTOS")
 
+# FIX-12 · texto libre que empieza por = + - @ queda como texto (CWE-1236), las fórmulas propias siguen siendo fórmulas
+INY = '=HYPERLINK("x")'
+r12 = construir("2026-09-14", [dict(f, id="iny", numero="POS9", valor=12000, tercero=INY, detalle="@SUM(1)", avisos=[])])
+w12 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-14": r12["filas"]}, datos={"2026-09-14": r12["datos"]})))
+celdas = [c for w in w12.worksheets for fila_ in w.iter_rows() for c in fila_ if isinstance(c.value, str) and ("HYPERLINK" in c.value or "@SUM" in c.value)]
+chk(celdas and all(c.data_type == "s" and c.quotePrefix for c in celdas) and {c.parent.title for c in celdas} >= {"DATOS OCR", "MOVIMIENTOS SEPTIEMBRE"},
+    f"FIX-12: tercero/detalle «{INY}» quedan como texto en DATOS OCR y MOVIMIENTOS: {[(c.parent.title, c.coordinate, c.data_type) for c in celdas]}")
+chk(any(c.data_type == "f" for c in w12["MOVIMIENTOS SEPTIEMBRE"]["F"] + w12["MOVIMIENTOS SEPTIEMBRE"]["G"]), "FIX-12: los importes de MOVIMIENTOS siguen siendo fórmulas")
+
 # fitness ADR-002 con los días guardados (si hay libro.json): cada día evaluado = construir()
 LIB = Path(__file__).parent / "datos" / "libro.json"
 if LIB.exists():

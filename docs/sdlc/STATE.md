@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 5-implement   # FIX-12 (fórmulas en Excel), luego re-test it. 3; después it. 4; smokes it. 1–3 pendientes (usuario)
+next: 6-test   # re-test it. 3 (FIX-11, FIX-12); después it. 4; smokes it. 1–3 pendientes (usuario)
 
 ## Stages
 - [x] 0-triage
@@ -13,7 +13,7 @@ next: 5-implement   # FIX-12 (fórmulas en Excel), luego re-test it. 3; después
 - [x] 2-requirements   (gate: user approval)
 - [x] 3-design         (gate: user approval)
 - [x] 4-plan
-- [ ] 5-implement      current task: FIX-12
+- [ ] 5-implement      current task: — (it. 3 cerrada; sigue it. 4 tras el re-test)
 - [ ] 6-test           (iter. 1 y 2 pasan; it. 3 no pasa: FIX-11, FIX-12; smokes pendientes)
 - [ ] 7-release
 - [~] 8-maintain
@@ -78,3 +78,4 @@ next: 5-implement   # FIX-12 (fórmulas en Excel), luego re-test it. 3; después
 2026-10-17 | 5-implement | T17: 3 checks N4 (50 DS en 0,07 s, Excel soporte 0,15 s, Excel del libro de sept. real en 0,50 s; límites 2/2/5 s); suites verdes. Iteración 3 completa → 6-test
 2026-10-17 | 6-test | Iter. 3 no pasa: suite verde y R4/R7/R8/N1/N2/N4 con checks, pero falta el botón de nota de ajuste en ③ (FIX-11) y hay inyección de fórmulas en los Excel (FIX-12) → 06-test-report.md
 2026-10-17 | 5-implement | FIX-11: botón «Nota de ajuste» en DS transmitidos (concepto + líneas ±, total en vivo) y «Ajusta a CTG-N» en la tabla; demo en copia: CTG-1 → −20.000 → NA-1, su ⬇ trae hoja NA-1; 375 px sin desborde; suites verdes
+2026-10-17 | 5-implement | FIX-12: texto que empieza por = + - @ (o tab/CR) queda como texto con quotePrefix en soporte_excel (todo el libro) y exportar (DATOS OCR, MOVIMIENTOS salvo F/G, AVISOS); 4 checks; suites verdes → 6-test

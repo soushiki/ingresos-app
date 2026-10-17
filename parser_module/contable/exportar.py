@@ -19,6 +19,12 @@ DATOS_HEAD = {"fecha": "Fecha", "archivo": "Archivo de origen", "tipo": "Tipo", 
 AMARILLO = "FFF2CC"
 
 
+def texto(c):
+    """FIX-12 (CWE-1236): texto libre (papel leído, digitado) que empieza por = + - @ queda como texto, no como fórmula activa."""
+    if isinstance(c.value, str) and c.value[:1] in ("=", "+", "-", "@", "\t", "\r"): c.data_type = "s"; c.quotePrefix = True
+    return c
+
+
 D = "'DATOS OCR'!"
 DC = {k: L(i) for i, k in enumerate(DATOS_HEAD, 1)}   # columna de cada campo en DATOS OCR
 NOTAS_DATOS = ["Los importes de MOVIMIENTOS son fórmulas sobre la hoja DATOS OCR: corrige allí un valor, una cuenta o un estado y el libro se recalcula al abrirlo en Excel.",
@@ -61,6 +67,7 @@ def hoja_datos(wb, datos: dict) -> dict:
         for r in datos[f]:
             ws.append([date.fromisoformat(r["fecha"]) if k == "fecha" else (int(r[k]) if k == "cuenta" and str(r[k]).isdigit() else (r[k] if r[k] != "" else None)) for k in DATOS_HEAD])
             k = ws.max_row; ws.cell(k, 1).number_format = "dd/mm/yyyy"
+            for c in ws[k]: texto(c)
             for i in (7, 12, 13): ws.cell(k, i).number_format = '$ #,##0;-$ #,##0;"$ -"'
             if r["estado"] != "ok" or r["aviso"]:
                 for c in ws[k]: c.fill = _f(AMARILLO)
@@ -109,6 +116,7 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
                  *imp, None, f["reporta"] or None, f["medio"] or None]
             for i, x in enumerate(v, 1):
                 c = ws.cell(k, i, x); c.border = FINO
+                if i not in (6, 7): texto(c)   # F/G sí pueden ser fórmulas (ADR-002)
                 c.fill = _f(VERDE if str(f["codigo"]).startswith("4") or f.get("grupo") == "venta" else ROSA)
             ws.cell(k, 1).number_format = "dd/mm/yyyy"; ws.cell(k, 1).alignment = Alignment(horizontal="center")
             for i in (6, 7): ws.cell(k, i).number_format = '$ #,##0;-$ #,##0;"$ -"'
@@ -134,5 +142,5 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
     if not hojas: wb.remove(rs); wb.create_sheet("MOVIMIENTOS")
     if avisos or inicio:
         av = wb.create_sheet("AVISOS"); av["A1"] = "Avisos de exportación"; av["A1"].font = Font(bold=True); av.column_dimensions["A"].width = 110
-        for a in avisos + (NOTAS_DATOS if inicio else []): av.append([a])
+        for a in avisos + (NOTAS_DATOS if inicio else []): av.append([a]); texto(av.cell(av.max_row, 1))
     buf = io.BytesIO(); wb.save(buf); return buf.getvalue()
