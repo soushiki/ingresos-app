@@ -436,6 +436,7 @@ def cont_revision_confirmar(fecha, doc_id):
         b = _bloqueos(fecha, dia["documentos"])
         if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
         d.update(limpio); d["estado"], d["motivos"], d["revisado"] = "revisado", [], True
+        if d.get("avisos"): d["avisos_resueltos"], d["avisos"] = list(d.get("avisos_resueltos") or []) + d["avisos"], []   # FIX-13: el aviso viejo del OCR ya no cuenta
         r = construir_asientos(fecha, dia["documentos"], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
         lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre")); _guardar_libro(lib)
         revisado = next(x for x in lib[fecha]["documentos"] if x.get("id") == doc_id)

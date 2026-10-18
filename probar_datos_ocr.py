@@ -302,11 +302,11 @@ print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
 
 # T12 · estado del recibo y motivo en DATOS OCR y en el Excel; avisos del día (R7)
 vd = dict(v, id="dud1", numero="85700", estado="dudoso", motivos=["Los medios de pago suman 51.500 y pagado − cambio es 52.000"], avisos=[])
-vr = dict(v, id="rev1", numero="85701", estado="revisado", motivos=["x"], avisos=[])
+vr = dict(v, id="rev1", numero="85701", estado="revisado", motivos=["x"], avisos=["Los pagos (75.000) no suman"])   # aviso viejo de un revisado de antes
 r12 = construir("2026-09-12", docs + [vd, vr], {"tarjetas": 146500}); D12 = r12["datos"]
 pd_ = [x for x in D12 if x["id"] == "dud1"]; pr_ = [x for x in D12 if x["id"] == "rev1"]
 chk(pd_ and all(x["recibo"] == "dudoso" and "51.500" in x["motivo"] for x in pd_), "dato de un recibo dudoso: recibo «dudoso» y su motivo")
-chk(pr_ and all(x["recibo"] == "revisado" for x in pr_), "un recibo revisado sale «revisado»")
+chk(pr_ and all(x["recibo"] == "revisado" and x["motivo"] == "" for x in pr_), "un recibo revisado sale «revisado» y sin motivo aunque tenga un aviso viejo")
 chk(any("85700 dudosa" in a and "51.500" in a for a in r12["avisos"]), "aviso del día con el motivo del dudoso")
 chk(not any("85701 dudosa" in a for a in r12["avisos"]), "el revisado ya no avisa")
 ws12 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": r12["filas"]}, datos={"2026-09-12": D12}))).worksheets[0]

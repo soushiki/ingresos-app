@@ -192,7 +192,8 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
     datos = []
     def dato(d=None, **k):
         r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="", recibo="", motivo="")
-        if d: r.update(recibo=estado_de(d), motivo="; ".join(d.get("motivos") or d.get("avisos") or []), archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
+        if d: r.update(recibo=estado_de(d), motivo="; ".join(d.get("motivos") or d.get("avisos") or []) if estado_de(d) == "dudoso" else "",   # FIX-13: solo el dudoso trae motivo
+                         archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
         r.update(k); datos.append(r)
     for k, desc, medio in RECAUDOS_BANCO:
         if int(banco.get(k) or 0): dato(tipo="extracto", archivo="extracto bancario", detalle=desc, valor=int(banco[k]), medio=medio, cuenta=BANCO, bloque="extracto")

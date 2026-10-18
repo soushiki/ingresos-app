@@ -22,7 +22,7 @@ def venta(id, numero, consumo, estado, **kw):
     return d
 
 FECHA = "2026-09-14"
-docs = [venta("aaaa0001", "100", 10000, "dudoso"), venta("aaaa0002", "101", 20000, "validado"), venta("aaaa0003", "102", 30000, "dudoso")]
+docs = [venta("aaaa0001", "100", 10000, "dudoso", avisos=["Los pagos (75.000) no suman consumo"]), venta("aaaa0002", "101", 20000, "validado"), venta("aaaa0003", "102", 30000, "dudoso")]
 lib = {FECHA: web.construir_asientos(FECHA, docs, {}, web._cont_cfg(), None)}
 lib[FECHA].update(fecha=FECHA, banco={}, cierre={})
 web.RUTA_LIBRO.write_text(json.dumps(lib), encoding="utf8")
@@ -62,6 +62,10 @@ antes = dia()["debito"]
 r = cl.post(URL + "aaaa0001")
 chk(r.status_code == 200 and r.get_json()["estado"] == "revisado" and estado_de(doc("aaaa0001")) == "revisado", "confirmar: queda «revisado»")
 chk(dia()["debito"] == antes and doc("aaaa0001")["motivos"] == [], "confirmar sin cambios: mismo total, sin motivos")
+chk(doc("aaaa0001")["avisos"] == [] and doc("aaaa0001")["avisos_resueltos"] == ["Los pagos (75.000) no suman consumo"],
+    "revisado (FIX-13 del ciclo OCR): confirmar pasa el aviso viejo del OCR a avisos_resueltos")
+chk(not any(x["id"] == "aaaa0001" and x["motivo"] for x in web.construir_asientos(FECHA, dia()["documentos"], {}, web._cont_cfg(), None)["datos"]),
+    "revisado (FIX-13 del ciclo OCR): sin Motivo en DATOS OCR")
 ref = json.loads((web.RUTA_REF / "referencia_2026-09.json").read_text(encoding="utf8"))
 chk([r["numero"] for r in ref["documentos"]] == ["100"] and ref["documentos"][0]["foto"] == "sep/foto1.jpg", "confirmar: entra a la referencia del mes")
 
