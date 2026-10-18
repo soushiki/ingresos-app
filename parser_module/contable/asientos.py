@@ -181,7 +181,7 @@ def marcar_duplicados(docs: list) -> list:
 
 
 FALTA_CUENTA = "falta la cuenta"   # aviso de DATOS OCR que construir() reconoce (DEBT-1)
-COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id"]
+COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id", "recibo", "motivo"]   # T12: recibo = validado|dudoso|revisado (estado_de) y motivo = por qué es dudoso (R7)
 
 
 def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
@@ -191,8 +191,8 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
     bloque: venta · caja · factura · extracto · rappi, el asiento al que va la fila."""
     datos = []
     def dato(d=None, **k):
-        r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="")
-        if d: r.update(archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
+        r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="", recibo="", motivo="")
+        if d: r.update(recibo=estado_de(d), motivo="; ".join(d.get("motivos") or d.get("avisos") or []), archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
         r.update(k); datos.append(r)
     for k, desc, medio in RECAUDOS_BANCO:
         if int(banco.get(k) or 0): dato(tipo="extracto", archivo="extracto bancario", detalle=desc, valor=int(banco[k]), medio=medio, cuenta=BANCO, bloque="extracto")
@@ -358,6 +358,8 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     for d in docs:
         if d["tipo"] in ("venta", "gasto_caja", "factura") and d.get("avisos") and estado_de(d) != "revisado":
             avisos += [f"{d['tipo'].replace('_', ' ').capitalize()} {d['numero'] or ''}: {a}".replace("  ", " ") for a in d["avisos"]]
+        if d["tipo"] == "venta" and estado_de(d) == "dudoso":   # T12 (R7): el motivo de la validación, si no es ya un aviso
+            avisos += [f"Venta {d['numero'] or ''} dudosa: {m}".replace("  ", " ") for m in d.get("motivos") or [] if m not in (d.get("avisos") or [])]
     cie = {**datos_cierre(todos), **{k: int(v) for k, v in (cierre or {}).items() if v is not None}}
     cruces, faltan = cruzar([d for d in todos if d["tipo"] != "cierre"], cie)
     if faltan: avisos.insert(0, "Faltan comandas del cierre: " + ", ".join(map(str, faltan)))

@@ -299,3 +299,20 @@ chk((neto(PROPINAS), neto(DOMICILIOS), neto(RESTAURANTE)) == (9000, 15000, 11300
 _, mov6 = movimientos(load_workbook(io.BytesIO(libro_a_excel({"2026-09-18": r6["filas"]}, datos={"2026-09-18": r6["datos"]}))))
 chk([(int(d), int(c)) for _, d, c in mov6] == [(f_["debito"], f_["credito"]) for f_ in r6["filas"]], "M-6: en Excel, las fórmulas de esas filas dan lo mismo que construir()")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
+
+# T12 · estado del recibo y motivo en DATOS OCR y en el Excel; avisos del día (R7)
+vd = dict(v, id="dud1", numero="85700", estado="dudoso", motivos=["Los medios de pago suman 51.500 y pagado − cambio es 52.000"], avisos=[])
+vr = dict(v, id="rev1", numero="85701", estado="revisado", motivos=["x"], avisos=[])
+r12 = construir("2026-09-12", docs + [vd, vr], {"tarjetas": 146500}); D12 = r12["datos"]
+pd_ = [x for x in D12 if x["id"] == "dud1"]; pr_ = [x for x in D12 if x["id"] == "rev1"]
+chk(pd_ and all(x["recibo"] == "dudoso" and "51.500" in x["motivo"] for x in pd_), "dato de un recibo dudoso: recibo «dudoso» y su motivo")
+chk(pr_ and all(x["recibo"] == "revisado" for x in pr_), "un recibo revisado sale «revisado»")
+chk(any("85700 dudosa" in a and "51.500" in a for a in r12["avisos"]), "aviso del día con el motivo del dudoso")
+chk(not any("85701 dudosa" in a for a in r12["avisos"]), "el revisado ya no avisa")
+ws12 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": r12["filas"]}, datos={"2026-09-12": D12}))).worksheets[0]
+cab = [c.value for c in ws12[1]]
+ie, im, ii = cab.index("Recibo"), cab.index("Motivo si es dudoso"), cab.index("Id")
+fl = [f_ for f_ in ws12.iter_rows(min_row=2, values_only=True) if f_[ii] == "dud1"]
+chk(fl and fl[0][ie] == "dudoso" and "51.500" in fl[0][im], f"Excel: columnas Recibo y Motivo ({cab[ie]}, {cab[im]})")
+chk(all(f_[ie] in ("validado", "dudoso", "revisado") for f_ in ws12.iter_rows(min_row=2, values_only=True) if f_[ii]), "Excel: todo papel trae su estado")
+print("\nTODO BIEN" if ok else "\nHAY FALLOS")

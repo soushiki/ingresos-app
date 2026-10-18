@@ -15,7 +15,7 @@ FINO = Border(bottom=Side(style="hair", color="BFBFBF"))
 
 
 DATOS_HEAD = {"fecha": "Fecha", "archivo": "Archivo de origen", "tipo": "Tipo", "numero": "Número", "tercero": "Tercero", "detalle": "Detalle", "valor": "Valor",
-              "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id"}
+              "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id", "recibo": "Recibo", "motivo": "Motivo si es dudoso"}
 AMARILLO = "FFF2CC"
 
 
@@ -70,9 +70,9 @@ def hoja_datos(wb, datos: dict) -> dict:
             k = ws.max_row; ws.cell(k, 1).number_format = "dd/mm/yyyy"
             for c in ws[k]: texto(c)
             for i in (7, 12, 13): ws.cell(k, i).number_format = '$ #,##0;-$ #,##0;"$ -"'
-            if r["estado"] != "ok" or r["aviso"]:
+            if r["estado"] != "ok" or r["aviso"] or r["recibo"] == "dudoso":
                 for c in ws[k]: c.fill = _f(AMARILLO)
-    for i, w in enumerate([12, 40, 14, 10, 26, 30, 14, 16, 11, 12, 36, 12, 12, 10, 10], 1): ws.column_dimensions[L(i)].width = w
+    for i, w in enumerate([12, 40, 14, 10, 26, 30, 14, 16, 11, 12, 36, 12, 12, 10, 10, 12, 44], 1): ws.column_dimensions[L(i)].width = w
     ws.freeze_panes = "A2"; ws.auto_filter.ref = f"A1:{L(len(DATOS_HEAD))}{max(ws.max_row, 2)}"
     return inicio
 

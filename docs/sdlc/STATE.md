@@ -13,7 +13,7 @@ next: 5-implement   # plan 2026-10-18
 - [x] 2-requirements   (aprobado 2026-10-17)
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
-- [ ] 5-implement      current task: T12 (avisos de dudoso)
+- [ ] 5-implement      current task: T12 hecho, falta commit; sigue T13
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -50,3 +50,4 @@ next: 5-implement   # plan 2026-10-18
 2026-10-18 | 5-implement | T9: V4 Real-ESRGAN opcional + medir_precision --variantes/--peores; 20 fotos más dudosas: V0 59/107 enteros bien, suman V4 +9, V3 +4, V1 +1, V2 0 → config V0,V4,V3,V1,V2; iteración 2 completa
 2026-10-18 | 5-implement | T10: GET/POST /api/contable/revision (400/404/413), confirmar/editar → «revisado» + recalcula el día + referencia.agregar; cont_confirmar conserva revisados al releer; referencia.congelar usa estado_de; probar_revision 38 checks; suite verde
 2026-10-18 | 5-implement | T11: pestaña ④ Revisión (recorte, motivo, pasadas, candidatos clicables, confirmar/editar) + @media ancho/alto; probada en navegador: corregir 85299 recalcula el 01/09; 375 px sin scroll; datos restaurados
+2026-10-18 | 5-implement | T12: DATOS OCR suma columnas Recibo (estado_de) y Motivo; fila amarilla si dudoso; avisos del día con motivo de cada venta dudosa (revisado no avisa); probar_datos_ocr +6 checks; suite verde; tocó asientos.py/exportar.py en vez de excel_export.py
