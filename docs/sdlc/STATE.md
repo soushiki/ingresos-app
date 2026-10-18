@@ -13,7 +13,7 @@ next: 5-implement   # plan 2026-10-18
 - [x] 2-requirements   (aprobado 2026-10-17)
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
-- [ ] 5-implement      current task: T8b (spike de segmentación, Opus)
+- [ ] 5-implement      current task: T8b hecho; falta conectar `esperados` en app.py (preguntar) → luego T9
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -45,3 +45,4 @@ next: 5-implement   # plan 2026-10-18
 2026-10-18 | 5-implement | T6: preprocess.variantes (V0–V3) + nitidez (Laplaciano + Tenengrad, numpy, ≤1000 px); probar_variantes 12 checks; suite verde
 2026-10-18 | 5-implement | T7: relectura.leer_recibo (V0→validar→≤3 relecturas, voto por campo, borrosa pide par que coincida, tope de tiempo, MOTOR_LOCK, recorte C6); probar_relectura 28 checks; umbral_laplaciano=100 sin calibrar (T9)
 2026-10-18 | 5-implement | T8: relectura.leer_hoja + R5 en validar (numeros_de_nombre, fuera del nombre, faltantes, cruces); 2 fotos reales leídas en la app; separar deja 30/40 fotos en una pieza → usuario aprueba spike T8b antes de T9
+2026-10-18 | 5-implement | T8b: separar(img, esperados=n) por columnas + huecos más anchos, sin bordes de papel; cuenta exacta 1/43 → 35/43 (81 %), a ojo ≈29/43 limpias; VLM y máscara de papel descartados; falla madera/mesa oscura y fotos de lado; sin esperados idéntico; probar_separar 9 checks
