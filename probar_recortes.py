@@ -25,6 +25,9 @@ hoy = date.today()
 chk(recortes.borrar(hoy + timedelta(1), hoy + timedelta(2), tmp) == 0, "borrar fuera del rango no borra")
 os.utime(tmp / n3, (0, 86400 * 365))   # 1971
 chk(recortes.borrar(date(1970, 1, 1), date(1972, 1, 1), tmp) == 1 and not (tmp / n3).exists() and (tmp / n1).exists(), "borrar(desde, hasta) borra solo ese rango")
+os.utime(tmp / n1, (0, 86400 * 365))   # 1971: un recorte viejo que se vuelve a guardar
+chk(recortes.guardar(a, tmp) == n1 and date.fromtimestamp((tmp / n1).stat().st_mtime) == hoy, "guardar de nuevo renueva la fecha (mtime)")
+chk(recortes.borrar(date(1970, 1, 1), date(1972, 1, 1), tmp) == 0 and (tmp / n1).exists(), "borrar por rango no se lleva un recorte recién reusado")
 
 # ruta HTTP sobre una carpeta temporal
 appmod.RUTA_RECORTES = tmp

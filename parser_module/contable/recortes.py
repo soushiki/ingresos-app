@@ -1,6 +1,6 @@
 """C6 · ADR-006: recortes de recibos en disco, un JPEG gris por huella (sha256[:16]). Solo este módulo escribe y borra en la carpeta."""
 from __future__ import annotations
-import hashlib, io, re
+import hashlib, io, os, re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -15,6 +15,7 @@ def guardar(img, carpeta) -> str:
     carpeta = Path(carpeta); carpeta.mkdir(parents=True, exist_ok=True)
     ruta = carpeta / nombre
     if not ruta.exists(): ruta.write_bytes(datos)
+    else: os.utime(ruta)   # reusado: renueva la fecha para que borrar(desde, hasta) no lo tome por viejo
     return nombre
 
 

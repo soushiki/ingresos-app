@@ -39,7 +39,7 @@
 - [x] FIX-4 (S) «Falta la mesa» no aplica a domicilio / para llevar (domicilio > 0 o detalle con «domicilio»/«llevar») — R1 — files: `validar.py`, `probar_validar.py` — model: Sonnet — hecho: «Falta la mesa» se omite si domicilio > 0 o el detalle (sin acentos/mayúsculas) dice domicilio/llevar; probar_validar +4 checks
 - [x] FIX-5 (S) `regla_items` apagada por defecto (o tolerancia/aviso suave), como decía T2 — R1 — files: `validar.py`, `probar_validar.py` — model: Sonnet — hecho: CONFIG regla_items=False; se enciende con ctx {"regla_items": True}; probar_validar +1 check (y «tolerancia 0» ya no depende de la regla de ítems)
 - [x] FIX-6 (S) Revisión: quitar `fecha` de los campos editables (o mover el recibo de día) — R8 — files: `app.py`, `probar_revision.py` — model: Sonnet — hecho: `fecha` fuera de los editables (400 «campo no editable»); la pestaña ④ nunca la enviaba; probar_revision +2 checks
-- [ ] FIX-7 (S) `recortes.guardar` actualiza el mtime si el archivo ya existe — N5 — files: `recortes.py`, `probar_recortes.py` — model: Sonnet
+- [x] FIX-7 (S) `recortes.guardar` actualiza el mtime si el archivo ya existe — N5 — files: `recortes.py`, `probar_recortes.py` — model: Sonnet
 - [ ] FIX-8 (S) `lector_completo` pasa `completa=False` en páginas de PDF de varias páginas — R5, R9 — files: `medir_precision.py` — model: Sonnet
 - [ ] FIX-9 (S) `_catalogo`: no reconstruir/escribir en cada escaneo (una vez por arranque o al confirmar) — R6 — files: `app.py` — model: Sonnet
 - [ ] FIX-10 (S) `referencia.agregar`: recibo sin número se reemplaza por id — R9 — files: `referencia.py`, `probar_revision.py` — model: Sonnet
