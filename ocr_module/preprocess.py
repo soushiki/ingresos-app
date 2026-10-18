@@ -67,3 +67,33 @@ def prepare_tiles(source, ancho: int = 1000, alto: int = 1500, solape: float = 0
         if y1 >= H: break
         y += paso
     return out
+
+
+def variantes(img: Image.Image) -> list[tuple[str, Image.Image]]:
+    """C1: 4 versiones de la misma imagen para releer una foto dudosa.
+    V0 = tal cual; V1 = ampliada 1,5x; V2 = gris + autocontraste; V3 = recorte con 3 % menos de margen por lado."""
+    img = img.convert("RGB")
+    w, h = img.size
+    v1 = img.resize((round(w * 1.5), round(h * 1.5)), Image.LANCZOS)
+    v2 = ImageOps.autocontrast(ImageOps.grayscale(img), cutoff=1).convert("RGB")
+    dx, dy = round(w * 0.03), round(h * 0.03)
+    v3 = img.crop((dx, dy, w - dx, h - dy))
+    return [("V0", img), ("V1", v1), ("V2", v2), ("V3", v3)]
+
+
+def nitidez(img: Image.Image) -> dict:
+    """C1: {'laplaciano': varianza del Laplaciano, 'tenengrad': media de |grad|^2 (Sobel)}. Más alto = más nítida.
+    Se mide sobre un máximo de 1000 px de lado para que no dependa del tamaño de la foto."""
+    import numpy as np
+    g = ImageOps.grayscale(img)
+    m = max(g.size)
+    if m > 1000:
+        g = g.resize((max(1, round(g.width * 1000 / m)), max(1, round(g.height * 1000 / m))), Image.BILINEAR)
+    a = np.asarray(g, dtype=np.float64)
+    if a.shape[0] < 3 or a.shape[1] < 3:
+        return {"laplaciano": 0.0, "tenengrad": 0.0}
+    c = a[1:-1, 1:-1]
+    lap = a[:-2, 1:-1] + a[2:, 1:-1] + a[1:-1, :-2] + a[1:-1, 2:] - 4 * c
+    gx = (a[:-2, 2:] + 2 * a[1:-1, 2:] + a[2:, 2:]) - (a[:-2, :-2] + 2 * a[1:-1, :-2] + a[2:, :-2])
+    gy = (a[2:, :-2] + 2 * a[2:, 1:-1] + a[2:, 2:]) - (a[:-2, :-2] + 2 * a[:-2, 1:-1] + a[:-2, 2:])
+    return {"laplaciano": float(lap.var()), "tenengrad": float((gx * gx + gy * gy).mean())}
