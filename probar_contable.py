@@ -110,6 +110,53 @@ dias = [r, r3, r4, r5, r6, r7]
 contados = [d["id"] for x in dias for d in x["documentos"] if d.get("contar") and d["tipo"] != "cierre"]
 en_libro = {p["id"] for x in dias for p in x["pendientes"]} | {i for x in dias for f_ in x["filas"] for i in f_["docs"]}
 chk(set(contados) <= en_libro, f"ningún papel desaparece de construir: {sorted(set(contados) - en_libro) or 'todos están'}")
+# M-4: una comanda cuyo número no sigue la secuencia del día (85767 entre 85873…) → aviso: ¿de otro día o número mal leído?
+sec = [leer_texto(cmd(n, "PAGA CON VISA $40,000"))[0] for n in (85873, 85874, 85876, 85767)]
+r6 = construir("2026-09-27", sec)
+chk([a.split(":")[0] for a in r6["avisos"] if "secuencia" in a] == ["Comanda 85767"],
+    f"comanda 85767 fuera de la secuencia del día (85873–85876) → aviso: {[a for a in r6['avisos'] if 'secuencia' in a]}")
+chk(not any("secuencia" in a for a in r4["avisos"]) and not any("secuencia" in a for a in construir("2026-09-27", sec, cfg={"salto_comanda": 200})["avisos"]),
+    "comandas seguidas (90001–90005) sin aviso · el salto tolerado se configura (salto_comanda)")
+# M-8: mismo número de comanda no es duplicado si la hora de venta o la mesa cambian (el OCR leyó mal el número de otro recibo)
+def cmd_hm(n, hora, mesa, iid):
+    return dict(leer_texto(cmd(n, "PAGA CON VISA $40,000", extra=f"Mesa: {mesa}\n").replace("9:00:00 p. m.", hora))[0], id=iid)
+rep = [cmd_hm(85560, "6:42:34 p. m.", "M1", "a"), cmd_hm(85560, "6:42:34 p. m.", "M30", "b"), cmd_hm(85560, "7:39:13 p. m.", "M1", "c")]
+r8 = construir("2026-09-13", rep)
+chk([d["contar"] for d in r8["documentos"]] == [True, True, True] and not any(d["dup_de"] for d in r8["documentos"])
+    and [a for a in r8["avisos"] if "número repetido" in a] == ["Comanda 85560: número repetido en 3 recibos distintos (no coinciden hora, mesa y valores): revisa el número en el papel"],
+    f"85560 con otra mesa u otra hora → los 3 cuentan, con aviso «número repetido: revisa»: {[a for a in r8['avisos'] if 'repetido' in a]}")
+copias = [cmd_hm(85505, "8:10:00 p. m.", "M16", i) for i in "pqrst"]   # la misma foto cargada 5 veces (10-09)
+r9 = construir("2026-09-10", copias)
+chk([d["contar"] for d in r9["documentos"]] == [True, False, False, False, False] and all(d["dup_de"] == "p" for d in r9["documentos"][1:])
+    and not any("repetido" in a for a in r9["avisos"]), "misma comanda, misma hora y mesa (la foto cargada 5 veces) → sigue siendo duplicado, sin aviso")
+otra = lambda d, **k: dict(d, **{"texto": d["texto"] + "\n(otra lectura)", **k})   # mismo papel leído otra vez: el texto no es idéntico
+base = cmd_hm(85580, "7:00:00 p. m.", "M5", "m")
+casos = {"otro valor": [base, otra(base, id="n", consumo=52000, tarjeta=52000)],
+         "sin mesa": [base, otra(base, id="n", texto=base["texto"].replace("Mesa: M5\n", ""), detalle="")],
+         "sin hora": [base, otra(base, id="n", texto=base["texto"].replace("7:00:00 p. m.", ""))]}
+for caso, ds in casos.items():
+    rc = construir("2026-09-13", ds)
+    chk([d["contar"] for d in rc["documentos"]] == [True, True] and any("85580: número repetido en 2" in a for a in rc["avisos"]),
+        f"mismo número, misma hora/mesa pero {caso} → son 2 papeles (falta de datos no los junta), con aviso")
+par = [cmd_hm(85575, "9:09:18 p. m.", "M40", "u"), otra(cmd_hm(85575, "9:09:18 p. m.", "M40", "w"), consumo=0, tarjeta=0)]   # 13-09: uno leyó 0
+rp = construir("2026-09-13", par)
+chk([(d["contar"], d["dup_de"]) for d in rp["documentos"]] == [(True, ""), (False, "u")], "85575 13-09: misma hora y mesa, uno con valores en 0 (no leídos) → sigue siendo duplicado")
+sn = [dict(cmd_hm(85590, "8:00:00 p. m.", "M7", i), numero="") for i in "ghi"] + [dict(cmd_hm(85591, "8:20:00 p. m.", "M7", "j"), numero="")]
+rs = construir("2026-09-10", sn)
+chk([d["contar"] for d in rs["documentos"]] == [True, False, False, True] and rs["documentos"][1]["dup_de"] == "g",
+    "sin número: la misma foto cargada 3 veces cuenta una vez; otro papel sin número (otra hora) cuenta")
+viejo = [cmd_hm(85575, "6:00:00 p. m.", "M2", "x"), dict(cmd_hm(85579, "6:30:00 p. m.", "M4", "y"), dup_de="x", contar=False)]
+r10 = construir("2026-09-13", viejo)
+chk([(d["dup_de"], d["contar"]) for d in r10["documentos"]] == [("", True), ("", True)], "número corregido (85579): el «duplicado de» viejo se borra y vuelve a contar")
+fijo = [cmd_hm(85575, "6:00:00 p. m.", "M2", "x"), dict(cmd_hm(85579, "6:30:00 p. m.", "M4", "y"), dup_de="x", contar=False, manual_contar=True)]
+r11 = construir("2026-09-13", fijo)
+chk([(d["dup_de"], d["contar"]) for d in r11["documentos"]] == [("", True), ("x", False)], "si tú lo desmarcaste a mano (manual_contar) se respeta tal cual")
+
+# M-9: el OCR marca los papeles con «=== DOCUMENTO ===» pero a veces pega dos recibos en un bloque → se parte también por membrete
+pegados = "=== DOCUMENTO ===\n" + cmd(90101, "PAGA CON VISA $40,000") + "\n\n" + cmd(90102, "PAGA CON TRANSFEREN") + "\n=== DOCUMENTO ===\n" + cmd(90103, "EFECTIVO $40,000")
+chk([d["numero"] for d in leer_texto(pegados, "comandas")] == ["90101", "90102", "90103"],
+    f"M-9: dos recibos pegados en un bloque «DOCUMENTO» salen como dos papeles: {[d['numero'] for d in leer_texto(pegados, 'comandas')]}")
+
 # Excel
 x = libro_a_excel({"2026-09-12": r["filas"] + r2["filas"]}, "Mi restaurante", "900.000.000-1")
 # guarda de exportación (R10): una fila sin código no llega a MOVIMIENTOS, sale como aviso
@@ -122,5 +169,21 @@ av = [c for c in wb["AVISOS"]["A"]] if "AVISOS" in wb.sheetnames else []
 chk(n_mov == 0 and any("sin código" in str(c.value) for c in av), f"fila sin código: {n_mov} filas en MOVIMIENTOS y aviso en la hoja AVISOS")
 wb2 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-13": r3["filas"]})))
 chk("AVISOS" not in wb2.sheetnames, "sin filas malas no hay hoja AVISOS")
+# T4 · estado/motivos/lectura/recorte: `_base` usa estado == "revisado" (migra el viejo `revisado`) y todo viaja por el .json crudo v1
+from parser_module.contable.asientos import estado_de
+from parser_module.contable.exportar import crudo, leer_crudo
+chk((estado_de({}), estado_de({"avisos": ["x"]}), estado_de({"avisos": ["x"], "revisado": True}), estado_de({"estado": "dudoso", "revisado": True})) == ("validado", "dudoso", "revisado", "dudoso"),
+    "T4: estado se migra al leer (sin estado: validado/dudoso; `revisado` viejo → revisado)")
+t4 = dict(leer_texto(VENTA)[0], avisos=["los pagos no cuadran"])
+av4 = lambda **k: construir("2026-09-12", [dict(t4, **k)])["avisos"]
+chk(any("los pagos no cuadran" in a for a in av4()) and any("los pagos no cuadran" in a for a in av4(estado="dudoso")), "T4: un recibo con avisos sin revisar los muestra")
+chk(not any("los pagos no cuadran" in a for a in av4(estado="revisado")) and not any("los pagos no cuadran" in a for a in av4(revisado=True)), "T4: estado «revisado» (o el viejo revisado) silencia sus avisos")
+cand = lambda v, var, m: dict(valor=v, variante=var, motor="qwen2.5vl")
+lec = dict(pasadas=3, candidatos={c: [cand(1000, "V0", 0), cand(1000, "V1", 0), cand(900, "V2", 0)] for c in ("consumo", "propina", "efectivo", "tarjeta", "numero")},
+           nitidez=0.8, tenengrad=123.5, segundos=14.2)
+t4l = dict(t4, id="2026-09-12/t4", estado="dudoso", motivos=["Los medios de pago suman 51.500 y pagado − cambio es 52.000"], lectura=lec, recorte="ab12cd34.jpg")
+lib4 = {"2026-09-12": dict(fecha="2026-09-12", documentos=[t4l], banco={}, cierre={}, guardado="2026-09-12T08:00:00")}
+d4, m4 = leer_crudo(crudo(lib4))
+chk(not m4 and d4[0]["documentos"][0] == t4l, "T4: documento con lectura completa (candidatos, motivos, recorte) hace la ida y vuelta por el .json crudo v1")
 import tempfile, os; open(os.path.join(tempfile.gettempdir(), "libro_prueba.xlsx"), "wb").write(x)
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

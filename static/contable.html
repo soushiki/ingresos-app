@@ -53,6 +53,14 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 @media(max-width:800px){#tabs{overflow-x:auto}#tabs button{white-space:nowrap}.wrap{max-height:none}}
 @media(max-width:600px){body{font-size:15px}header{padding:8px 10px}header h1{font-size:16px}main{padding:8px}button,select,input[type=text]{min-height:40px}.pf{grid-template-columns:1fr}.bar>button{flex:1 1 auto}.zonas,.cie{grid-template-columns:1fr 1fr}}
 @media(max-height:500px) and (orientation:landscape){header{padding:4px 10px}.wrap{max-height:none}#toast{bottom:6px}}
+.rv{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}.rv .rimg{flex:0 0 38%;max-width:380px;max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff}.rv .rimg img{width:100%;display:block}
+.rv .rf{flex:1;min-width:0}.rv h3{margin:0 0 6px;font-size:15px}.rv .mot{background:var(--warn);border:1px solid var(--warnb);border-radius:8px;padding:6px 8px;margin-bottom:8px;font-size:13px}
+.rv .rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.rv label{display:block;font-size:11px;text-transform:uppercase;color:#17466f}.rv input[type=text],.rv select{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px}
+.rv .cd{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.rv .cd button{padding:1px 7px;font-size:12px;min-height:0;background:#fff;color:var(--pri2);border:1px solid var(--line);border-radius:99px}.rv .cd small{color:var(--mut)}
+.rv .mot.ok{background:#e2efda;border-color:#a9d08e}.rv .pas{font-size:12px;color:var(--mut);margin:6px 0}.rv .ac{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:1000px){.rv{flex-direction:column}.rv .rimg{flex:none;max-width:100%;width:100%;max-height:45vh}.rv .rf{width:100%}}
+@media(max-width:600px){.rv .rg{grid-template-columns:1fr}.rv .ac button{flex:1 1 140px}.rv input[type=text],.rv select{min-height:40px}}
+@media(max-height:500px) and (orientation:landscape){.rv{flex-direction:row}.rv .rimg{flex:0 0 40%;max-height:80vh}}
 </style></head><body>
 <header>
 <h1>📒 Libro contable<small>Papeles del día → asientos verificados → tabla → Excel</small></h1>
@@ -61,7 +69,7 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 <select id="motor"><option value="local">IA local (Ollama)</option><option value="tesseract">Tesseract (solo impreso)</option></select><select id="modelo"></select>
 <button id="fs">⛶ Pantalla completa</button>
 </header>
-<div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button><button data-tab="3">③ Documento soporte <span class="badge" id="b3">0</span></button></div>
+<div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button><button data-tab="3">③ Documento soporte <span class="badge" id="b3">0</span></button><button data-tab="4">④ Revisión <span class="badge" id="b4">0</span></button></div>
 
 <main id="m1">
 <section class="col">
@@ -139,6 +147,11 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
   <div class="bar" style="margin-top:8px"><button id="p_ok">Guardar proveedor</button><button id="p_cl" class="g">Limpiar</button><span class="m" id="p_msg"></span></div>
   <div class="wrap" style="max-height:30vh;margin-top:8px"><table style="min-width:520px"><thead><tr><th>Nombre</th><th>ID</th><th>Municipio</th><th></th></tr></thead><tbody id="p_tb"></tbody></table></div></div>
 </section></main>
+<main id="m4" hidden><section class="col">
+ <div class="bar"><b style="font-size:16px">Revisión de recibos</b><select id="rv_est" aria-label="Qué recibos ver"><option value="dudoso">Dudosos</option><option value="revisado">Revisados</option></select><span class="m">Compara el recorte con lo leído, corrige y confirma: el día se recalcula.</span><span class="sp"></span><button class="g" id="rv_re">↻ Recargar</button></div>
+ <div id="rv_vacio" class="card m" style="text-align:center;padding:26px">No hay recibos dudosos por revisar.</div>
+ <div id="rv_ls"></div>
+</section></main>
 <div id="toast"></div>
 <script>
 const $=s=>document.getElementById(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -204,8 +217,9 @@ function renderFotos(){$("fotos").innerHTML=fotos.map(f=>`<span class="fo ${f.es
 $("fotos").onclick=e=>{const r=e.target.dataset.rot;if(r){const f=FOTOS[r];dias.forEach(d=>d.docs=d.docs.filter(x=>x.foto!==r));f.giro=((f.giro==="auto"?0:+f.giro)+90)%360;f.estado="pendiente";renderFotos();renderDocs();procesar();return}const id=e.target.dataset.retry;if(id){FOTOS[id].estado="pendiente";renderFotos();procesar()}};
 const campoN=(d,f,na)=>`<td class="${na?"na":""}"><input type="text" class="n" inputmode="numeric" data-id="${d.id}" data-f="${f}" value="${d[f]?fmt(d[f]):""}"></td>`;
 const campoT=(d,f)=>`<td><input type="text" data-id="${d.id}" data-f="${f}" value="${esc(d[f])}"></td>`;
+const revisado=d=>d.estado==="revisado"||(!d.estado&&!!d.revisado);   // FIX-13: igual que estado_de en asientos.py
 function filaDoc(d){const v=d.tipo==="venta",g=GASTOS.includes(d.tipo),c=d.tipo==="cierre",fo=FOTOS[d.foto];const dud=g&&d.contar&&(!d.cuenta||(d.conf<0.75&&!d.cuenta_manual));
- return `<tr class="${d.contar||c?"":"dup"} ${sel===d.id?"sel":""}"><td class="f" data-sel="${d.id}" title="${esc((d.avisos||[]).join("\n"))}">${fo?(fo.pdf?"📄 ":`<img src="${fo.url}">`):""}${esc(d.origen==="manual"?"manual":(d.origen||"").slice(0,16))}${d.dup_de?'<span class="tag">duplicado</span>':""}${(d.avisos||[]).length&&(d.contar||c)?'<span class="tag">⚠</span>':""}</td>
+ return `<tr class="${d.contar||c?"":"dup"} ${sel===d.id?"sel":""}"><td class="f" data-sel="${d.id}" title="${esc((d.avisos||[]).join("\n"))}">${fo?(fo.pdf?"📄 ":`<img src="${fo.url}">`):""}${esc(d.origen==="manual"?"manual":(d.origen||"").slice(0,16))}${d.dup_de?'<span class="tag">duplicado</span>':""}${(d.avisos||[]).length&&(d.contar||c)&&!revisado(d)?'<span class="tag">⚠</span>':""}${revisado(d)?'<span class="tag">✓ revisado</span>':""}</td>
   <td><select data-id="${d.id}" data-f="tipo">${Object.entries(TIPOS).map(([k,t])=>`<option value="${k}" ${k===d.tipo?"selected":""}>${t}</option>`).join("")}</select></td>
   ${campoT(d,"numero")}${campoT(d,"tercero")}${campoT(d,"detalle")}${campoN(d,"consumo",!v)}${campoN(d,"propina",!v)}${campoN(d,"domicilio",!v)}${campoN(d,"efectivo",!v)}${campoN(d,"tarjeta",!v)}${campoN(d,"transf",!v)}${campoN(d,"credito",!v)}${campoN(d,"valor",v||c)}
   <td class="${g?"":"na"}"><select class="${dud?"dud":""}" data-id="${d.id}" data-f="cuenta" title="${esc(d.motivo||"")}"><option value="">— elegir —</option>${CUENTAS.map(k=>`<option value="${k.codigo}" ${k.codigo===d.cuenta?"selected":""}>${k.codigo} · ${esc(k.nombre)}</option>`).join("")}</select></td>
@@ -352,7 +366,31 @@ $("s_gen").onclick=async()=>{const el=[...document.querySelectorAll("#s_tb .sk:c
   toast(`${ds.length} ${ds.length===1?"documento generado":"documentos generados"}`);await cargarSoporte()}catch(e){toast("No se pudo generar")}finally{sopBoton()}};
 async function bajarXl(ids){const r=await fetch("/api/soporte/excel"+(ids?"?ids="+encodeURIComponent(ids):""));if(!r.ok)return toast(await errDe(r));const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"documento_soporte.xlsx";a.click()}
 $("s_xl").onclick=()=>bajarXl("");$("s_res").addEventListener("click",e=>{if(e.target.id==="s_dl")bajarXl(e.target.dataset.ids)});
-function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;if(n==2)cargarLibro();if(n==3)cargarSoporte()}
+// ── ④ Revisión (T11 · R8): todo con textContent/DOM, nada de innerHTML con datos leídos ──
+const RV_ENT=[["consumo","Consumo"],["propina","Propina"],["domicilio","Domicilio"],["descuento","Descuento"],["cortesia","Cortesía"],["subtotal","Subtotal"],["efectivo","Efectivo"],["tarjeta","Tarjeta"],["transf","Transferencia"],["credito","Fiado"],["pagado","Pagado"],["cambio","Cambio"]],RV_MED=["Efectivo","Tarjeta","Transferencia","Crédito","Mixto"];
+function el(t,p,...k){const e=document.createElement(t);if(p)for(const x in p){if(x==="class")e.className=p[x];else if(x==="onclick")e.onclick=p[x];else e[x]=p[x]}for(const c of k)if(c!=null)e.append(c);return e}
+async function cargarRevision(){const est=$("rv_est").value;let j;try{const r=await fetch("/api/contable/revision?desde=2000-01-01&estado="+est);j=await r.json();if(!r.ok)throw new Error(j.error||r.status)}catch(e){return toast("No se pudo cargar la revisión: "+e.message)}
+ if(est==="dudoso")$("b4").textContent=j.total;$("rv_vacio").textContent=est==="dudoso"?"No hay recibos dudosos por revisar.":"Aún no hay recibos revisados.";$("rv_vacio").style.display=j.recibos.length?"none":"";const ls=$("rv_ls");ls.replaceChildren(...j.recibos.map(tarjetaRev))}
+function campoRev(k,et,r,sel){const doc=r.documento,cands=((r.lectura||{}).candidatos||{})[k]||[],v=doc[k],c=el("div");c.append(el("label",null,et));
+ let inp;if(sel){inp=el("select");for(const o of sel){const op=el("option",null,o);op.value=o;inp.append(op)}if(!sel.includes(v)){const op=el("option",null,v||"—");op.value=v||"";inp.prepend(op)}inp.value=v||""}else{inp=el("input",{type:"text",value:v==null?"":String(v)});if(RV_ENT.some(x=>x[0]===k))inp.inputMode="numeric"}
+ inp.dataset.k=k;c.append(inp);const vistos=new Map();for(const x of cands){if(x.valor==null||x.valor==="")continue;const q=String(x.valor);vistos.set(q,(vistos.get(q)||[]).concat(x.variante))}
+ if(vistos.size>1||(vistos.size===1&&!vistos.has(String(v)))){const d=el("div",{class:"cd"});for(const [q,vs] of vistos)d.append(el("button",{type:"button",class:"g",title:"Pasadas: "+vs.join(", "),onclick:()=>{inp.value=q}},q," ",el("small",null,vs.join("·"))));c.append(d)}return c}
+function tarjetaRev(r){const d=r.documento,card=el("div",{class:"card rv"}),img=el("div",{class:"rimg"});
+ if(r.recorte)img.append(el("img",{src:"/api/contable/recorte/"+encodeURIComponent(r.recorte),alt:"Recorte del recibo "+(r.numero||"")}));else img.append(el("div",{class:"m",style:"padding:20px"},"Sin recorte guardado"));
+ const f=el("div",{class:"rf"}),L=r.lectura||{};f.append(el("h3",null,`Recibo ${r.numero||"(sin número)"} · ${fmtF(r.fecha)}`));
+ if(r.estado==="revisado")f.append(el("div",{class:"mot ok"},"✓ Revisado: ya cuenta en el día. Puedes corregirlo otra vez."));else f.append(el("div",{class:"mot"},el("b",null,"Motivo: "),(r.motivos.length?r.motivos:["Sin motivo registrado"]).join(" · ")));
+ if((d.notas||[]).length)f.append(el("div",{class:"pas"},"ℹ "+d.notas.join(" · ")));
+ if(L.pasadas&&L.pasadas.length)f.append(el("div",{class:"pas"},"Pasadas: "+L.pasadas.map(p=>`${p.variante}${p.error?" (error)":p.motivos&&p.motivos.length?" ✗"+p.motivos.length:" ✓"}`).join(" · ")+(L.borrosa?" · foto borrosa":"")));
+ const g=el("div",{class:"rg"});g.append(campoRev("numero","Número",r),campoRev("hora","Hora",r),campoRev("medio","Medio",r,RV_MED));for(const [k,et] of RV_ENT)g.append(campoRev(k,et,r));g.append(campoRev("detalle","Detalle",r));f.append(g);
+ const ok=el("button",{type:"button"},"✓ Confirmar así"),ed=el("button",{type:"button",class:"g"},"✎ Guardar corrección");
+ const enviar=async cambios=>{ok.disabled=ed.disabled=true;try{const x=await fetch(`/api/contable/revision/${encodeURIComponent(r.fecha)}/${encodeURIComponent(r.id)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cambios?{cambios}:{})}),j=await x.json().catch(()=>({}));
+  if(!x.ok){ok.disabled=ed.disabled=false;return toast(j.error||"No se pudo guardar",5000)}toast("Revisado · diferencia del día: $ "+fmt(j.diferencia));LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length;cargarRevision()}catch(e){ok.disabled=ed.disabled=false;toast("Error de red")}};
+ ok.onclick=()=>enviar(null);
+ ed.onclick=()=>{const c={};for(const i of g.querySelectorAll("[data-k]")){const k=i.dataset.k,a=i.value.trim(),v=d[k];if(RV_ENT.some(x=>x[0]===k)){const n=a===""?0:Number(a.replace(/[.\s$]/g,""));if(!Number.isInteger(n)||n<0){i.classList.add("bad");return toast(`${k}: escribe un número entero`)}if(n!==(v||0))c[k]=n}else if(a!==String(v==null?"":v)&&(k!=="medio"||a))c[k]=a}
+  if(!Object.keys(c).length)return toast("No cambiaste nada: usa «Confirmar así»");enviar(c)};
+ f.append(r.estado==="revisado"?el("div",{class:"ac"},ed):el("div",{class:"ac"},ok,ed));card.append(img,f);return card}
+$("rv_re").onclick=$("rv_est").onchange=cargarRevision;
+function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;$("m4").hidden=n!=4;if(n==2)cargarLibro();if(n==3)cargarSoporte();if(n==4)cargarRevision()}
 $("tabs").onclick=e=>{const t=e.target.closest("button");if(t)irTab(t.dataset.tab)};
 $("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
 document.addEventListener("fullscreenchange",()=>$("fs").textContent=document.fullscreenElement?"✕ Salir de pantalla completa":"⛶ Pantalla completa");

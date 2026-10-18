@@ -1,6 +1,6 @@
 """Documento soporte (Res. DIAN 167/2021): junta las compras de libro.json por proveedor y semana ISO y calcula el plazo.
 
-Fuentes de los valores (docs/sdlc/03-design.md sección 6):
+Fuentes de los valores (docs/sdlc/archive/documento-soporte/03-design.md sección 6):
 - Semana: lunes a domingo, ISO 8601 (R3).
 - Plazo `misma_semana`: último día hábil de la semana en que ocurrió la compra (Res. 167/2021 art. 10 par.;
   DUR 1625/2016 art. 1.6.1.4.12; Res. 227/2025 sin verificar). `semana_siguiente`: el de la semana siguiente.

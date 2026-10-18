@@ -15,8 +15,9 @@ FINO = Border(bottom=Side(style="hair", color="BFBFBF"))
 
 
 DATOS_HEAD = {"fecha": "Fecha", "archivo": "Archivo de origen", "tipo": "Tipo", "numero": "Número", "tercero": "Tercero", "detalle": "Detalle", "valor": "Valor",
-              "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id"}
+              "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id", "recibo": "Recibo", "motivo": "Motivo si es dudoso"}
 AMARILLO = "FFF2CC"
+NARANJA = "F8CBAD"   # FIX-12: recibo dudoso, distinto del amarillo de cualquier aviso
 
 
 def texto(c):
@@ -46,7 +47,8 @@ def formula(fx, fila: int, ref_fila, ref_dato) -> str:
     op, *a = fx
     if op == "sum":
         col, crit = a
-        pares = [(DC["fecha"], f"$A{fila}"), (DC["estado"], '"ok"')] + [(DC[k], _criterio(v)) for k, v in crit.items()]
+        est = _criterio(crit["estado"]) if "estado" in crit else '"ok"'   # M-6: «en extracto» para la propina/domicilio que cubre el extracto
+        pares = [(DC["fecha"], f"$A{fila}"), (DC["estado"], est)] + [(DC[k], _criterio(v)) for k, v in crit.items() if k != "estado"]
         return f"SUMIFS({D}{DC[col]}:{DC[col]}," + ",".join(f"{D}{c}:{c},{x}" for c, x in pares) + ")"
     if op == "dato": return ref_dato(a[0])
     if op == "fila": return ref_fila(a[0])
@@ -58,7 +60,7 @@ def formula(fx, fila: int, ref_fila, ref_dato) -> str:
 
 
 def hoja_datos(wb, datos: dict) -> dict:
-    """DATOS OCR (R9, ADR-002), primera hoja: una fila por papel y medio de pago. Lo que no está «ok» o trae aviso va en amarillo.
+    """DATOS OCR (R9, ADR-002), primera hoja: una fila por papel y medio de pago. Un recibo dudoso va en naranja; lo demás que no está «ok» o trae aviso, en amarillo.
     Devuelve {fecha: fila de la hoja donde empieza ese día} para que MOVIMIENTOS apunte a sus datos."""
     ws = wb.create_sheet("DATOS OCR"); ws.append(list(DATOS_HEAD.values())); inicio = {}
     for c in ws[1]: c.font = Font(bold=True); c.fill = _f(AZUL); c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -69,9 +71,11 @@ def hoja_datos(wb, datos: dict) -> dict:
             k = ws.max_row; ws.cell(k, 1).number_format = "dd/mm/yyyy"
             for c in ws[k]: texto(c)
             for i in (7, 12, 13): ws.cell(k, i).number_format = '$ #,##0;-$ #,##0;"$ -"'
-            if r["estado"] != "ok" or r["aviso"]:
+            if r["recibo"] == "dudoso":
+                for c in ws[k]: c.fill = _f(NARANJA)
+            elif r["estado"] != "ok" or r["aviso"]:
                 for c in ws[k]: c.fill = _f(AMARILLO)
-    for i, w in enumerate([12, 40, 14, 10, 26, 30, 14, 16, 11, 12, 36, 12, 12, 10, 10], 1): ws.column_dimensions[L(i)].width = w
+    for i, w in enumerate([12, 40, 14, 10, 26, 30, 14, 16, 11, 12, 36, 12, 12, 10, 10, 12, 44], 1): ws.column_dimensions[L(i)].width = w
     ws.freeze_panes = "A2"; ws.auto_filter.ref = f"A1:{L(len(DATOS_HEAD))}{max(ws.max_row, 2)}"
     return inicio
 
@@ -194,10 +198,15 @@ def _motivo_dia(d) -> str:
     docs = d.get("documentos")
     if not isinstance(docs, list): return "«documentos» no es una lista"
     if len(docs) > MAX_DOCS: return f"{len(docs)} documentos (máx. {MAX_DOCS})"
+    ids = set()
     for i, x in enumerate(docs):
         if not isinstance(x, dict): return f"documento {i + 1}: no es un objeto"
         if x.get("tipo") not in TIPOS_CRUDO: return f"documento {i + 1}: tipo desconocido {str(x.get('tipo'))[:30]!r}"
         if not isinstance(x.get("id"), str) or not x["id"]: return f"documento {i + 1}: sin id"
+        if x["id"] in ids: return f"documento {i + 1}: id {x['id'][:40]!r} repetido en el día"   # M-2
+        if x["tipo"] != "cierre" and isinstance(x.get("valor"), (int, float)) and not isinstance(x["valor"], bool) and x["valor"] < 0:
+            return f"documento {i + 1}: valor negativo ({x['valor']}); solo el cierre lleva negativos (faltante)"   # M-1
+        ids.add(x["id"])
         if m := _malo(x, f"documento {i + 1}"): return m
     for k in ("banco", "cierre"):
         if not isinstance(d.get(k, {}), dict): return f"«{k}» no es un objeto"

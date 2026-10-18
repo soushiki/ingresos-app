@@ -87,14 +87,131 @@ def _xy(tinta, x0, y0, x1, y1, nivel=0):
     return [(x0, y0, x1, y1)]
 
 
-def separar(img: Image.Image, max_papeles: int = 8) -> list:
+def _ventana(t, L, eje):
+    """Suma de L celdas seguidas a lo largo de `eje` (sumas acumuladas; sale n − L + 1 a lo largo del eje)."""
+    c = np.cumsum(t, axis=eje, dtype=np.int32); n = t.shape[eje]
+    c = np.concatenate([np.zeros_like(c.take([0], axis=eje)), c], axis=eje)
+    return c.take(range(L, n + 1), axis=eje) - c.take(range(0, n - L + 1), axis=eje)
+
+
+def _lineas(t, L, eje):
+    """Píxeles de un trazo recto de ≥ L a lo largo de `eje`: bordes y sombras de los papeles, que tapan los huecos entre ellos."""
+    if t.shape[eje] <= L: return np.zeros_like(t)
+    lleno = (_ventana(t, L, eje) == L).astype(np.int32)
+    pad = [(0, 0), (0, 0)]; pad[eje] = (L - 1, L - 1)
+    return _ventana(np.pad(lleno, pad), L, eje) > 0
+
+
+def _suave(p, k): return np.convolve(p.astype(float), np.ones(k) / k, "same")
+
+
+def _alto_tinta(prof, cortes, n) -> int:
+    """El tramo con tinta más bajo que dejan estos cortes."""
+    b = [0] + sorted(cortes) + [n]; altos = []
+    for a, z in zip(b, b[1:]):
+        ys = np.nonzero(prof[a:z])[0]; altos.append(0 if ys.size == 0 else ys[-1] - ys[0] + 1)
+    return min(altos)
+
+
+def _caja(g, k):
+    """Media en una ventana k×k (mismo tamaño que g; sumas acumuladas)."""
+    p = k // 2; c = np.pad(g.astype(float), p, mode="edge").cumsum(0).cumsum(1); c = np.pad(c, ((1, 0), (1, 0)))
+    H, W = g.shape
+    return (c[k:k + H, k:k + W] - c[:H, k:k + W] - c[k:k + H, :W] + c[:H, :W]) / (k * k)
+
+
+def _otsu(v) -> int:
+    h, _ = np.histogram(v, 256, (0, 256)); p = h / max(1, h.sum()); w = np.cumsum(p); m = np.cumsum(p * np.arange(256))
+    return int(np.argmax((m[-1] * w - m) ** 2 / np.maximum(w * (1 - w), 1e-9)))
+
+
+def _tinta_en_papel(rgb):
+    """M-11 · Tinta solo DENTRO de los papeles: la madera (color: ≥ 30 % de píxeles saturados alrededor) no es papel, y en
+    las fotos sin escanear (mesa oscura, papel gris) el papel es lo claro según Otsu del brillo local y la tinta lo que
+    queda ≥ 25 niveles por debajo de su papel. Con g < 165 a secas la textura de la mesa contaba como tinta."""
+    a = rgb.astype(float); g = a @ np.array([0.299, 0.587, 0.114])
+    mx = a.max(2); sat = (mx - a.min(2)) / np.maximum(mx, 1)
+    H, W = g.shape; k = max(9, int(0.05 * min(H, W)) | 1)
+    papel = _caja(sat > 0.15, k) < 0.3
+    if np.median(g) < 200:                               # foto cruda: mesa oscura alrededor del papel
+        fondo = _caja(g, k); papel &= fondo > _otsu(fondo)
+        return papel & (g < np.minimum(165, _caja(g, 15) - 25))
+    return papel & (g < 165)
+
+
+def _equilibrio(cajas) -> float:
+    """Área del papel más chico / la del más grande (1 = todos iguales)."""
+    ar = [(c[2] - c[0]) * (c[3] - c[1]) for c in cajas]
+    return min(ar) / max(ar) if ar and max(ar) else 0.0
+
+
+def _masa_min(prof, cortes, n) -> float:
+    """La tinta del tramo más pobre que dejan estos cortes."""
+    b = [0] + sorted(cortes) + [n]
+    return min(float(prof[a:z].sum()) for a, z in zip(b, b[1:]))
+
+
+def _por_columnas(tinta, esperados, masa=0.0, cantos=None):
+    """T8b · Papeles en columnas que se tocan o se escalonan (las fotos de comandas): columnas por valles de tinta; dentro de
+    cada columna, los `esperados − columnas` huecos más anchos de toda la hoja, sin dejar un papel de menos de 15 % del alto."""
+    H, W = tinta.shape
+    px = _suave(tinta.sum(0), 5); med = np.median(px[px > 0])
+    cols, ini = [], 0
+    for a, b in _huecos(px, max(4, int(0.015 * W)), 0.25 * med): cols.append((ini, a)); ini = b
+    cols.append((ini, W)); cols = [c for c in cols if c[1] - c[0] >= 0.08 * W]
+    if not cols or len(cols) > esperados + 1: return []   # una columna de más: un papel que no está en el nombre (Rappi)
+    cand, perfiles = [], []
+    for ci, (a, b) in enumerate(cols):
+        raw = tinta[:, a:b].sum(1); py = _suave(raw, 3); perfiles.append(raw)
+        m = np.median(py[py > 0]) if (py > 0).any() else 0
+        canto = lambda g0, g1: cantos is not None and cantos[max(0, g0 - 12):g1 + 12, a:b].any(0).mean() >= 0.8   # M-11: canto de papel (algo torcido) de lado a lado
+        cand += [(g1 - g0 + (0.06 * H if canto(g0, g1) else 0), ci, (g0 + g1) // 2) for g0, g1 in _huecos(py, max(3, int(0.01 * H)), 0.2 * m)]
+    cortes, falta = {ci: [] for ci in range(len(cols))}, esperados - len(cols)
+    for _, ci, y in sorted(cand, reverse=True):
+        if falta <= 0: break
+        if _alto_tinta(perfiles[ci], cortes[ci] + [y], H) >= 0.15 * H and _masa_min(perfiles[ci], cortes[ci] + [y], H) >= masa * tinta.sum() / esperados:
+            cortes[ci].append(y); falta -= 1                # masa (M-11): un tramo con cuatro motas de mesa no es un papel
+    cajas = []
+    for ci, (a, b) in enumerate(cols):
+        bordes = [0] + sorted(cortes[ci]) + [H]
+        for y0, y1 in zip(bordes, bordes[1:]):
+            sub = tinta[y0:y1, a:b]
+            if not sub.any(): continue
+            ys = np.nonzero(sub.sum(1))[0]; xs = np.nonzero(sub.sum(0))[0]
+            cajas.append((a + int(xs[0]), y0 + int(ys[0]), a + int(xs[-1]) + 1, y0 + int(ys[-1]) + 1))
+    return cajas
+
+
+def separar(img: Image.Image, max_papeles: int = 8, esperados: int | None = None) -> list:
     """Parte una hoja con VARIOS papeles (recibos lado a lado) en un recorte por papel, en orden de lectura.
-    Si no encuentra separaciones claras devuelve la hoja entera."""
+    Si no encuentra separaciones claras devuelve la hoja entera.
+    `esperados`: cuántos papeles trae la foto según su nombre («85297 al 85302» → 6). Con él se parte por columnas y los
+    huecos más anchos (T8b: de 2 % a 81 % de fotos de septiembre con la cuenta exacta); sin él, o si no sale, lo de siempre."""
     f = 3
     g = np.asarray(img.convert("L").resize((max(1, img.width // f), max(1, img.height // f))), dtype=float)
     tinta = g < 165
     total = tinta.sum()
     if total < 200: return [img]
+    if esperados and 2 <= esperados <= max_papeles:
+        rgb = np.asarray(img.convert("RGB").resize((tinta.shape[1], tinta.shape[0])))
+        papel = _tinta_en_papel(rgb)
+        opciones = []
+        for nombre, t in (("papel", papel), ("tinta", tinta), ("de lado", papel.T)):   # M-11: tinta en papel; la de T8b; la foto de lado
+            H, W = t.shape
+            horiz = _lineas(t, max(10, int(0.06 * W)), 1)
+            limpia = t & ~_lineas(t, max(10, int(0.06 * H)), 0) & ~horiz
+            tl = limpia.sum()
+            if tl < 200: continue
+            m9 = nombre != "tinta"                       # la ruta de T8b queda igual
+            cajas = [c for c in _por_columnas(limpia, esperados, 0.3 if m9 else 0.0, horiz if m9 else None) if limpia[c[1]:c[3], c[0]:c[2]].sum() >= max(150, 0.03 * tl)]
+            if not (2 <= len(cajas) <= max_papeles and all(min(c[2] - c[0], c[3] - c[1]) * f >= 150 for c in cajas)): continue
+            de_pie = np.mean([(c[3] - c[1]) > 1.2 * (c[2] - c[0]) for c in cajas])     # los recibos son más altos que anchos
+            if nombre == "de lado": cajas = [(y0, x0, y1, x1) for x0, y0, x1, y1 in cajas]
+            opciones.append((len(cajas) in (esperados, esperados + 1), de_pie, _equilibrio(cajas), cajas, nombre == "de lado"))
+        buenas = [o for o in opciones if o[0] and o[1] >= 0.5 and o[2] >= 0.25]   # la cuenta (o una de más: Rappi), de pie, parejos
+        if opciones:
+            o = buenas[0] if buenas else max(opciones, key=lambda o: (o[0], o[2]))
+            return _recortes(img, o[3], tinta.shape[0], f, de_lado=o[4])
     cajas = [c for c in _xy(tinta, 0, 0, tinta.shape[1], tinta.shape[0]) if tinta[c[1]:c[3], c[0]:c[2]].sum() >= max(150, 0.03 * total)]
     if len(cajas) >= 2:                                    # una caja mucho más ancha que las demás = recibos pegados: se corta en los «valles» de tinta
         ref = min(c[2] - c[0] for c in cajas); nuevas = []
@@ -110,9 +227,17 @@ def separar(img: Image.Image, max_papeles: int = 8) -> list:
             else: nuevas.append(c)
         cajas = nuevas
     if len(cajas) < 2 or len(cajas) > max_papeles or any(min(c[2] - c[0], c[3] - c[1]) * f < 150 for c in cajas): return [img]   # fragmentos pequeños = no es una separación fiable
-    cajas.sort(key=lambda c: (round(c[1] / (tinta.shape[0] * 0.25)), c[0]))   # filas de arriba abajo, y de izquierda a derecha
+    return _recortes(img, cajas, tinta.shape[0], f)
+
+
+def _recortes(img, cajas, alto, f, de_lado=False) -> list:
+    cajas = sorted(cajas, key=lambda c: (round(c[1] / (alto * 0.25)), c[0]))   # filas de arriba abajo, y de izquierda a derecha
     out = []
     for x0, y0, x1, y1 in cajas:
         r = img.crop((max(0, (x0 - 6) * f), max(0, (y0 - 6) * f), min(img.width, (x1 + 6) * f), min(img.height, (y1 + 6) * f)))
         out.append(recortar(r))
+    if de_lado:                                          # M-11: papeles de lado que la hoja entera no giró: el giro que más papeles piden
+        votos = [g for g, c in map(giro_automatico, out) if c >= CONFIANZA_MIN and g in (90, 270)]
+        if votos:
+            g = max(set(votos), key=votos.count); out = [r.rotate(-g, expand=True) for r in out]
     return out

@@ -1,9 +1,13 @@
-flask>=3.0
-openpyxl>=3.1
-requests>=2.31
-Pillow>=10.0
-python-dotenv>=1.0
-pymupdf>=1.24   # leer PDF
-pillow-heif>=0.16   # opcional: fotos .heic
-pytesseract>=0.3    # opcional: motor tesseract
-numpy
+# Versiones fijas: las auditadas con pip-audit el 2026-10-17 (sin vulnerabilidades).
+# Para subir una: cambiarla aquí, correr las suites probar_*.py y repetir pip-audit.
+flask==3.1.3
+werkzeug==3.1.9     # la trae flask; fija porque el chequeo de Host depende de ella
+jinja2==3.1.6       # la trae flask
+openpyxl==3.1.5
+requests==2.34.2
+Pillow==12.3.0
+python-dotenv==1.2.4
+pymupdf==1.28.2   # leer PDF
+numpy==2.5.4
+pytesseract==0.3.13 # opcional: motor tesseract
+pillow-heif>=0.16   # opcional: fotos .heic (no instalada aquí, sin auditar)

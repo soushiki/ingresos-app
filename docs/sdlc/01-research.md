@@ -1,45 +1,37 @@
-# 01 · Research — documento soporte (light, 2026-10-16)
+# 01 · Investigación — Precisión del OCR (2026-10-17)
 
 ## Summary
-- Regla: un documento soporte por compra, o acumulado por proveedor y semana; se genera dentro de la semana siguiente a la primera operación. Fuera de plazo pierde efecto fiscal (INCP, Concepto DIAN 006942/2025). Hoy compilado en Res. Única DIAN 000227/2025.
-- Contenido mínimo: título legal, fecha (= fecha de generación), nombre + NIT/ID del vendedor y del adquirente, descripción, valor total, consecutivo con prefijo/rango/vigencia autorizados por la DIAN. El CUDS y la firma los pone quien transmite, no la app.
-- Emisión: la solución gratuita DIAN es de digitación manual; no se encontró carga masiva Excel/CSV. Tampoco se confirmó la importación en Vendty, Alegra ni Siigo (confianza baja). → La app genera un Excel/CSV propio y legible para transcribir, con columnas que imitan los campos del formulario DIAN.
-- Código: Flask + JSON en `datos/` (sin DB), openpyxl. El tercero es solo un nombre (sin NIT/tipo ID) y no hay lógica de consecutivos: hay que crear un registro de proveedores y un contador de numeración.
-- Pendiente para requisitos: rango de numeración real del usuario (prefijo, desde/hasta, vigencia), la regla de nota de ajuste y si contabilidad usa Vendty o la solución DIAN.
+- El error de hoy es grande: de ~578 ventas de septiembre, el OCR **omitió 96 recibos (≈17 %)**, erró el medio de pago en 49, los montos en 48 y el número en 25, y dejó 28 papeles basura o repetidos. En total, ≈40 % de los recibos necesitó corrección a mano.
+- Tipos de error vistos (en orden de peso): recibos pegados en un bloque (M-9), recibos de una foto que no se leen, montos o medio cruzados entre recibos vecinos, dígitos mal leídos (6↔8, números cortados), línea de pago perdida, papel equivocado (orden de consumo, gasto leído como venta) y fecha impresa mal leída.
+- La literatura no tiene cifras para Qwen2.5-VL con recibos: **hay que medir con nuestros datos**. Los ~227 recibos corregidos este mes son el conjunto de referencia (ground truth).
+- Lo que más rinde, según la evidencia y nuestros datos: **validar cada recibo con su propia aritmética** y con reglas del negocio, y **releer** (con variantes de imagen) solo lo que falla. Lo que no pasa va a revisión con la foto.
+- Usar el **tiempo del OCR** como señal de foto borrosa es débil: depende de cuánto texto escribe el modelo. La medida estándar es la **varianza del Laplaciano** (más Tenengrad para desempatar). Se medirán las dos contra el ground truth.
+- Con temperatura 0, leer dos veces la misma imagen da lo mismo. La variación tiene que venir de **variantes de imagen** (resolución, contraste, recorte) o de **otro motor** (Tesseract solo para dígitos).
+- **Binarizar puede empeorar** a un VLM (estudio con Qwen2.5-VL-7B: binarizar y quitar ruido bajó la precisión; enfocar ayudó en un caso). Por defecto, color o gris, sin binarizar; probarlo A/B.
+- Ventaja del negocio: la **carta tiene precios fijos** (p. ej. Combo Amor y Amistad 55.000, Smoky Burger 30.000). Un catálogo producto→precio permite validar ítems y **predecir** el valor de una línea mal impresa sin entrenar nada.
+- A futuro (pedido del usuario): **afinar (LoRA) un modelo de visión** con nuestros recibos corregidos, para que «aprenda» este formato. Hay antecedentes (Receipt-Bench 2026 con Qwen3-VL-4B afinado; LoRA de Qwen2.5-VL-3B para recibos con 58,9 % de coincidencia exacta de todos los campos, cifra preliminar). Requiere más datos etiquetados (cientos de recibos) y GPU; queda como fase 2.
 
-## Options compared
-| Pregunta | Opción | Ajuste | Costo | Madurez | Veredicto |
-|---|---|---|---|---|---|
-| Salida | Excel por proveedor-semana + resumen (openpyxl) | Alto: ya está en el stack | Bajo | Probado en `exportar.py` | **Elegida** |
-| Salida | XML UBL 2.1 firmado | Bajo: exige firma y transmisión | Alto | — | Fuera de alcance (triage) |
-| Salida | Plantilla de importación de Vendty/Alegra/Siigo | Desconocido | Medio | Sin confirmar | Revisar luego si el proveedor da plantilla |
-| Emisión | Solución gratuita DIAN (manual) | Bueno para pocos documentos | Gratis | Oficial | Destino probable de la transcripción |
-| Emisión | Vendty | Emite documento soporte | Suscripción | Página comercial | Preguntar a contabilidad |
-| Numeración | Contador local que valida rango y vigencia | Necesario | Bajo | — | **Elegida**: nunca reutilizar un número |
+## Hallazgos (fuentes)
+1. **Consenso entre modelos**, CE-OCR (arXiv 2504.11101): varios VLM votan; si la «entropía de consenso» es baja se acepta, si es alta se escala. La ganancia reportada varía entre fuentes (15–42 % F1).
+2. **Predecir errores** del VLM con sondas (arXiv 2511.19806): sirve para abstenerse, pero el estudio es de texto en escena, no de recibos.
+3. **Receipt-Bench** (arXiv 2605.22413): los modelos chicos afinados sobre todo omiten campos y leen mal dígitos. Los grandes **inventan valores plausibles**, que pueden hacer cuadrar un total falso. Por eso no basta con que la suma cierre: además se exige que el valor aparezca en el texto leído.
+4. **Validación aritmética** (informes de práctica): atrapa errores de total. Necesita una tolerancia de redondeo.
+5. **Resolución**: Qwen2.5-VL usa bloques de 28×28 px. Un min_pixels demasiado alto también empeora. Regla tipo Tesseract: altura de letra ≥20 px (ideal 20–40). Hay que verificar cómo Ollama reduce la imagen.
+6. **Foto**: plana, de frente, sin flash (brillo), con el recibo llenando el cuadro; corregir la perspectiva por recibo. CLAHE (clip ≈2) solo si hay poco contraste.
+7. **Votación ROVER** (multi-motor): viene del habla. En OCR solo hay tesis que muestran poca correlación de errores entre motores, sin una cifra limpia de mejora.
 
-## Codebase map
-- Entrada: `app.py` (Flask, puerto 5050; `python app.py` o `iniciar.bat`). Rutas contables en `app.py:209-343`, incluida `/api/contable/excel`.
-- Datos: JSON en `datos/` (`historial`, `esquema`, `alias_negocio`, `libro`, `contable`). El NIT del negocio está en `datos/contable.json`.
-- `parser_module/contable/`: `documentos.py` (venta, gasto_caja, factura; tercero como texto en L182-192), `asientos.py` (asientos y duplicados por número, L86-122; **tiene cambios sin commit**), `clasificar.py`, `exportar.py` (`libro_a_excel`, L17), `terceros_cuentas.json` (tercero → cuenta, sin NIT).
-- Tests: scripts `probar_*.py` en la raíz, con checks `chk` por consola, sin pytest. Ejemplos en `parser_module/ejemplos/`.
+## Opciones para el diseño (a decidir en requisitos)
+| Pieza | Qué hace | Costo | Evidencia |
+|---|---|---|---|
+| A. Validación por recibo | Aritmética (ítems = subtotal; subtotal − descuento + domicilio = total; total + propina = pagado; pagado − cambio = efectivo), número dentro del rango del archivo y en orden con la hora, un membrete por recorte, catálogo de precios | Bajo | Alta (nuestros datos) |
+| B. Relectura con variantes + voto por campo | 2–3 variantes (tamaño, contraste, recorte), gana el candidato que valida | Medio (×2–3 tiempo) | Media, hay que medir |
+| C. Tesseract solo para dígitos | Cruce independiente de números | Bajo | Media |
+| D. Medidor de foto borrosa | Varianza del Laplaciano (umbral inicial ~100, a calibrar) + tiempo como señal secundaria → más pasadas | Bajo | Media |
+| E. Cola de revisión con foto | Lo que no valida tras N pasadas | Medio | Alta (lo hicimos a mano) |
+| F. Métrica de precisión | Conjunto de referencia de este mes; precisión por campo antes/después de cada cambio | Bajo | Necesaria |
+| G. Modelo afinado (fase 2) | LoRA con nuestros recibos | Alto | Media |
 
-## Risks / unknowns
-- R1: el texto exacto de la Res. 167/2021 y de la 227/2025 no se leyó. Hay que verificar campos y plazos en el normograma DIAN antes del diseño.
-- R2: la relación de la Res. 165/2023 con el documento soporte no está confirmada; parece ser una norma de facturación general.
-- R3: no se sabe cómo se solicita la numeración. Confirmar con contabilidad el rango autorizado.
-- R4: nota de ajuste: tiene número propio y no se puede reutilizar el original. ¿La app debe prepararla? Decidir en requisitos.
-- R5: sin carga masiva, a muchos proveedores por semana la transcripción manual sale cara. Medir el volumen típico.
-- R6: plazo semanal. La app debe avisar los documentos que estén cerca del límite.
-- R7: los datos del proveedor (cédula, nombre, dirección) son datos personales y se guardan en local. Bajo riesgo, porque `exposed: no`.
-
-## Sources
-- https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/lo-que-deberias-saber-soporte-adquisiciones-no-obligados/
-- https://incp.org.co/publicaciones/infoincp-publicaciones/impuestos/2025/06/generar-el-documento-soporte-con-no-obligados-a-facturar-fuera-de-los-plazos-establecidos-invalida-su-efecto-fiscal/
-- https://siemprealdia.co/colombia/impuestos/nota-de-ajuste-al-documento-soporte/
-- https://normograma.invima.gov.co/normograma/docs/pdf/resolucion_dian_0167_2021.pdf
-- https://normograma.invima.gov.co/normograma/docs/pdf/resolucion_dian_0165_2023.pdf
-- https://legalytributarioenlinea.co.pwc.com/Repositorio%20PwC/PDF/Doctrina/DIAN/Conceptos/2024/CON-000206-24.pdf
-- https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/facturacion-gratuita-dian/
-- https://www.dian.gov.co/impuestos/factura-electronica/Documents/Solucion-Gratuita-Proceso-de-generacion-documento-soporte-en-adquisiciones-efectuadas-a-no-obligados.pdf
-- https://www.vendty.com/
-- https://www.siigo.com/blog/tecnologia-innovacion/documento-soporte-para-los-no-obligados-a-facturar/
+## Riesgos
+- Más tiempo por foto (aceptado por el usuario: menos errores importa más que la velocidad).
+- Los umbrales (Laplaciano, tolerancias) sin calibrar pueden marcar demasiadas fotos o muy pocas → calibrar con el ground truth.
+- Un modelo que «predice» valores puede inventar: toda predicción queda marcada como tal y nunca reemplaza en silencio un valor leído.

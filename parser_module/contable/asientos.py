@@ -1,7 +1,7 @@
 """Documentos del día → filas del libro (débito/crédito) con tus cuentas y tus frases."""
 from __future__ import annotations
 import json, re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 AQUI = Path(__file__).parent
@@ -16,7 +16,7 @@ RECAUDO_DESC = {m: d for _, d, m in RECAUDOS_BANCO} | {"App": "Ventas por Rappi"
                                                        "Daviplata": "Recaudos a través de Daviplata"}
 # puente_*: adonde va lo que no se pudo leer (venta sin medio, gasto sin cuenta), para que nada se descarte en silencio (R10).
 # Códigos PUC 138095 «Deudores varios – otros» y 519595 «Gastos diversos – otros»; cámbialos en contable.json si tu contador usa otros.
-CFG = {"reporta_efectivo": "Yorly", "reporta_banco": "Sergio", "cuenta_recaudo": "", "puente_ingreso": "13809501", "puente_gasto": "51959501"}
+CFG = {"reporta_efectivo": "Yorly", "reporta_banco": "Sergio", "cuenta_recaudo": "", "puente_ingreso": "13809501", "puente_gasto": "51959501", "salto_comanda": 30}
 PUENTES = {"13809501": "Puente ingreso: venta sin medio de pago", "51959501": "Puente gasto: gasto sin cuenta"}
 
 
@@ -90,6 +90,14 @@ def faltantes(docs: list, c: dict) -> list:
     return [n for n in range(ini, fin + 1) if n not in hay]
 
 
+def fuera_de_secuencia(docs: list, salto: int) -> list:
+    """M-4: comandas cuyo número queda a más de `salto` de cualquier otra comanda del día (con 3 o más números distintos).
+    Suele ser un papel de otro día que trae otra fecha escrita (reimpresión) o un número mal leído (65310 por 85310)."""
+    ns = sorted({int(d["numero"]) for d in docs if d.get("tipo") == "venta" and str(d.get("numero", "")).isdigit()})
+    if len(ns) < 3: return []
+    return [n for i, n in enumerate(ns) if min(abs(n - m) for m in ns[max(i - 1, 0):i] + ns[i + 1:i + 2]) > salto]
+
+
 def cruzar(docs: list, c: dict) -> tuple:
     """¿Lo que dice el cierre del POS coincide con la suma de tus comandas y gastos? Una diferencia = falta un papel o se leyó mal.
     Devuelve (filas del cruce, números de comanda que faltan)."""
@@ -115,17 +123,51 @@ def cruzar(docs: list, c: dict) -> tuple:
     return out, falta
 
 
+def firma_venta(d: dict) -> tuple:
+    """M-8: (hora de «Fecha de Venta», mesa) de una comanda, leídas del texto; "" si no se leyó."""
+    t = (d.get("texto") or "").lower()
+    h = re.search(r"fecha de venta\W*\S+\s+(\d{1,2}:\d{2}(?::\d{2})?\s*[ap]\W*m)", t)
+    m = re.search(r"mesa\s*:?\s*([a-z0-9]+)", t) or re.search(r"mesa\s+([a-z0-9]+)", (d.get("detalle") or "").lower())
+    return (re.sub(r"\W", "", h.group(1)) if h else "", m.group(1) if m else "")
+
+
+def misma_venta(a: dict, b: dict) -> bool:
+    """Dos comandas son el mismo papel (foto cargada dos veces) solo si los datos coinciden de verdad: el texto es idéntico, o la hora
+    de «Fecha de Venta» y la mesa se leyeron en las dos y son iguales y los valores no se contradicen. Un dato sin leer NO es
+    coincidencia: papeles distintos cuentan aunque compartan número o no se lea el número (M-8). Un valor 0 cuenta como «no leído»."""
+    if a.get("texto") and a.get("texto") == b.get("texto"): return True
+    (ha, ma), (hb, mb) = firma_venta(a), firma_venta(b)
+    if not (ha and ma and ha == hb and ma == mb): return False
+    total = lambda d: d.get("efectivo", 0) + d.get("tarjeta", 0) + d.get("transf", 0) + d.get("credito", 0)
+    return all(not x or not y or x == y for x, y in ((a.get("consumo", 0), b.get("consumo", 0)), (total(a), total(b))))
+
+
+def numeros_repetidos(docs: list) -> dict:
+    """M-8: número de comanda → cuántas comandas que cuentan lo comparten (recibos distintos con el mismo número leído)."""
+    c = Counter(d["numero"] for d in docs if d.get("tipo") == "venta" and d.get("numero") and d.get("contar"))
+    return {n: k for n, k in c.items() if k > 1}
+
+
 def marcar_duplicados(docs: list) -> list:
-    """El gasto de caja impreso y su «recibo de caja menor» manuscrito son el MISMO gasto: se cuenta uno solo."""
-    vistos = {}
+    """El gasto de caja impreso y su «recibo de caja menor» manuscrito son el MISMO gasto: se cuenta uno solo.
+    Una comanda es duplicada solo si es el mismo papel (misma_venta): con número, frente a las de su número; sin número, frente a todas. En cada pasada se borra el «duplicado de»
+    anterior (si el número se corrigió, vuelve a contar), salvo que tú hayas marcado a mano si cuenta (manual_contar)."""
+    for d in docs:
+        if d.get("tipo") in ("gasto_caja", "venta") and not d.get("manual_contar"): d["dup_de"] = ""
+    vistos, ventas = {}, {}
     for d in docs:
         if d.get("tipo") == "gasto_caja" and d.get("numero"):
             if d["numero"] in vistos: d["dup_de"] = vistos[d["numero"]]
             else: vistos[d["numero"]] = d["id"]
         if d.get("tipo") == "venta" and d.get("numero"):
-            k = "v" + d["numero"]
-            if k in vistos: d["dup_de"] = vistos[k]
-            else: vistos[k] = d["id"]
+            igual = next((o for o in ventas.get(d["numero"], []) if misma_venta(o, d)), None)
+            if igual: d["dup_de"] = igual["id"]
+            else: ventas.setdefault(d["numero"], []).append(d)
+    for d in docs:   # sin número: se compara con todas las comandas que quedaron (con o sin número)
+        if d.get("tipo") == "venta" and not d.get("numero"):
+            igual = next((o for vs in ventas.values() for o in vs if misma_venta(o, d)), None)
+            if igual: d["dup_de"] = igual["id"]
+            else: ventas.setdefault("", []).append(d)
     impresos = {(x["valor"], x["id"]) for x in docs if x.get("tipo") == "gasto_caja" and not x.get("dup_de")}
     usados = set()
     for d in docs:
@@ -139,7 +181,7 @@ def marcar_duplicados(docs: list) -> list:
 
 
 FALTA_CUENTA = "falta la cuenta"   # aviso de DATOS OCR que construir() reconoce (DEBT-1)
-COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id"]
+COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id", "recibo", "motivo"]   # T12: recibo = validado|dudoso|revisado (estado_de) y motivo = por qué es dudoso (R7)
 
 
 def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
@@ -149,8 +191,9 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
     bloque: venta · caja · factura · extracto · rappi, el asiento al que va la fila."""
     datos = []
     def dato(d=None, **k):
-        r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="")
-        if d: r.update(archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
+        r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="", recibo="", motivo="")
+        if d: r.update(recibo=estado_de(d), motivo="; ".join(d.get("motivos") or d.get("avisos") or []) if estado_de(d) == "dudoso" else "",   # FIX-13: solo el dudoso trae motivo
+                         archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
         r.update(k); datos.append(r)
     for k, desc, medio in RECAUDOS_BANCO:
         if int(banco.get(k) or 0): dato(tipo="extracto", archivo="extracto bancario", detalle=desc, valor=int(banco[k]), medio=medio, cuenta=BANCO, bloque="extracto")
@@ -187,6 +230,13 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
     return datos
 
 
+def estado_de(d: dict) -> str:
+    """Estado del recibo: validado | dudoso | revisado (03 §4). Migración al leer, sin tocar el documento: sin `estado`, el viejo
+    `revisado: true` pasa a «revisado»; si no, «validado» sin avisos y «dudoso» con avisos."""
+    if d.get("estado") in ("validado", "dudoso", "revisado"): return d["estado"]
+    return "revisado" if d.get("revisado") else "dudoso" if d.get("avisos") else "validado"
+
+
 def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None) -> dict:
     cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; banco = banco or {}; filas, avisos, pendientes = [], [], []
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
@@ -213,7 +263,18 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     jb = [fila(BANCO, "Consumidor Final", x["detalle"], deb=x["valor"], reporta=cfg["reporta_banco"], medio=x["medio"], grupo="venta", fx=["dato", i]) for i, x in ext]
     if total_b:
         cta = f"Recaudos pagados a la cta.{cfg['cuenta_recaudo']}" if cfg["cuenta_recaudo"] else "Recaudos pagados a la cuenta"
-        fila(RESTAURANTE, "Consumidor Final", cta, cre=total_b, reporta=cfg["reporta_banco"], grupo="venta", fx=["+", *F(*jb)])
+        # M-6: la propina y el domicilio de las comandas que cubre el extracto no son ingreso: van a 2815, con tope en lo que trae el extracto
+        enx = [(i, x) for i, x in enumerate(datos) if x["estado"] == "en extracto" and x["bloque"] == "venta"]
+        pro_x, dom_x = suma(enx, "propina"), suma(enx, "domicilio"); tot = ["+", *F(*jb)]; ex = dict(bloque="venta", estado="en extracto")
+        if pro_x + dom_x > total_b:
+            avisos.append("El extracto no alcanza para cubrir las propinas y domicilios de las comandas pagadas al banco")
+            pro_x = min(pro_x, total_b); dom_x = min(dom_x, total_b - pro_x)
+        jp = jd = None
+        if pro_x: jp = fila(PROPINAS, "Consumidor Final", "Ordenes: " + abreviar_recibos(nums(enx, "propina")), cre=pro_x, reporta=cfg["reporta_banco"], grupo="venta",
+                            fx=["min", S("propina", **ex), tot])
+        if dom_x: jd = fila(DOMICILIOS, "Consumidor Final", "Ordenes: " + abreviar_recibos(nums(enx, "domicilio")), cre=dom_x, reporta=cfg["reporta_banco"], grupo="venta",
+                            fx=["min", S("domicilio", **ex), ["-", tot, *F(jp)]])
+        fila(RESTAURANTE, "Consumidor Final", cta, cre=total_b - pro_x - dom_x, reporta=cfg["reporta_banco"], grupo="venta", fx=["-", tot, *F(jp, jd)])
     for i, x in de("rappi"):   # Rappi te consigna lo que te debía: entra al banco y baja la cuenta por cobrar (no es una venta nueva)
         j = fila(BANCO, "Rappi", x["detalle"], deb=x["valor"], reporta=cfg["reporta_banco"], medio=x["medio"], grupo="venta", fx=["dato", i])
         fila(POR_COBRAR, "Rappi", x["detalle"], cre=x["valor"], reporta=cfg["reporta_banco"], grupo="venta", fx=["fila", j])
@@ -296,12 +357,20 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         j = fila(x["cuenta"], ter, desc, deb=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["dato", i])
         fila(EFECTIVO if ef else BANCO, ter, desc, cre=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["fila", j])
     for d in docs:
-        if d["tipo"] in ("venta", "gasto_caja", "factura") and d.get("avisos") and not d.get("revisado"):
+        if d["tipo"] in ("venta", "gasto_caja", "factura") and d.get("avisos") and estado_de(d) != "revisado":
             avisos += [f"{d['tipo'].replace('_', ' ').capitalize()} {d['numero'] or ''}: {a}".replace("  ", " ") for a in d["avisos"]]
+        if d["tipo"] == "venta" and estado_de(d) == "dudoso":   # T12 (R7): el motivo de la validación, si no es ya un aviso
+            avisos += [f"Venta {d['numero'] or ''} dudosa: {m}".replace("  ", " ") for m in d.get("motivos") or [] if m not in (d.get("avisos") or [])]
     cie = {**datos_cierre(todos), **{k: int(v) for k, v in (cierre or {}).items() if v is not None}}
     cruces, faltan = cruzar([d for d in todos if d["tipo"] != "cierre"], cie)
     if faltan: avisos.insert(0, "Faltan comandas del cierre: " + ", ".join(map(str, faltan)))
     if faltan: avisos.append("Falta la comanda " + ", ".join(map(str, faltan)) + " (está en el rango del cierre)")
+    for n, k in sorted(numeros_repetidos(docs).items()):
+        avisos.append(f"Comanda {n}: número repetido en {k} recibos distintos (no coinciden hora, mesa y valores): revisa el número en el papel")
+    raros = fuera_de_secuencia(docs, int(cfg["salto_comanda"]))
+    if raros:
+        ns = sorted({int(d["numero"]) for d in docs if d["tipo"] == "venta" and str(d.get("numero", "")).isdigit()} - set(raros))
+        avisos.append(f"Comanda{'s' if len(raros) > 1 else ''} {', '.join(map(str, raros))}: no sigue{'n' if len(raros) > 1 else ''} la secuencia del día ({ns[0]}–{ns[-1]}); ¿es de otro día (fecha reimpresa) o se leyó mal el número?")
     if any(not x["ok"] for x in cruces): avisos.append(f"El cierre del POS no coincide con tus papeles en {sum(not x['ok'] for x in cruces)} concepto(s): ¿falta alguna comanda o se leyó mal?")
     deb, cre = sum(f["debito"] for f in filas), sum(f["credito"] for f in filas)
     if deb != cre: avisos.insert(0, f"El día no cuadra: débito {deb:,} · crédito {cre:,} (diferencia {deb - cre:,})".replace(",", "."))

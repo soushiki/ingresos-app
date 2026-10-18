@@ -1,35 +1,35 @@
-# 06 · Test report — Iteración 4, re-test (FIX-13, FIX-14)
+# 06 · Informe de pruebas — Precisión del OCR (iteración 5: FIX-1..13 + R3b)
 
 ## Summary
-- **Resultado: pasa.** FIX-13 y FIX-14 están cerrados, cada uno con su check. La suite completa está verde y la revisión no encontró defectos nuevos. Con esto pasan las 4 iteraciones; queda 7-release.
-- Cobertura de la it. 4 (sin R-ids nuevos; criterios = «done when» de T18–T21 y 03 §10):
-  - T18–T21: cubiertos como en el test anterior (ida y vuelta, rechazos de archivo, 8 clases de día malo, iguales/conflicto/reemplazar/bloqueado R7, subproceso SIN_OCR → CTG-1).
-  - FIX-13: un cierre con faltante (`faltante_impreso` y `cierre.faltante` negativos) sale por `crudo`, pasa `leer_crudo`, se importa por POST y queda igual en el libro. El caso de tope del test es ahora 10^11.
-  - FIX-14: un texto de 6.000 caracteres entra. Un JSON anidado 100.000 niveles da `CrudoInvalido`, el POST responde 400 y no escribe nada (antes daba 500).
+- **Resultado: pasa, con 1 defecto nuevo (Should).** Las 17 suites `probar_*.py` pasan (`probar_imagen.py` es manual).
+- **Cobertura:** cada FIX trae su check (probar_revision +9, probar_validar +5, probar_relectura +6, probar_precision +3,
+  probar_recortes +2, probar_datos_ocr +5, probar_digitos +8). R3b cubierto (nota suave, otro número del nombre → dudoso,
+  total/pagado distinto → nota). Sigue sin prueba: N4 (temperatura 0, config en `local_engine.py:24`).
+- **N3 sigue sin medirse de nuevo:** la re-corrida de T16 pide re-OCR de 107 recibos con Ollama (FIX-2, pendiente en 08-maintenance).
+- Diff revisado: `ed4b480..HEAD` (21 archivos, +220/−71; código ≈150 líneas).
 
-## Failures (suite completa, 2026-10-17)
-- Ninguna. Verdes: probar_contable, probar_datos_ocr, probar_dia15, probar_documento_soporte, probar_esquema, probar_parser (79/79), probar_pdf y probar_restaurante. probar_imagen es una herramienta manual que pide una imagen; no es parte de la suite.
+## Fallos
+- Ninguno en la suite.
 
-## Comprobación con datos reales
-- Los 30 días reales de septiembre: `crudo → leer_crudo` da 30 válidos y 0 inválidos.
-- El día real 2026-09-16, con un faltante de −3.000 puesto en sus 5 cierres, se valida y vuelve igual. Ese es el caso que fallaba en el test anterior.
+## Hallazgos de la revisión (a mano, diff chico; más grave primero)
+1. **FIX-14** `app.py:269` + `catalogo.py:39`: si `catalogo.json` ya trae precios, nunca se rehace. Lo que FIX-9 resetea tras
+   confirmar solo vuelve a leer el mismo archivo → un precio corregido en Revisión o un día nuevo validado nunca entra a «auto».
+   Hoy no se nota (el archivo está vacío, así que se arma del libro en cada lectura), pero R6 queda congelado tras su primera carga.
+2. (bajo, aceptado por FIX-1) `_conservar_revisados` (`app.py:399`) vuelve a poner un «revisado» que el usuario borró a mano del día
+   antes de guardar. Coherente con R7 («releer nunca pisa un revisado»); queda anotado, sin tarea.
+3. (cosmético) ④ en «Revisados»: el número de la pestaña no se actualiza al corregir; se actualiza al volver a «Dudosos».
+- Revisado sin hallazgos: FIX-3 (SIN_CANDIDATO), FIX-4 (sin tildes), FIX-6/7/8/10/13, colores de FIX-12, R3b `notas_digitos`/`_digitos`.
 
-## Review findings (diff ebf9702..HEAD: exportar.py +5/−4, probar_datos_ocr.py +17, ADR-004)
-- `_malo` acepta |v| ≤ 10^10. NaN sigue rechazado (`v == v`). bool y None siguen aparte.
-- Que entren negativos no abre camino a un DS negativo: `soporte.compras` salta las compras con valor ≤ 0 (soporte.py:129) y `generar` las rechaza (soporte.py:229).
-- `RecursionError` se captura junto a `ValueError`. La validación de forma sigue completa antes de escribir y bajo `LOCK`.
-- MAX_TEXTO = 20.000 deja ~5× de margen sobre el texto real más largo (4.038). MAX_DOCS (2.000) limita el tamaño del archivo.
-- ADR-004 anota los dos topes y el porqué.
-- Menor (8-maintain, ya anotado): un archivo hecho a mano con una factura de valor negativo entraría al libro contable como cifra negativa. El soporte la ignora. Es el mismo riesgo que editar libro.json a mano. Sigue abierto el otro menor: `id` repetidos dentro de un día.
-- `/security-review` a mano (entrada de otro equipo): sin hallazgos nuevos.
+## Seguridad (`exposed: no`)
+- No hay entradas nuevas: `estado=` en GET /revision ya pasaba por la lista blanca; ④ sigue armando todo con textContent (las notas ℹ también).
+- `spikes/` queda fuera de lo que se publica (FIX-11). `/security-review` completo: opcional antes de 7-release.
 
-## Debt
-- Sin linter. +9 líneas de código, sin funciones nuevas. Sin DEBT nuevo.
+## Carga y deuda
+- Sin prueba de carga (app local de un solo usuario). No hay linter configurado, así que no hay con qué comparar la deuda.
 
-## Smoke (usuario, ≈5 min, sigue pendiente)
-1. En tu PC (con Ollama): ② Libro contable → filtra una semana → «Datos crudos (.json)».
-2. En la copia del contador (`.env` con SIN_OCR=1, `iniciar.bat`): el chip dice «Sin OCR · importa datos» y ① muestra «Importar datos».
-3. ② → «⬆ Importar datos crudos» → elige el .json: el informe muestra N nuevos. Si importas el mismo archivo otra vez, todos salen como «iguales».
-4. ③: aparecen las mismas semanas que en tu PC. Genera un CTG y baja su Excel.
-5. En una ventana de 375 px, ① y ② no tienen scroll lateral.
-- Siguen pendientes los smokes de las it. 1 (abrir el Excel con fórmulas), 2 y 3. Conviene hacerlos antes de 7-release.
+## Smoke (para el usuario, ≈5 min)
+1. ④ Revisión → selector «Revisados»: salen los confirmados con aviso verde y solo «Guardar corrección».
+2. Escanear una foto de comandas con Tesseract instalado → un recibo que solo tiene «Sin confirmar por segundo lector» muestra ℹ y NO cuenta como dudoso.
+3. Un recibo a domicilio / para llevar ya no pide «Falta la mesa».
+4. Exportar el Excel: dudoso en naranja, otros avisos en amarillo; un revisado sin «Motivo».
+Resultado: pendiente del usuario.

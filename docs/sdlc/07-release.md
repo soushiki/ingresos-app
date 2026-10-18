@@ -12,10 +12,11 @@ Hay dos instalaciones: **tu PC** (con Ollama, lee fotos) y **el PC del contador*
 
 **Entorno (.env, solo nombres)**: `PORT` (5050), `NO_BROWSER`, `SIN_OCR` (1 en el PC del contador),
 `LOCAL_VLM_URL`, `LOCAL_VLM_MODEL`, `LOCAL_VLM_KEY`, `GEMINI_API_KEY` / `GOOGLE_API_KEY`, `GEMINI_MODEL`, `TESSERACT_LANG`.
-Datos fuera de git: `datos/` (libro.json, soporte.db), `parser_module/contable/terceros_cuentas.json`, `*.xlsx`.
+Motores locales (solo tu PC): Ollama con qwen2.5vl, Tesseract (R3; si falta, se salta con aviso), Real-ESRGAN opcional (V4).
+Datos fuera de git: `datos/` (libro.json, soporte.db, catalogo.json, recortes/, referencia), `parser_module/contable/terceros_cuentas.json`, `*.xlsx`.
 
 **Publicar una versión** (desde tu PC)
-1. Suite verde: `for f in probar_contable probar_datos_ocr probar_dia15 probar_documento_soporte probar_esquema probar_parser probar_pdf probar_restaurante; do python $f.py | tail -1; done`
+1. Suite verde (17 suites; `probar_imagen.py` es manual): `for f in probar_*.py; do [ $f = probar_imagen.py ] || { printf "$f: "; python $f | tail -1; }; done`
 2. `VERSION` + entrada en `CHANGELOG.md`; commit.
 3. `git checkout main && git merge --no-ff <rama> && git tag vX.Y.Z && git push origin main --tags`
 
@@ -25,7 +26,7 @@ Datos fuera de git: `datos/` (libro.json, soporte.db), `parser_module/contable/t
 3. `iniciar.bat`. soporte.db migra solo (`user_version`).
 
 **Health check**: la página abre en :5050; `GET /api/estado` responde (en el contador, `sin_ocr: true`);
-la pestaña ③ muestra las mismas semanas que antes de actualizar.
+la pestaña ③ muestra las mismas semanas que antes de actualizar; desde 1.1.0, ④ Revisión lista los dudosos y abre un recorte.
 
 **Rollback**: cerrar la app → `git checkout vX.Y.Z-anterior` → restaurar la copia de `datos/` hecha en el paso 1
 (obligatorio si la versión nueva migró soporte.db: la versión vieja no conoce las migraciones nuevas).
@@ -33,7 +34,10 @@ la pestaña ③ muestra las mismas semanas que antes de actualizar.
 **CI**: no hay. Sugerido (GitHub Actions, Windows): la suite de arriba + gitleaks (historial completo) + `pip-audit`
 + `bandit -r . -x ./datos`. Hoy no están instalados localmente; pre-flight hecho con grep (ver Releases).
 **Logs**: Flask no registra cuerpos; cédulas/NIT solo viven en soporte.db y en los Excel.
-**Monitoreo RED**: no aplica (un usuario, local). La línea base de rendimiento son los checks N4 (T17).
+**Monitoreo RED**: no aplica (un usuario, local). Línea base de calidad: `python medir_precision.py --completo` (107 recibos de sept.).
+**Repo público**: nada con cifras reales ni datos del negocio (01b/01c, nombre/dirección del local) entra a `main` ni a `origin`.
 
 ## Releases
-2026-10-17 | v1.0.0 | Preparada: suite verde (8/8), sin secretos en main..HEAD, debug off, solo 127.0.0.1, errores sin traceback. Sin cabeceras de seguridad (aceptado: local; Host/Origin revisados). **Bloqueada** por los smokes it. 1–4 (usuario) y el ok para merge/tag/push.
+2026-10-18 | v1.1.0 | **Publicada**: smoke it. 5 pasa (usuario); merge --no-ff a main, tag v1.1.0, push main + tags. suite 17/17, debug off, solo 127.0.0.1, sin claves (la del spike sale de ~/.claves o .env). 46 commits sin push reescritos (filter-branch; respaldo en `backup/pre-rewrite-v1.1.0`, solo local): sin 01b/01c y sin el nombre del local; 01b/01c en .gitignore; el spike lee NOMBRE_LOCAL/DIRECCION_LOCAL de .env. Ya público desde antes en `ejemplos.py`: dirección y teléfono del POS.
+2026-10-17 | v1.0.1 | Publicada (M-1..M-3).
+2026-10-17 | v1.0.0 | **Publicada**: smokes it. 1–4 pasan (usuario); suite 8/8, sin secretos ni IDs reales en ba14629..3c7e316 (solo IDs de prueba), debug off, solo 127.0.0.1. main fast-forward a 3c7e316, tag v1.0.0, push a origin. Fuera del repo (público): 01b/01c (cifras reales) y .claude/. Sin cabeceras de seguridad (aceptado: local, Host/Origin revisados). Actualizar los PC: runbook «Actualizar un PC».

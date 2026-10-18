@@ -1,6 +1,6 @@
 # ADR-002 · MOVIMIENTOS con fórmulas que leen la hoja DATOS OCR
 
-Estado: **confirmado** por el spike T4 (2026-10-16): en los 30 días de libro.json, los 408 asientos hechos con fórmulas dan lo mismo que `construir()` (evaluador propio de referencias, SUMIFS, MIN). Falta abrir `spike/spike_2026-09-20.xlsx` en Excel y ver «¿Cuadra?» = SÍ (en este equipo no hay Excel).
+Estado: **confirmado** por el spike T4 (2026-10-16): en los 30 días de libro.json, los 408 asientos hechos con fórmulas dan lo mismo que `construir()` (evaluador propio de referencias, SUMIFS, MIN). Falta abrir `archive/documento-soporte/spike/spike_2026-09-20.xlsx` en Excel y ver «¿Cuadra?» = SÍ (en este equipo no hay Excel).
 
 ## Contexto
 R9: corregir a mano lo que el OCR leyó mal y que el libro se recalcule. Las macros (.xlsm) quedan bloqueadas por Office. Opciones: 1) valores fijos (como hoy, no se propaga); **2) fórmulas con openpyxl**; 3) VBA (descartado: bloqueado y difícil de auditar).
@@ -19,4 +19,4 @@ R9: corregir a mano lo que el OCR leyó mal y que el libro se recalcule. Las mac
 
 ## Fitness test (`probar_datos_ocr.py`)
 - No hay `vbaProject.bin`. Todo importe de MOVIMIENTOS empieza con `=` («ADR-002: importe sin fórmula»). Ninguna fila sin código («ADR-002/R10: fila sin código»).
-- Al evaluar las fórmulas (lógica de `spike/spike_adr002.py`) cada día da lo mismo que `construir()`.
+- Al evaluar las fórmulas (lógica de `archive/documento-soporte/spike/spike_adr002.py`) cada día da lo mismo que `construir()`.

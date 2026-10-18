@@ -14,12 +14,14 @@ from PIL import Image
 from ocr_module import digitize, get_engine
 from ocr_module import pdf as pdflib
 from ocr_module import orientacion
+from ocr_module.digitos import numeros_tesseract
 from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
-from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS
-from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs
+from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de
+from parser_module.contable import referencia
+from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
 from datetime import date
@@ -252,17 +254,38 @@ def _pdf_ok() -> bool:
     except RuntimeError: return False
 
 
-def _leer_hoja(img_bytes: bytes, eng, giro="auto") -> tuple:
-    """Una hoja (foto o página escaneada) → (texto con varios papeles separados por MARCA, segundos, grados girados)."""
-    png, grados = orientacion.preparar_pagina(img_bytes, giro)
-    trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"))
-    textos, seg = [], 0.0
-    for t in trozos:
-        b = io.BytesIO(); t.save(b, "PNG")
-        res = digitize(b.getvalue(), eng)
+def _motor(eng):
+    """El motor de C5: un recorte (PIL) → texto, con el mismo OCR de siempre (digitize). Un error sube."""
+    def leer(img):
+        b = io.BytesIO(); img.save(b, "PNG"); res = digitize(b.getvalue(), eng)
         if not res.ok: raise RuntimeError(res.error)
-        textos.append(res.text); seg += res.seconds
-    return f"\n{MARCA}\n".join(textos), round(seg, 2), grados
+        return res.text
+    leer.nombre = getattr(eng, "model", None) or getattr(eng, "name", "local"); return leer
+
+
+_PRECIOS = None   # FIX-9: el catálogo se arma una vez por arranque; confirmar en Revisión lo invalida
+
+
+def _catalogo() -> dict:
+    """R6: precios de la carta (datos/catalogo.json); si está vacío se arma del libro. Sin libro → {} (R6 no hace nada).
+    Queda en memoria: escanear no relee ni reescribe el archivo en cada foto."""
+    global _PRECIOS
+    if _PRECIOS is not None: return _PRECIOS
+    from parser_module.contable import catalogo
+    try: precios = catalogo.desde_libro(_leer_libro())   # FIX-14: siempre rehace «auto» desde el libro (manual gana)
+    except Exception: precios = catalogo.cargar()   # noqa: BLE001  sin libro legible → lo que haya en el archivo
+    _PRECIOS = precios; return precios
+
+
+def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", completa=True) -> dict:
+    """Una hoja (foto o página escaneada) → documentos (T8: cada venta por C5 leer_recibo, R5 con el nombre de la foto),
+    texto con los papeles separados por MARCA, segundos, grados girados y avisos de la hoja («Falta el recibo …»)."""
+    png, grados = orientacion.preparar_pagina(img_bytes, giro)
+    esperados = relectura.numeros_de_nombre(nombre) if categoria in ("", "comandas") else None   # T8b: cuántos papeles trae la foto
+    trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
+    h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar,
+                         catalogo=_catalogo(), leer_digitos=numeros_tesseract)
+    return {**h, "grados": grados}
 
 
 @app.post("/api/contable/escanear")
@@ -275,21 +298,24 @@ def cont_escanear():
     nombre = request.form.get("ruta") or f.filename or ""
     categoria = request.form.get("categoria", "") or _categoria_por_nombre(nombre)
     giro = request.form.get("giro", "auto"); giro = giro if giro == "auto" else int(giro)
-    data = f.read(); fuente, segundos, grados = "ocr", 0, 0
+    data = f.read(); fuente, segundos, grados, docs, avisos = "ocr", 0, 0, None, []
     try:
-        if (f.filename or "").lower().endswith(".pdf") or data[:4] == b"%PDF":
+        es_pdf = (f.filename or "").lower().endswith(".pdf") or data[:4] == b"%PDF"
+        if es_pdf:
             texto, img = pdflib.pagina(data, int(request.form.get("pagina") or 1), como_imagen=request.form.get("como_imagen") == "1")
             if texto is not None: fuente = "texto"
         else: texto, img = None, data
         if texto is None:
             if SIN_OCR: raise RuntimeError("Este PC está en modo sin OCR: lee las fotos en el PC de lectura e importa aquí sus datos crudos (.json).")
             eng = get_engine(motor, **({"model": modelo} if modelo and motor == "local" else {}))
-            texto, segundos, grados = _leer_hoja(img, eng, giro)
+            completa = not es_pdf or pdflib.info(data)["paginas"] == 1     # R5: una página de un PDF largo no trae todo el lote del nombre
+            h = _leer_hoja(img, eng, giro, categoria, nombre, completa)
+            texto, segundos, grados, docs, avisos = h["texto"], h["segundos"], h["grados"], h["documentos"], h["avisos"]
     except Exception as e:  # noqa: BLE001
         return jsonify(ok=False, error=str(e))
-    docs = _clasificar(leer_texto(texto, categoria))
+    docs = _clasificar(leer_texto(texto, categoria) if docs is None else docs)
     for d in docs: d["origen"] = nombre
-    return jsonify(ok=True, texto=texto, segundos=segundos, fuente=fuente, grados=grados, categoria=categoria, documentos=docs)
+    return jsonify(ok=True, texto=texto, segundos=segundos, fuente=fuente, grados=grados, categoria=categoria, documentos=docs, avisos=avisos)
 
 
 @app.post("/api/contable/releer")
@@ -318,6 +344,17 @@ def cont_aprender():
     return jsonify(ok=True)
 
 
+RUTA_RECORTES = DATOS / "recortes"
+
+
+@app.get("/api/contable/recorte/<nombre>")
+def cont_recorte(nombre):
+    """ADR-006: sirve solo nombres <16 hex>.jpg de datos/recortes."""
+    b = recortes.abrir(nombre, RUTA_RECORTES)
+    if b is None: return jsonify(error="sin recorte"), 404
+    return send_file(io.BytesIO(b), mimetype="image/jpeg")
+
+
 @app.get("/api/contable/libro")
 def cont_libro():
     return jsonify(dias=sorted(_leer_libro().values(), key=lambda d: d["fecha"], reverse=True))
@@ -334,10 +371,88 @@ def cont_confirmar():
         if fecha in lib and not j.get("reemplazar"): return jsonify(conflicto=[fecha]), 409
         b = _bloqueos(fecha, r["documentos"])
         if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
-        lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=j.get("banco", {}), cierre=j.get("cierre") or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
-                          diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
+        previos = [d for d in lib.get(fecha, {}).get("documentos", []) if estado_de(d) == "revisado"]
+        if previos:   # T10/R8: volver a leer un día nunca pisa un recibo «revisado»
+            r = construir_asientos(fecha, _conservar_revisados(previos, j.get("documentos", [])), j.get("banco", {}), _cont_cfg(), j.get("cierre"))
+        lib[fecha] = _dia(fecha, r, j.get("banco", {}), j.get("cierre"))
         _guardar_libro(lib)
     return jsonify(ok=True, dias=len(lib), diferencia=r["diferencia"])
+
+
+def _dia(fecha: str, r: dict, banco: dict, cierre) -> dict:
+    return dict(fecha=fecha, documentos=r["documentos"], banco=banco, cierre=cierre or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
+                diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
+
+
+def _conservar_revisados(previos: list, nuevos: list) -> list:
+    """El papel «revisado» guardado gana sobre su relectura (mismo id, o mismo tipo+número+foto de origen)."""
+    clave = lambda d: (d.get("tipo"), str(d.get("numero", "")), d.get("origen", "")) if d.get("numero") else None
+    por_id, por_clave = {d["id"]: d for d in previos}, {clave(d): d for d in previos if clave(d)}
+    usados, out = set(), []
+    for d in nuevos:
+        p = por_id.get(d.get("id")) or por_clave.get(clave(d))
+        if p is not None and p["id"] not in usados:   # un previo sustituye a una sola lectura nueva
+            usados.add(p["id"]); out.append(p)
+        else: out.append(d)
+    return out + [p for p in previos if p["id"] not in usados]   # el revisado que la relectura no trae se conserva
+
+
+# ── T10 · revisión de recibos dudosos (R8): listar, confirmar/editar → «revisado», recalcular el día, sumar a la referencia ──
+RUTA_REF = DATOS / "referencia"
+REV_ENTEROS = ("consumo", "propina", "domicilio", "descuento", "cortesia", "efectivo", "tarjeta", "transf", "credito", "subtotal", "pagado", "cambio")
+REV_TEXTOS = {"medio": ("Efectivo", "Tarjeta", "Transferencia", "Crédito", "Mixto"), "hora": None, "detalle": None, "numero": None}
+REV_TOPE = 500
+
+
+@app.get("/api/contable/revision")
+def cont_revision_listar():
+    """Recibos de venta del libro por estado (por defecto «dudoso») con su recorte y motivos, entre `desde` y `hasta` (aaaa-mm-dd)."""
+    desde, hasta = request.args.get("desde", ""), request.args.get("hasta", "9999-12-31")
+    est = request.args.get("estado", "dudoso")
+    if not ISO.match(desde) or not ISO.match(hasta): return jsonify(error="desde y hasta deben ser aaaa-mm-dd"), 400
+    if est not in ("dudoso", "validado", "revisado"): return jsonify(error="estado desconocido"), 400
+    out = []
+    for dia in sorted(_leer_libro().values(), key=lambda x: x["fecha"]):
+        if not desde <= dia["fecha"] <= hasta: continue
+        for d in dia.get("documentos", []):
+            if d.get("tipo") == "venta" and estado_de(d) == est:
+                out.append(dict(fecha=dia["fecha"], id=d.get("id"), numero=d.get("numero", ""), estado=est, motivos=d.get("motivos") or d.get("avisos") or [],
+                                recorte=d.get("recorte"), lectura=d.get("lectura"), documento=d))
+    return jsonify(recibos=out[:REV_TOPE], total=len(out))
+
+
+@app.post("/api/contable/revision/<fecha>/<doc_id>")
+def cont_revision_confirmar(fecha, doc_id):
+    """Confirma (cuerpo vacío) o edita (`cambios`: solo campos permitidos) un recibo → «revisado»; recalcula el día y lo agrega a la referencia."""
+    if not ISO.match(fecha) or not re.fullmatch(r"[0-9a-f]{1,32}", doc_id): return jsonify(error="fecha o id inválidos"), 400
+    if (request.content_length or 0) > 64 * 1024: return jsonify(error="Cuerpo demasiado grande"), 413
+    j = request.get_json(silent=True)
+    if j is None: j = {}
+    cambios = j.get("cambios", {}) if isinstance(j, dict) else None
+    if not isinstance(cambios, dict): return jsonify(error="cambios debe ser un objeto"), 400
+    limpio = {}
+    for k, v in cambios.items():
+        if k in REV_ENTEROS:
+            if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 10**9: return jsonify(error=f"{k}: entero entre 0 y 1000000000"), 400
+        elif k in REV_TEXTOS:
+            if not isinstance(v, str) or len(v) > 200 or (REV_TEXTOS[k] and v not in REV_TEXTOS[k]): return jsonify(error=f"{k}: valor inválido"), 400
+        else: return jsonify(error=f"campo no editable: {k}"), 400   # FIX-6: fecha tampoco; el recibo vive en el día del libro
+        limpio[k] = v
+    with LOCK:
+        lib = _leer_libro(); dia = lib.get(fecha)
+        d = next((x for x in (dia or {}).get("documentos", []) if x.get("id") == doc_id and x.get("tipo") == "venta"), None)
+        if d is None: return jsonify(error="No existe ese recibo en el libro"), 404
+        b = _bloqueos(fecha, dia["documentos"])
+        if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
+        d.update(limpio); d["estado"], d["motivos"], d["revisado"] = "revisado", [], True
+        if d.get("avisos"): d["avisos_resueltos"], d["avisos"] = list(d.get("avisos_resueltos") or []) + d["avisos"], []   # FIX-13: el aviso viejo del OCR ya no cuenta
+        r = construir_asientos(fecha, dia["documentos"], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
+        lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre")); _guardar_libro(lib)
+        revisado = next(x for x in lib[fecha]["documentos"] if x.get("id") == doc_id)
+        mes = str(revisado.get("fecha") or fecha)[:7]
+        referencia.agregar(RUTA_REF / f"referencia_{mes}.json", mes, {**revisado, "fecha": revisado.get("fecha") or fecha})
+        global _PRECIOS; _PRECIOS = None   # FIX-9: un precio corregido entra al catálogo en el próximo escaneo
+    return jsonify(ok=True, diferencia=r["diferencia"], estado="revisado")
 
 
 @app.get("/api/contable/crudo")
@@ -415,7 +530,7 @@ RUTA_SOPORTE = DATOS / "soporte.db"
 def _revisar_origen():
     """T1 de 03: otra página web no puede hacer POST/DELETE a localhost (CSRF). FIX-10: el Host se revisa en todo método,
     así una página por DNS rebinding tampoco lee proveedores (cédulas, direcciones) ni el Excel con GET."""
-    if urlsplit("//" + request.host).hostname not in {"127.0.0.1", "localhost", "::1"}:
+    if "@" in request.host or urlsplit("//" + request.host).hostname not in {"127.0.0.1", "localhost", "::1"}:   # M-3: user@host no pasa aunque Werkzeug cambie
         return jsonify(error="Host no permitido"), 403
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         o = request.headers.get("Origin")

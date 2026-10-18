@@ -268,6 +268,13 @@ chk(not m13 and d13[0]["documentos"] == [cie13] and ji13["nuevos"] == ["2026-09-
 lib14 = {"2026-09-22": dict(fecha="2026-09-22", documentos=[dict(cie13, id="cierre-14", texto="línea de cierre\n" * 375)], banco={}, cierre={}, guardado="2026-09-23T08:00:00")}
 d14, m14 = leer_crudo(crudo(lib14))
 chk(not m14 and len(d14[0]["documentos"][0]["texto"]) == 6000, f"FIX-14: un texto de 6.000 caracteres no entra: {m14}")
+# M-1 · valor negativo en un papel que no es cierre se rechaza (el cierre sí puede: faltante, FIX-13); M-2 · id repetido en el día se rechaza
+fac = dict(id="f-1", tipo="factura", archivo="f.jpg", valor=50000, datos={}, avisos=[])
+dm, mm = leer_crudo(_arch(j19, dias=[dict(malo, fecha="2026-09-07", documentos=[dict(fac, valor=-50000)]),
+                                     dict(malo, fecha="2026-09-08", documentos=[fac, dict(fac, archivo="g.jpg")]),
+                                     dict(malo, fecha="2026-09-09", documentos=[fac, dict(fac, id="f-2")])]))
+chk([d["fecha"] for d in dm] == ["2026-09-09"] and [x["fecha"] for x in mm] == ["2026-09-07", "2026-09-08"]
+    and "negativo" in mm[0]["motivo"] and "repetido" in mm[1]["motivo"], f"M-1/M-2: valor negativo o id repetido no se rechaza: {mm}")
 hondo = b"[" * 100000 + b"]" * 100000
 msg = _rechaza(hondo)
 T14 = Path(tempfile.mkdtemp()); web.RUTA_LIBRO = T14 / "libro.json"; r14 = imp(hondo)
@@ -276,7 +283,44 @@ if LIB.exists():
     T19b = Path(tempfile.mkdtemp()); web.RUTA_LIBRO, web.RUTA_CONT = T19b / "libro.json", LIB.parent / "contable.json"
     ji = imp(crudo(lib)).get_json(); li, cfg = web._leer_libro(), web._cont_cfg()
     esp = {f: construir(f, copy.deepcopy(d["documentos"]), d.get("banco", {}), cfg, d.get("cierre")) for f, d in lib.items()}
-    malos = [f for f in lib if f not in li or li[f]["documentos"] != lib[f]["documentos"] or li[f]["filas"] != esp[f]["filas"]]
+    # se compara con lo que construir() deja hoy: si el cálculo cambió (M-8: «duplicado de» se recalcula), lo guardado puede ser de antes
+    malos = [f for f in lib if f not in li or li[f]["documentos"] != esp[f]["documentos"] or li[f]["filas"] != esp[f]["filas"]]
     chk(not ji["invalidos"] and len(ji["nuevos"]) == len(lib) and not malos, f"T19: libro.json real ({len(lib)} días) export → import en vacío: mismos documentos y filas (distintos: {malos[:3]})")
     chk([asdict(g) for g in _sop.semanas(li, None, None, hoy)] == [asdict(g) for g in _sop.semanas(lib, None, None, hoy)], "T19: libro real → mismas semanas")
+# M-6: con el extracto escrito, la propina y el domicilio de las comandas pagadas al banco siguen yendo a 2815 (no todo a ingresos)
+from parser_module.contable.asientos import PROPINAS, DOMICILIOS, RESTAURANTE
+b6 = dict(efectivo=0, tarjeta=0, transf=0, credito=0, descuento=0, cortesia=0, medio_transf="", avisos=[])
+m6 = [{**v, **b6, "id": "m6a", "numero": "85900", "consumo": 48000, "propina": 5000, "domicilio": 15000, "transf": 68000, "medio": "Transferencia", "medio_transf": "Transferencia"},
+      {**v, **b6, "id": "m6b", "numero": "85901", "consumo": 40000, "propina": 4000, "domicilio": 0, "tarjeta": 44000, "medio": "Tarjeta"}]
+r6 = construir("2026-09-18", m6, {"qr": 70000, "tarjetas": 43000})
+neto = lambda c: sum(f_["credito"] - f_["debito"] for f_ in r6["filas"] if f_["codigo"] == c)
+chk((neto(PROPINAS), neto(DOMICILIOS), neto(RESTAURANTE)) == (9000, 15000, 113000 - 24000) and r6["debito"] == r6["credito"],
+    f"M-6: extracto 113.000 → propinas 9.000 y domicilios 15.000 a 2815, ingresos 89.000: {(neto(PROPINAS), neto(DOMICILIOS), neto(RESTAURANTE))}")
+_, mov6 = movimientos(load_workbook(io.BytesIO(libro_a_excel({"2026-09-18": r6["filas"]}, datos={"2026-09-18": r6["datos"]}))))
+chk([(int(d), int(c)) for _, d, c in mov6] == [(f_["debito"], f_["credito"]) for f_ in r6["filas"]], "M-6: en Excel, las fórmulas de esas filas dan lo mismo que construir()")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
+
+# T12 · estado del recibo y motivo en DATOS OCR y en el Excel; avisos del día (R7)
+vd = dict(v, id="dud1", numero="85700", estado="dudoso", motivos=["Los medios de pago suman 51.500 y pagado − cambio es 52.000"], avisos=[])
+vr = dict(v, id="rev1", numero="85701", estado="revisado", motivos=["x"], avisos=["Los pagos (75.000) no suman"])   # aviso viejo de un revisado de antes
+r12 = construir("2026-09-12", docs + [vd, vr], {"tarjetas": 146500}); D12 = r12["datos"]
+pd_ = [x for x in D12 if x["id"] == "dud1"]; pr_ = [x for x in D12 if x["id"] == "rev1"]
+chk(pd_ and all(x["recibo"] == "dudoso" and "51.500" in x["motivo"] for x in pd_), "dato de un recibo dudoso: recibo «dudoso» y su motivo")
+chk(pr_ and all(x["recibo"] == "revisado" and x["motivo"] == "" for x in pr_), "un recibo revisado sale «revisado» y sin motivo aunque tenga un aviso viejo")
+chk(any("85700 dudosa" in a and "51.500" in a for a in r12["avisos"]), "aviso del día con el motivo del dudoso")
+chk(not any("85701 dudosa" in a for a in r12["avisos"]), "el revisado ya no avisa")
+ws12 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": r12["filas"]}, datos={"2026-09-12": D12}))).worksheets[0]
+cab = [c.value for c in ws12[1]]
+ie, im, ii = cab.index("Recibo"), cab.index("Motivo si es dudoso"), cab.index("Id")
+fl = [f_ for f_ in ws12.iter_rows(min_row=2, values_only=True) if f_[ii] == "dud1"]
+chk(fl and fl[0][ie] == "dudoso" and "51.500" in fl[0][im], f"Excel: columnas Recibo y Motivo ({cab[ie]}, {cab[im]})")
+chk(all(f_[ie] in ("validado", "dudoso", "revisado") for f_ in ws12.iter_rows(min_row=2, values_only=True) if f_[ii]), "Excel: todo papel trae su estado")
+
+# FIX-12 · «dudoso» lleva su propio color en DATOS OCR; los demás avisos siguen en amarillo
+from parser_module.contable.exportar import AMARILLO, NARANJA
+color = lambda id_: [f_[0].fill.fgColor.rgb[-6:] for f_ in ws12.iter_rows(min_row=2) if f_[ii].value == id_]
+chk(color("dud1") and all(c == NARANJA for c in color("dud1")), "Excel: la fila de un dudoso va en su color propio (no amarillo)")
+ia, ix = cab.index("Aviso"), cab.index("Estado")
+otras = [f_[0].fill.fgColor.rgb[-6:] for f_ in ws12.iter_rows(min_row=2) if f_[ie].value != "dudoso" and (f_[ia].value or f_[ix].value != "ok")]
+chk(otras and all(c == AMARILLO for c in otras), f"Excel: otra fila con aviso sigue en amarillo ({len(otras)})")
+print("\nTODO BIEN" if ok else "\nHAY FALLOS")
