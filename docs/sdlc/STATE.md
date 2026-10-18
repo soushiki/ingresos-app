@@ -5,12 +5,12 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 1-research
+next: 3-design
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
-- [ ] 1-research     (ligera: los 13 omitidos uno por uno → causa: corte, número, lectura)
-- [ ] 2-requirements   (gate: user approval)
+- [x] 1-research     (2026-10-18: 3 corte, 10 cortados bien → número/tipo sin saber)
+- [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [ ] 3-design         (gate: user approval)
 - [ ] 4-plan
 - [ ] 5-implement      current task: -
@@ -39,3 +39,6 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 <!-- YYYY-MM-DD | stage | one-line result -->
 2026-10-18 | 0-triage | Ciclo nuevo M-13 «recibos omitidos», tamaño M, exposed no; ciclo precisión OCR archivado (archive/precision-ocr/). Preguntas: (1) meta ≤ 2 % omitidos en la referencia [def. sí]; (2) primero «falta N» a mano en ④ y luego leer mejor [def. los dos, a mano primero]; (3) consejos de foto (fondo oscuro liso, una columna) en el LEEME, sin obligar [def. sí]
 2026-10-18 | 0-triage | Confirmado por el usuario: meta ≤ 2 % omitidos (N3); orden = «falta N» a mano en ④ primero, luego mejor corte/lectura; consejos de foto en el LEEME (sin obligar); tamaño M
+2026-10-18 | 1-research | 13 omitidos: 3 del corte (nombre «3341» sin entender → 1 pieza; 13/85582 columna), 10 bien cortados (número o tipo; falta registro por pieza). Orden: «falta N» en ④ (S) → nombre → registro → lector del número
+2026-10-18 | 2-requirements | Borrador 02-requirements.md: R1–R8 (Musts R1 anotar «falta N» en ④, R2 aviso al exportar, R3 nombre acortado, R4 causa por pieza), N1–N5; espera aprobación
+2026-10-18 | 2-requirements | Aprobado por el usuario con los 3 valores por defecto: anotados a mano no cuentan para N3; R2 avisa, no bloquea; +20 % de tiempo aceptable
