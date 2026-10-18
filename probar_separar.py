@@ -1,4 +1,5 @@
-"""T8b: separar(img, esperados=n) parte las fotos de comandas (papeles en columnas, escalonados, con bordes que se tocan)
+"""T8b + M-11: separar(img, esperados=n) parte las fotos de comandas (papeles en columnas, escalonados, con bordes que se tocan,
+sobre mesa de madera u oscura, o la foto de lado)
 en un papel por recorte; sin `esperados` todo sigue como antes.
     python probar_separar.py [carpeta de fotos de septiembre, opcional]"""
 import random, sys
@@ -42,6 +43,19 @@ check(all(400 < im.height < 1000 for im in p), "cada recorte tiene el alto de un
 check(len(separar(hoja, esperados=8)) >= 1, "esperados de más no revienta")
 check(len(separar(hoja, esperados=20)) >= 1, "esperados > max_papeles: vuelve al método de siempre")
 
+# M-11: mesa de madera (vetas de color) debajo de los papeles: no cuenta como tinta ni sale como un papel vacío
+madera = Image.new("RGB", (1050, 2000), (215, 160, 110)); d = ImageDraw.Draw(madera)
+for y in range(0, 2000, 7): d.line((0, y, 1050, y + random.randint(-20, 20)), fill=(150, 95, 60), width=2)
+d.rectangle((5, 5, 1045, 1605), fill=(245, 245, 245)); madera.paste(hoja.crop((0, 0, 1040, 1600)), (5, 5))
+p = separar(madera, esperados=6)
+check(len(p) == 6, f"sobre madera, esperados=6: 6 papeles (salieron {len(p)})")
+check(all(im.height < 1000 for im in p), "ningún recorte se come la franja de madera de abajo")
+
+lado = hoja.rotate(90, expand=True)                     # la foto de lado que el OSD no giró
+p = separar(lado, esperados=6)
+check(len(p) == 6, f"foto de lado, esperados=6: 6 papeles (salieron {len(p)})")
+check(all(min(im.size) < 420 and max(im.size) > 400 for im in p), "de lado: cada recorte es un papel, no media fila")
+
 solo = Image.new("RGB", (400, 1400), "white"); recibo(ImageDraw.Draw(solo), 20, 20, 360, 1350, 50)
 check(len(separar(solo)) == 1, "un solo recibo largo sin esperados: una pieza")
 check(len(separar(Image.new("RGB", (300, 300), "white"), esperados=4)) == 1, "hoja en blanco: la hoja entera")
@@ -55,7 +69,7 @@ if fotos:
     for f, n in fotos:
         png, _ = preparar_pagina(f.read_bytes())
         bien += len(separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(n))) == len(n)
-    check(bien >= 0.8 * len(fotos), f"fotos reales: {bien}/{len(fotos)} con la cuenta exacta (≥ 80 %)")
+    check(bien >= 0.9 * len(fotos), f"fotos reales: {bien}/{len(fotos)} con la cuenta exacta (≥ 90 %; M-11 midió 42/43)")
 else:
     print("     (sin la carpeta de fotos de septiembre: se salta la medición real)")
 print(f"\n{ok} comprobaciones OK")
