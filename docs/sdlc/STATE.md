@@ -5,13 +5,13 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 3-design
+next: 4-plan
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
 - [x] 1-research     (2026-10-18: 3 corte, 10 cortados bien → número/tipo sin saber)
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
-- [ ] 3-design         (gate: user approval)
+- [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [ ] 4-plan
 - [ ] 5-implement      current task: -
 - [ ] 6-test
@@ -42,3 +42,5 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 1-research | 13 omitidos: 3 del corte (nombre «3341» sin entender → 1 pieza; 13/85582 columna), 10 bien cortados (número o tipo; falta registro por pieza). Orden: «falta N» en ④ (S) → nombre → registro → lector del número
 2026-10-18 | 2-requirements | Borrador 02-requirements.md: R1–R8 (Musts R1 anotar «falta N» en ④, R2 aviso al exportar, R3 nombre acortado, R4 causa por pieza), N1–N5; espera aprobación
 2026-10-18 | 2-requirements | Aprobado por el usuario con los 3 valores por defecto: anotados a mano no cuentan para N3; R2 avisa, no bloquea; +20 % de tiempo aceptable
+2026-10-18 | 3-design | Borrador 03-design.md + ADR-008 (faltante = documento marcador), 009 (nombre acortado: sufijo + aviso; foto 3 = 85334, 85338–341, 85343), 010 (cabecera ampliada solo con faltantes); espera aprobación
+2026-10-18 | 3-design | Aprobado por el usuario tal como está; ADR-008/009/010 aceptados
