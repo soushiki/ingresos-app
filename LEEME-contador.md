@@ -52,6 +52,16 @@ La última crea el archivo `.env` que le dice a la app que en este PC no se leen
 Copia la carpeta **`C:\ingresos_app\datos`** a una memoria USB o a tu nube. El archivo `datos\soporte.db` lleva la numeración
 CTG y tus proveedores: si se pierde, la app no sabe qué números ya usaste.
 
+## 7. Fotos de los recibos (para quien las toma; ≈ 1 min por foto)
+La app lee mejor cuanto más grande y nítida llega la foto. Esto vale para las fotos nuevas: las de septiembre ya están en
+≈ 1600 px y no hay originales.
+1. **Enviar sin comprimir.** Por WhatsApp, mándala como **documento** (📎 → Documento), no como foto; o activa la calidad **HD**.
+2. **CamScanner:** exporta en calidad **alta u original**, nunca «pequeña» ni «media».
+3. **Encuadre:** papeles sobre una superficie clara y lisa (no madera ni mesa oscura), sin encimarse, foto de frente y derecha,
+   con luz pareja y sin flash ni sombra de la mano. Que el nombre del archivo traiga los números de los recibos (p. ej. `85297 al 85302`).
+4. Lo que la app no pueda leer con seguridad queda **dudoso** y aparece en la pestaña **④ Revisión** con su recorte: ahí se
+   confirma o se corrige en segundos.
+
 ## Si algo falla
 | Lo que ves | Qué hacer |
 |---|---|

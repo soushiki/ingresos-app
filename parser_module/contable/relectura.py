@@ -50,15 +50,17 @@ def _votar(cands: list) -> dict:
 
 
 def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *, carpeta=None, parsear=None,
-                umbral=None, reloj=time.monotonic) -> dict:
+                umbral=None, reloj=time.monotonic, leer_digitos=None) -> dict:
     """Recorte (PIL) → documento con `estado`, `motivos`, `lectura` y, si hay `carpeta`, el nombre del `recorte` guardado.
+    leer_digitos: imagen → set de enteros (ocr_module.digitos.numeros_tesseract) o None; se calcula en cada pasada con SU imagen
+    y va a ctx["digitos"] (R3). ctx["catalogo"] (R6) lo pone quien llama. Sin leer_digitos nada cambia.
     limite_s: tope de segundos para este recorte; al pasarlo no se relee más y, si no validó, queda «dudoso» por tiempo."""
     max_relecturas = CONFIG["max_relecturas"] if max_relecturas is None else max(0, min(int(max_relecturas), 3))
     umbral = CONFIG["umbral_laplaciano"] if umbral is None else umbral
     parsear = parsear or parse_venta
     nombre_motor = getattr(motor, "nombre", "local")
     t0 = reloj(); nit = nitidez(recorte); borrosa = nit["laplaciano"] < umbral
-    cands, pasadas, agotado = [], [], False
+    cands, pasadas, agotado, dig0 = [], [], False, None
     ganador = None
     for i, (var, img) in enumerate(_pasadas(recorte, 1 + max_relecturas)):
         if i and limite_s is not None and reloj() - t0 >= limite_s: agotado = True; break
@@ -68,7 +70,9 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
         except Exception as e:  # noqa: BLE001
             if not i: raise                     # sin la primera lectura no hay recibo: el error sube como hoy
             pasadas.append(dict(variante=var, segundos=round(reloj() - t, 2), error=str(e))); break
-        doc = parsear(texto); mot = validar(doc, ctx)
+        dig = leer_digitos(img) if leer_digitos else None
+        if not i: dig0 = dig
+        doc = parsear(texto); mot = validar(doc, dict(ctx or {}, digitos=dig) if dig is not None else ctx)
         cands.append(dict(variante=var, doc=doc, motivos=mot))
         pasadas.append(dict(variante=var, segundos=round(reloj() - t, 2), motivos=mot))
         validos = [c for c in cands if not c["motivos"]]
@@ -81,7 +85,7 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
     elif validos:                               # borrosa: validó pero sin segunda lectura que coincida
         doc, motivos = dict(validos[0]["doc"]), [BORROSA_SIN_PAR]
     else:
-        doc = _votar(cands); motivos = validar(doc, ctx) or list(cands[0]["motivos"])
+        doc = _votar(cands); motivos = validar(doc, dict(ctx or {}, digitos=dig0) if dig0 is not None else ctx) or list(cands[0]["motivos"])
     if agotado and not ganador: motivos.append(TIEMPO_AGOTADO)
     doc["avisos"] = list(doc.get("avisos") or []) + (["Foto borrosa"] if borrosa else [])
     doc["estado"] = "dudoso" if motivos else "validado"
@@ -114,7 +118,7 @@ def _nums(docs) -> set:
 
 
 def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=None, separar=None, factor_tope=3.0,
-              tope_s=None, umbral=None, reloj=time.monotonic) -> dict:
+              tope_s=None, umbral=None, reloj=time.monotonic, catalogo=None, leer_digitos=None) -> dict:
     """C7 · Los recortes de una hoja → documentos. R5, R2, N2.
     1) V0 de cada recorte (lo de siempre) mide T. 2) Un recorte con UNA venta pasa por leer_recibo con los números del nombre
     de la foto; los demás (cierres, gastos, varios papeles pegados en un texto) siguen como hoy y la venta solo se valida.
@@ -122,7 +126,7 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
        lo que se parta, si trae un faltante. 4) Montos idénticos entre vecinos → «dudoso».
     Tope: factor_tope × T para toda la hoja (o `tope_s` segundos); al pasarlo no se relee más (leer_recibo marca «tiempo agotado»)."""
     esperados = numeros_de_nombre(nombre) if categoria in ("", "comandas") else None
-    ctx = {"esperados": esperados} if esperados else None
+    ctx = {k: v for k, v in (("esperados", esperados), ("catalogo", catalogo)) if v} or None
     t0 = reloj(); v0 = [_v0(motor, t, reloj) for t in trozos]
     tope = t0 + (factor_tope * (reloj() - t0) if tope_s is None else tope_s)
 
@@ -130,7 +134,8 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
         docs = leer_texto(texto, categoria)
         if len(docs) == 1 and docs[0]["tipo"] == "venta":
             extra = [a for a in docs[0]["avisos"] if a not in parse_venta(texto)["avisos"]]   # p. ej. «lo subiste como comandas…»
-            d = leer_recibo(img, _con_v0(motor, texto), ctx, limite_s=max(0.0, tope - reloj()), carpeta=carpeta, umbral=umbral, reloj=reloj)
+            d = leer_recibo(img, _con_v0(motor, texto), ctx, limite_s=max(0.0, tope - reloj()), carpeta=carpeta, umbral=umbral, reloj=reloj,
+                           leer_digitos=leer_digitos)
             d["avisos"] = extra + d["avisos"]
             d["lectura"]["pasadas"][0]["segundos"] = seg; d["lectura"]["segundos"] = round(d["lectura"]["segundos"] + seg, 2)
             return [d], d["texto"]

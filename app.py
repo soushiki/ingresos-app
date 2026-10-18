@@ -14,6 +14,7 @@ from PIL import Image
 from ocr_module import digitize, get_engine
 from ocr_module import pdf as pdflib
 from ocr_module import orientacion
+from ocr_module.digitos import numeros_tesseract
 from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc
@@ -262,13 +263,23 @@ def _motor(eng):
     leer.nombre = getattr(eng, "model", None) or getattr(eng, "name", "local"); return leer
 
 
+def _catalogo() -> dict:
+    """R6: precios de la carta (datos/catalogo.json); si está vacío se arma del libro. Sin libro → {} (R6 no hace nada)."""
+    from parser_module.contable import catalogo
+    precios = catalogo.cargar()
+    if precios: return precios
+    try: return catalogo.desde_libro(_leer_libro())
+    except Exception: return {}   # noqa: BLE001
+
+
 def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", completa=True) -> dict:
     """Una hoja (foto o página escaneada) → documentos (T8: cada venta por C5 leer_recibo, R5 con el nombre de la foto),
     texto con los papeles separados por MARCA, segundos, grados girados y avisos de la hoja («Falta el recibo …»)."""
     png, grados = orientacion.preparar_pagina(img_bytes, giro)
     esperados = relectura.numeros_de_nombre(nombre) if categoria in ("", "comandas") else None   # T8b: cuántos papeles trae la foto
     trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
-    h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar)
+    h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar,
+                         catalogo=_catalogo(), leer_digitos=numeros_tesseract)
     return {**h, "grados": grados}
 
 

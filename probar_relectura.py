@@ -189,5 +189,26 @@ h = leer_hoja([trozo(0), trozo(1)], m, nombre="85627 al 628.jpg", reloj=reloj, c
 chk(m.n == 6 and h["segundos"] == 60, f"tope de la hoja = 3 × T: 20 s de V0 → 60 s; el 1.º usa sus 3 relecturas y al 2.º le alcanza 1 (hubo {m.n} llamadas)")
 chk(TIEMPO_AGOTADO in d["motivos"] and TIEMPO_AGOTADO not in h["documentos"][0]["motivos"] and d["lectura"]["pasadas"][0]["segundos"] == 10, "al pasar el tope: «tiempo agotado»; V0 anota sus segundos")
 
+# T16 · R3 y R6 en el ciclo de lectura: ctx["digitos"] (de la imagen de CADA pasada) y ctx["catalogo"]; ausentes → igual que antes
+_validar = relectura.validar; vistos_ctx = []
+relectura.validar = lambda d, c=None: (vistos_ctx.append(c), _validar(d, c))[1]
+vistos_ctx.clear(); leer_recibo(img, Motor(doc()), **P)
+chk(vistos_ctx and all(c is None for c in vistos_ctx), "sin leer_digitos ni catalogo, validar recibe el ctx de siempre (None)")
+vistos_ctx.clear(); anchos = []
+def dig(im): anchos.append(im.width); return {85560, 51500, 60000}
+r = leer_recibo(img, Motor(malo, doc()), leer_digitos=dig, **P)
+chk(len(anchos) == 2 and anchos[0] != anchos[1], "leer_digitos se calcula en cada pasada con la imagen de esa pasada (V0 y V1 distintas)")
+chk(all(c and c["digitos"] == {85560, 51500, 60000} for c in vistos_ctx[:2]) and r["estado"] == "validado", "ctx[digitos] llega a validar en cada pasada")
+r = leer_recibo(img, Motor(doc()), leer_digitos=lambda im: {1}, **P)
+chk(r["estado"] == "dudoso" and any("Tesseract" in x for x in r["motivos"]), "R3 a través de leer_recibo: Tesseract no ve el total → dudoso")
+r = leer_recibo(img, Motor(doc()), leer_digitos=lambda im: None, **P)
+chk(r["estado"] == "validado", "Tesseract ausente (None) → no falla ni cambia nada")
+vistos_ctx.clear(); leer_hoja([trozo(0)], MotorHoja(t0=rec(85627)), nombre="85627.jpg", catalogo={"JUGO": 5000}, **H)
+chk(vistos_ctx and all(c and c.get("catalogo") == {"JUGO": 5000} for c in vistos_ctx), "leer_hoja pone el catálogo en ctx (R6)")
+vistos_ctx.clear(); leer_hoja([trozo(0)], MotorHoja(t0=rec(85627)), nombre="IMG_1.jpg", **H)
+chk(all(c is None for c in vistos_ctx), "leer_hoja sin catálogo ni esperados: ctx None como antes")
+relectura.validar = _validar
+
+
 print(f"\n{'FALLAS: ' + str(len(fallos)) if fallos else 'todo bien'}")
 sys.exit(1 if fallos else 0)

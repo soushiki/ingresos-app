@@ -36,6 +36,56 @@ def leer_hoja_v0(ruta: Path, pagina: int, motor, variante: str = "V0") -> str:
     return f"\n{MARCA}\n".join(out)
 
 
+def motor_relectura(eng):
+    """Como app._motor: recorte (PIL) → texto con el mismo OCR (digitize). Un error sube."""
+    from ocr_module import digitize
+    def leer(img):
+        b = io.BytesIO(); img.save(b, "PNG"); res = digitize(b.getvalue(), eng)
+        if not res.ok: raise RuntimeError(res.error)
+        return res.text
+    leer.nombre = getattr(eng, "model", None) or getattr(eng, "name", "local"); return leer
+
+
+def catalogo_del_libro(libro: Path) -> dict:
+    """R6 solo LEYENDO: datos/catalogo.json y, si está vacío, los precios de los recibos buenos del libro (sin escribir nada)."""
+    from parser_module.contable import catalogo
+    precios = catalogo.cargar()
+    if precios or not libro.exists(): return precios
+    lib = json.loads(libro.read_text(encoding="utf-8"))
+    return catalogo.construir([d for v in lib.values() if isinstance(v, dict) for d in v.get("documentos", [])])
+
+
+def lector_completo(catalogo=None, leer_digitos=None, separar=None, preparar=None, hoja=None):
+    """T16 · --completo: lee cada foto como la app (orientar → separar con esperados → relectura.leer_hoja con R3 y R6, sin carpeta
+    de recortes). Devuelve (leer_hoja, leer_texto) para `ejecutar`: lo primero guarda los documentos y lo segundo los entrega;
+    un recibo «dudoso» se mide como dudoso (sus motivos pasan a `avisos`). Inyectables para probar sin fotos ni OCR."""
+    from PIL import Image
+    from ocr_module import orientacion, pdf as pdflib
+    from parser_module.contable import relectura, leer_texto as parsear_texto
+    from parser_module.contable.validar import numeros_de_nombre
+    separar = separar or orientacion.separar; preparar = preparar or orientacion.preparar_pagina; hoja = hoja or relectura.leer_hoja
+    ultimo = {}
+
+    def leer(ruta: Path, pagina, motor):
+        data = ruta.read_bytes()
+        if ruta.suffix.lower() == ".pdf":
+            texto, data = pdflib.pagina(data, pagina)
+            if texto is not None: ultimo["docs"] = parsear_texto(texto, "comandas"); return "completo"
+        png, _ = preparar(data, "auto")
+        en_comandas = ruta.parent.name in ("comandas", "comanda")
+        nombre = ruta.name if en_comandas else ""
+        esperados = numeros_de_nombre(nombre) if nombre else None
+        trozos = separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
+        h = hoja(trozos, motor, "comandas" if en_comandas else "", nombre,
+                 separar=separar, catalogo=catalogo, leer_digitos=leer_digitos)
+        docs = h["documentos"]
+        for d in docs:
+            if d.get("estado") == "dudoso": d["avisos"] = list(d.get("avisos") or []) + (d.get("motivos") or ["dudoso"])
+        ultimo["docs"] = docs; return "completo"
+
+    return leer, lambda texto, categoria: ultimo.get("docs", [])
+
+
 def mas_dudosas(libro: dict, ref: dict, n: int) -> set:
     """T9 · Las n fotos (foto, página) de la referencia con más recibos «dudoso» en el libro (empate: más recibos en la referencia)."""
     from collections import Counter
@@ -48,8 +98,9 @@ def mas_dudosas(libro: dict, ref: dict, n: int) -> set:
     return set(sorted(en_ref, key=lambda f: (-dud[f], -en_ref[f], f))[:n])
 
 
-def ejecutar(mes, fotos, motor, leer_hoja, datos=DATOS, refrescar=False, variante="V0", muestra=None, semilla=7, peores=None) -> dict:
-    from parser_module.contable import leer_texto
+def ejecutar(mes, fotos, motor, leer_hoja, datos=DATOS, refrescar=False, variante="V0", muestra=None, semilla=7, peores=None, leer_texto=None) -> dict:
+    if leer_texto is None:
+        from parser_module.contable import leer_texto
     from parser_module.contable.referencia import congelar, huella, medir
     libro = datos / "libro.json"; refp = datos / "referencia" / f"referencia_{mes}.json"
     antes = huella(libro)
@@ -108,6 +159,7 @@ def main():
     ap.add_argument("--muestra", type=int, help="solo N fotos al azar (las mismas para todas las variantes)")
     ap.add_argument("--semilla", type=int, default=7)
     ap.add_argument("--peores", type=int, help="solo las N fotos con más recibos «dudoso» en el libro")
+    ap.add_argument("--completo", action="store_true", help="T16: lee como la app (orientar, separar, relectura con R3/R6); informe «completo»")
     ap.add_argument("--exportar", metavar="CARPETA", help="T15: exporta imagen + JSON por recibo de la referencia del mes (no mide)")
     ap.add_argument("--borrar-recortes", nargs=2, metavar=("DESDE", "HASTA"), help="T15: borra recortes guardados entre dos fechas aaaa-mm-dd")
     ap.add_argument("--borrar-huerfanos", action="store_true", help="T15: borra recortes que ningún recibo del libro usa")
@@ -115,6 +167,14 @@ def main():
     if a.exportar or a.borrar_recortes or a.borrar_huerfanos: return mantenimiento(a)
     from ocr_module import get_engine
     from ocr_module.preprocess import _realesrgan_exe
+    if a.completo:
+        from ocr_module.digitos import numeros_tesseract
+        motor = motor_relectura(get_engine(a.motor)); leer, parsear = lector_completo(catalogo_del_libro(DATOS / "libro.json"), numeros_tesseract)
+        inf = ejecutar(a.mes, Path(a.fotos), motor, leer, refrescar=a.refrescar, variante="completo", muestra=a.muestra, semilla=a.semilla,
+                       peores=a.peores, leer_texto=parsear)
+        print(f"completo {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")
+        for c, x in inf["por_campo"].items(): print(f"  {c:10s} {x['ok']:4d} ok {x['mal']:4d} mal  {'' if x['acierto'] is None else format(x['acierto'], '.1%')}")
+        print("informe:", inf["archivo"]); return
     vs = [v.strip().upper() for v in a.variantes.split(",") if v.strip()]
     if any(v not in ("V0", "V1", "V2", "V3", "V4") for v in vs): ap.error(f"variantes válidas: V0–V4 (llegó {a.variantes})")
     if "V4" in vs and not _realesrgan_exe(): print("V4: no está realesrgan-ncnn-vulkan → se salta"); vs.remove("V4")

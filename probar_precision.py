@@ -61,4 +61,28 @@ lib2["2026-09-16"]["documentos"].append(dud)
 chk(medir_precision.mas_dudosas(lib2, ref, 1) == {("h2.jpg", 1)}, "--peores 1: la foto con más dudosos gana aunque tenga menos recibos")
 chk(medir_precision.mas_dudosas(json.loads((d / "libro.json").read_text(encoding="utf-8")), ref, 1) == {("h1.jpg", 1)}, "--peores sin dudosos: empata y gana la de más recibos")
 chk(inf2["total"] == (2 if leidas[0] == "h1.jpg" else 1), "--muestra: el total cuenta solo los recibos de las fotos elegidas")
+# T16 · --completo: lee como la app (orientar → separar → leer_hoja con catálogo y dígitos); un «dudoso» se mide como dudoso
+from PIL import Image
+for n in ("h1.jpg", "h2.jpg"): Image.new("RGB", (40, 40), "white").save(d / n, "PNG")
+llamadas = []
+def hoja_falsa(trozos, motor, categoria, nombre, **kw):
+    llamadas.append(dict(n=len(trozos), motor=motor, categoria=categoria, nombre=nombre, **kw))
+    if len(llamadas) == 1 or nombre == "h1.jpg":
+        a, b = leer_texto(recibo(100, 50000), "comandas")[0], leer_texto(recibo(101, 3000), "comandas")[0]
+        b["estado"], b["motivos"] = "dudoso", ["Tesseract no ve el total"]
+        return dict(documentos=[a, b])
+    return dict(documentos=[])
+dig = lambda im: {1}
+leer_c, parsear_c = medir_precision.lector_completo({"PLATO": 50000}, dig, separar=lambda im, esperados=None: [im], preparar=lambda b, g: (b, 0), hoja=hoja_falsa)
+h1 = huella(d / "libro.json")
+infc = medir_precision.ejecutar("2026-09", d, "MOTOR", leer_c, datos=d, variante="completo", leer_texto=parsear_c)
+chk(infc["variante"] == "completo" and Path(infc["archivo"]).stem.endswith("_completo"), "--completo: el informe dice completo")
+chk(llamadas and llamadas[0]["catalogo"] == {"PLATO": 50000} and llamadas[0]["leer_digitos"] is dig and llamadas[0]["motor"] == "MOTOR", "--completo pasa catálogo, leer_digitos y motor a leer_hoja")
+chk(infc["total"] == 3 and infc["dudosos"] == 1 and infc["dudosos_numeros"] == ["101"] and infc["omitidos"] == 1, "--completo: el estado dudoso de la relectura cuenta como dudoso")
+chk(huella(d / "libro.json") == h1 == infc["huella_libro_antes"] == infc["huella_libro_despues"], "--completo tampoco toca el libro")
+infp = medir_precision.ejecutar("2026-09", d, "MOTOR", leer_c, datos=d, variante="completo", leer_texto=parsear_c, peores=1)
+chk(infp["peores"] == 1 and infp["total"] <= 2, "--completo funciona con --peores")
+infm = medir_precision.ejecutar("2026-09", d, "MOTOR", leer_c, datos=d, variante="completo", leer_texto=parsear_c, muestra=1)
+chk(infm["muestra"] == 1, "--completo funciona con --muestra")
+chk(medir_precision.catalogo_del_libro(d / "nada.json") == medir_precision.catalogo_del_libro(d / "nada.json"), "catalogo_del_libro sin libro no falla")
 print("\n" + ("TODO OK" if not fallos else f"{len(fallos)} FALLOS")); sys.exit(1 if fallos else 0)
