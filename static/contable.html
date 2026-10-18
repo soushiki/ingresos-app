@@ -283,7 +283,12 @@ document.querySelectorAll(".zona").forEach(z=>{z.onclick=()=>{catSel=z.dataset.c
 $("carp").onclick=()=>$("carpeta").click();
 $("carpeta").onchange=e=>{tomar([...e.target.files].filter(f=>/\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name)),"");e.target.value=""};
 $("file").onchange=e=>{tomar(e.target.files,catSel);e.target.value=""};
+/* R2: aviso (no bloquea) si quedan recibos faltantes sin anotar */
+async function avisoFaltan(){await insigniaRev();const n=RV_N.falta;return !n||confirm(`Quedan ${n} recibo(s) sin anotar (④ Revisión → Faltan).
+
+¿Continuar de todas formas?`)}
 $("conf").onclick=async()=>{const dd=dudosos();
+ if(!await avisoFaltan())return;
  if(res.diferencia!==0&&!confirm(`El día NO cuadra: débito ${fmt(res.debito)} · crédito ${fmt(res.credito)} (diferencia ${fmt(res.diferencia)}).\n\n¿Pasarlo al libro de todas formas?`))return;
  const cr=(res.cruces||[]).filter(x=>!x.ok);if(cr.length&&!confirm(`El cierre del POS no coincide con tus papeles en: ${cr.map(x=>x.concepto).join(", ")}.\n\n¿Pasarlo al libro de todas formas?`))return;
  if(dd.length&&!confirm(`${dd.length} gasto(s) tienen la cuenta sin confirmar (amarillo).\n\n¿Pasarlos así?`))return;
@@ -320,7 +325,7 @@ async function importar(reemplazar){const fd=new FormData();fd.append("archivo",
   L("Inválidos (no entraron)",j.invalidos,x=>`<li>${esc(x.fecha)}: ${esc(x.motivo)}</li>`);
  $("impx").onclick=()=>{e.hidden=true};const ok=$("impok");if(ok)ok.onclick=()=>{const m=[...document.querySelectorAll(".impc:checked")].map(i=>i.value);if(!m.length)return toast("Marca al menos un día");if(confirm(`¿Reemplazar ${m.length} ${m.length===1?"día":"días"} del libro por los del archivo?`))importar(m.join(","))};
  if(j.nuevos.length||j.reemplazados.length){await cargarLibro();cargarSoporte()}}
-$("xl2").onclick=async()=>{const r=await fetch(`/api/contable/excel?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudo generar el Excel");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"reporte_contable.xlsx";a.click()};
+$("xl2").onclick=async()=>{if(!await avisoFaltan())return;const r=await fetch(`/api/contable/excel?desde=${fval("f1")}&hasta=${fval("f2")}`);if(!r.ok)return toast("No se pudo generar el Excel");const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"reporte_contable.xlsx";a.click()};
 /* ══════ módulo ③: documento soporte ══════ */
 let SEM=[],PROVS=[],DOCS=[];const ESTL={en_plazo:"En plazo",vence_pronto:"Vence pronto",vencida:"Vencida"},ESTD={generado:"Generado",transmitido:"Transmitido",anulado:"Anulado"};
 const jpost=(u,b)=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});

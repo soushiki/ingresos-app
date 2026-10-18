@@ -31,8 +31,9 @@
   Todo con `textContent`/DOM (T11); reglas `@media` de teléfono y tableta (ancho y alto) — R1 — done when: en el navegador, una foto
   de prueba con faltante se anota y el aviso desaparece; «No existe» lo cierra; captura de pantalla — files: `static/contable.html` — model: Sonnet
   — hecho: opción «Faltan» en `#rv_est`, `tarjetaFalta` (foto o «Sin foto guardada»), Anotar/No existe con validación en cliente; `#b4` = dudosos + faltan; ① fila `tr.falta` de solo lectura; @media teléfono/tableta/apaisado. Verificado en el navegador con datos temporales
-- [ ] T6 (S) Aviso R2: «quedan N recibos sin anotar» en «Pasar al libro» y en «⬇ Excel» (`confirm()`, no bloquea) — R2 — done when:
+- [x] T6 (S) Aviso R2: «quedan N recibos sin anotar» en «Pasar al libro» y en «⬇ Excel» (`confirm()`, no bloquea) — R2 — done when:
   con 1 faltante abierto sale el aviso y se puede seguir; con 0 no sale — files: `static/contable.html` — model: Sonnet
+  — hecho: `avisoFaltan()` (refresca abiertos con `insigniaRev`; `confirm()` solo si N>0, cancelar no sigue, aceptar sí) al inicio de «Pasar al libro» y «⬇ Excel (MOVIMIENTOS)»
 
 ## Iteración 2 — demo: la foto «85334-338 al 3341-343» corta en 6 y `medir --completo` dice la causa de cada omitido
 - [ ] T7 (M) `validar.leer_nombre` → `Nombre(numeros, correcciones, entendido)`; corrección por sufijo con aviso «3341 → 85341»;
