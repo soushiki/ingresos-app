@@ -120,5 +120,12 @@ chk(web._catalogo() == {"cafe": 3000} and web._catalogo() == {"cafe": 3000} and 
 r = cl.post(URL + "aaaa0001", json={})
 chk(r.status_code == 200 and web._PRECIOS is None and web._catalogo() == {"cafe": 3000} and llamadas.count("desde_libro") == 2, "catálogo: confirmar en Revisión lo vuelve a armar")
 
+# FIX-10: un recibo sin número se reemplaza por id (antes cada edición lo volvía a sumar)
+dsn = T / "ref_sin_numero.json"
+for v in (1000, 2000): referencia.agregar(dsn, "2026-09", venta("ssss0001", "", v, "revisado"))
+referencia.agregar(dsn, "2026-09", venta("ssss0002", "", 3000, "revisado"))
+sn = json.loads(dsn.read_text(encoding="utf8"))["documentos"]
+chk(sorted((r["documento"]["id"], r["documento"]["consumo"]) for r in sn) == [("ssss0001", 2000), ("ssss0002", 3000)], "referencia.agregar: sin número se reemplaza por id")
+
 print("\nTODO BIEN" if not fallos else f"\n{len(fallos)} FALLO(S)")
 raise SystemExit(1 if fallos else 0)

@@ -40,12 +40,13 @@ def congelar(ruta_libro, mes: str, destino) -> dict:
 
 
 def agregar(destino, mes: str, doc: dict) -> dict:
-    """T10: suma un recibo recién «revisado» a la referencia del mes (la crea si no existe); mismo número y foto → lo reemplaza."""
+    """T10: suma un recibo recién «revisado» a la referencia del mes (la crea si no existe); mismo número y foto → lo reemplaza; sin número → por id."""
     destino = Path(destino)
     try: ref = json.loads(destino.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError): ref = {"mes": mes, "congelado": datetime.now().isoformat(timespec="seconds"), "documentos": []}
     foto, pagina = _foto_de(doc.get("origen", "")); numero = str(doc.get("numero", ""))
-    ref["documentos"] = [r for r in ref["documentos"] if not (numero and r["numero"] == numero and r["foto"] == foto and r["pagina"] == pagina)]
+    ref["documentos"] = [r for r in ref["documentos"] if not ((numero and r["numero"] == numero and r["foto"] == foto and r["pagina"] == pagina)
+                                                  or (not numero and doc.get("id") and r["documento"].get("id") == doc["id"]))]
     ref["documentos"].append({"numero": numero, "foto": foto, "pagina": pagina, "documento": doc})
     destino.parent.mkdir(parents=True, exist_ok=True)
     tmp = destino.with_suffix(".tmp"); tmp.write_text(json.dumps(ref, ensure_ascii=False, indent=1), encoding="utf-8"); tmp.replace(destino)
