@@ -6,7 +6,7 @@ size: M      # varios días; toca ocr_module y el parser; sin datos externos nue
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
 next: 5-implement   # iteración 5: FIX-1..11 + R3b (06-test-report)
-current task: FIX-9 hecho (sin commit); sigue FIX-10
+current task: FIX-9 hecho; sigue FIX-10
 
 ## Stages
 - [x] 0-triage       (propuesto 2026-10-17; preguntas abiertas en el log)
