@@ -3,7 +3,7 @@
 Devuelve una lista de motivos legibles; lista vacía = validado. Dinero en pesos enteros.
 ctx (todo opcional):
   tolerancia   pesos de diferencia aceptados en cada suma (por defecto 0)
-  regla_items  False apaga «ítems → subtotal» (T2: la suma de ítems solo cuadra en ~72 % de los recibos de septiembre)
+  regla_items  True enciende «ítems → subtotal»; apagada por defecto (T2: la suma de ítems solo cuadra en ~72 % de los recibos de septiembre)
   esperados    números que trae el nombre de la foto (R5); `rango` (desde, hasta) sirve igual
   digitos      números que vio Tesseract (R3); None/ausente se salta
   catalogo     {PRODUCTO: precio unitario} de catalogo.cargar() (R6); ausente/vacío se salta
@@ -12,7 +12,7 @@ ctx (todo opcional):
 import re
 import unicodedata
 
-CONFIG = {"tolerancia": 0, "regla_items": True}
+CONFIG = {"tolerancia": 0, "regla_items": False}
 
 
 def _p(n) -> str:
