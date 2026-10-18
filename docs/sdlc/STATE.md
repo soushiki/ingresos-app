@@ -5,7 +5,7 @@ goal: Bajar el margen de error del OCR de recibos (hoy ≈40 % necesita correcci
 size: M      # varios días; toca ocr_module y el parser; sin datos externos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 7-release   # smoke it. 5 pendiente del usuario
+next: 7-release   # v1.1.0 commiteada; falta smoke it. 5 del usuario → merge/tag/push
 current task: —
 
 ## Stages
@@ -74,3 +74,5 @@ current task: —
 2026-10-18 | 5-implement | R3b: Tesseract no ve → nota «Sin confirmar por segundo lector» (ℹ en Revisión, no dudoso); dudoso solo si lee otro número del nombre; total/pagado distinto → nota (aceptado, R1 cubre); probar_digitos +8, probar_relectura +2; 17 suites verdes; iteración 5 completa
 2026-10-18 | 6-test | It. 5: 17 suites verdes; FIX-1..13 + R3b con checks; revisión a mano: catálogo R6 nunca se rehace si ya tiene precios → FIX-14; smoke it. 5 pendiente del usuario
 2026-10-18 | 5-implement | FIX-14: _catalogo() siempre rehace «auto» con desde_libro (cargar solo si el libro falla; manual gana); probar_revision +2 checks, 1 ajustado; 17 suites verdes
+2026-10-18 | 7-release | v1.1.0 preparada: VERSION, CHANGELOG, 07-release.md (runbook al día); pre-flight verde (17/17, debug off, 127.0.0.1, sin claves). Bloqueo: 01b/01c con cifras reales en git desde 4e1c487 (sin push) → decidir antes de push
+2026-10-18 | 7-release | Historia sin push reescrita (sin 01b/01c ni nombre del local; respaldo backup/pre-rewrite-v1.1.0); spike lee nombre/dirección de .env; v1.1.0 commiteada; merge/tag/push tras smoke it. 5
