@@ -44,5 +44,5 @@
 - [ ] FIX-9 (S) `_catalogo`: no reconstruir/escribir en cada escaneo (una vez por arranque o al confirmar) — R6 — files: `app.py` — model: Sonnet
 - [ ] FIX-10 (S) `referencia.agregar`: recibo sin número se reemplaza por id — R9 — files: `referencia.py`, `probar_revision.py` — model: Sonnet
 - [ ] FIX-11 (S) Sacar `spike_google_vision.py` del camino de release (mover a `spikes/` o `.gitignore`) — N1 — model: Sonnet
-- [ ] FIX-12 (S) Pestaña ④: selector Dudosos / Revisados (la API ya acepta `estado=revisado`) para ver lo confirmado; hallado en el smoke de 6-test — R8 — files: `static/contable.html` — model: Sonnet
+- [ ] FIX-12 (S) Pestaña ④: selector Dudosos / Revisados (la API ya acepta `estado=revisado`) para ver lo confirmado; y en DATOS OCR un color propio para «dudoso» (hoy amarillo = dudoso o cualquier aviso, p. ej. «lo cubre el extracto»); hallado en el smoke de 6-test — R8, R7 — files: `static/contable.html`, `parser_module/contable/exportar.py` — model: Sonnet
 - [ ] R3b (M) Cambio de R3 aprobado 2026-10-18: no ver → nota suave «sin confirmar por segundo lector» (visible en Revisión, no marca dudoso); distinto con contexto → dudoso — R3 — files: `validar.py`, `relectura.py`, `probar_digitos.py`, `static/contable.html` — model: Sonnet

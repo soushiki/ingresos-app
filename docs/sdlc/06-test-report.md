@@ -37,4 +37,4 @@
 2. Pestaña ④ Revisión: el recorte se ve, los candidatos se pueden clicar, «Confirmar así» recalcula el día.
 3. Volver a escanear ese día → el recibo confirmado sigue «revisado» (ver FIX-1: hoy puede perderse).
 4. Exportar el Excel del día → DATOS OCR tiene las columnas Recibo y Motivo, fila amarilla si dudoso.
-Resultado (usuario, 2026-10-18): 1, 2 y 4 bien. 3 sin verificar: el recibo confirmado sale de ④ y la UI no muestra los «revisado» en ningún lado → FIX-12.
+Resultado (usuario, 2026-10-18): 1, 2 y 4 bien. 3 bien (los 5 confirmados siguen «revisado» tras releer; el amarillo de 85299/85313 es «lo cubre el extracto», no dudoso). UI: ④ no muestra revisados y el amarillo mezcla dudoso con otros avisos → FIX-12.
