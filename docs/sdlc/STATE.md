@@ -5,7 +5,7 @@ goal: Bajar el margen de error del OCR de recibos (hoy ≈40 % necesita correcci
 size: M      # varios días; toca ocr_module y el parser; sin datos externos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 8-maintain   # v1.1.0 publicada; pendientes en 08-maintenance (metas N3, re-corrida T16)
+next: 8-maintain   # siguiente: M-10 (fecha de la carpeta; arregla el año 2025 de M-12)
 current task: —
 
 ## Stages
@@ -77,3 +77,5 @@ current task: —
 2026-10-18 | 7-release | v1.1.0 preparada: VERSION, CHANGELOG, 07-release.md (runbook al día); pre-flight verde (17/17, debug off, 127.0.0.1, sin claves). Bloqueo: 01b/01c con cifras reales en git desde 4e1c487 (sin push) → decidir antes de push
 2026-10-18 | 7-release | Historia sin push reescrita (sin 01b/01c ni nombre del local; respaldo backup/pre-rewrite-v1.1.0); spike lee nombre/dirección de .env; v1.1.0 commiteada; merge/tag/push tras smoke it. 5
 2026-10-18 | 7-release | v1.1.0 publicada: smoke it. 5 pasa (usuario); main merge --no-ff, tag v1.1.0, push main + tags
+2026-10-18 | 8-maintain | Triage post-v1.1.0: Summary al día; M-12 (re-corrida T16), M-13 (omitidos → ciclo nuevo), M-14 (umbral Laplaciano), M-15 (tope de tiempo); M-11 commit 563faf9
+2026-10-18 | 8-maintain | M-12: mismas 107 (set de T16 fijado): omitidos 18→13, dudosos 58→17, validados con error 3→9 (6 por año 2025 → M-10); sin el año 3/94
