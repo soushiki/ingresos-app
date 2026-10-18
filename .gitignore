@@ -11,3 +11,7 @@ parser_module/contable/terceros_cuentas.json
 # recibos reales
 parser_module/ejemplos_pos/recibo_referencia.jpg
 parser_module/ejemplos_pos/recibo_foto3.txt
+
+# docs con cifras reales del negocio (el repo es público)
+docs/sdlc/01b-reporte-contable.md
+docs/sdlc/01c-app-vs-manual.md

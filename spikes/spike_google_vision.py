@@ -14,9 +14,15 @@ DATOS = BASE / "datos"
 CARPETA = DATOS / "referencia" / "google"
 MANIFIESTO = CARPETA / "manifiesto.json"
 URL = "https://vision.googleapis.com/v1/images:annotate"
-NOMBRE = ("<NOMBRE>",)                                  # solo la palabra (sale también en platos: «THE BIG <NOMBRE> BURGER»)
+try: from dotenv import load_dotenv; load_dotenv(BASE / ".env")
+except ImportError: pass
+# Nombre del local y número de su dirección: fuera del repo (público), en .env. NOMBRE_LOCAL tapa solo la palabra
+# (sale también en platos: «THE BIG <NOMBRE> BURGER»); DIRECCION_LOCAL es una regex extra, p. ej. 12\s*-\s*34.
+NOMBRE = tuple(w.strip().upper() for w in os.environ.get("NOMBRE_LOCAL", "").split(",") if w.strip())
+if not NOMBRE: sys.exit("Falta NOMBRE_LOCAL en .env (palabra del nombre del local que se tapa)")
 PRIVADO = ("TELEFONOS", "TELEFONO", "6434897")        # la línea entera
-DIRECCION = re.compile(r"\bCRA\b|\bCARRERA\b|\bN[I1L]T\b|IDENTIFICAC|\bC\.?C\.?\s*[:#]")   # + NIT y cédulas
+DIRECCION = re.compile(r"\bCRA\b|\bCARRERA\b|\bN[I1L]T\b|IDENTIFICAC|\bC\.?C\.?\s*[:#]"   # + NIT y cédulas
+                       + (f"|{os.environ['DIRECCION_LOCAL']}" if os.environ.get("DIRECCION_LOCAL") else ""))
 
 
 def _clave() -> str:
