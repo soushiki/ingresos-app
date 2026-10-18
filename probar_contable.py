@@ -186,4 +186,19 @@ lib4 = {"2026-09-12": dict(fecha="2026-09-12", documentos=[t4l], banco={}, cierr
 d4, m4 = leer_crudo(crudo(lib4))
 chk(not m4 and d4[0]["documentos"][0] == t4l, "T4: documento con lectura completa (candidatos, motivos, recorte) hace la ida y vuelta por el .json crudo v1")
 import tempfile, os; open(os.path.join(tempfile.gettempdir(), "libro_prueba.xlsx"), "wb").write(x)
+# M-10: la fecha de la carpeta («20 SEPT 26») manda sobre la impresa; el nombre del archivo trae la fecha del escaneo y no cuenta
+from parser_module.contable.documentos import fecha_de_carpeta, aplicar_fecha_carpeta
+R = "SEPTIEMBRE/SEPTIEMBRE DEL 15 AL 30/20 SEPT 26/CIERRE/cierre20261002_18131736.pdf"
+chk(fecha_de_carpeta(R) == "2026-09-20", f"M-10: «20 SEPT 26» → 2026-09-20, no la del nombre (escaneo 02-10): {fecha_de_carpeta(R)}")
+chk(fecha_de_carpeta("x/17 sept 26/COMANDAS/a.pdf") == "2026-09-17" and fecha_de_carpeta(r"x\3 de octubre de 2026\a.jpg") == "2026-10-03",
+    "M-10: minúsculas, «de», año de 4 cifras y rutas de Windows")
+chk(fecha_de_carpeta("SEPTIEMBRE/6/comandas/85447 al 452.jpg") is None and fecha_de_carpeta("comandas20260920_85735.pdf") is None
+    and fecha_de_carpeta("x/31 SEPT 26/a.jpg") is None, "M-10: carpeta de solo el día, fecha solo en el nombre o fecha imposible → None (sigue la impresa)")
+dm = [dict(tipo="venta", numero="85767", fecha="2026-09-27", avisos=[]), dict(tipo="venta", numero="85768", fecha="2026-09-20", avisos=[]),
+      dict(tipo="venta", numero="85769", fecha="", avisos=[])]
+aplicar_fecha_carpeta(dm, "S/20 SEPT 26/COMANDAS/comandas20260920_85766 al 768.pdf")
+chk([d["fecha"] for d in dm] == ["2026-09-20"] * 3 and dm[0].get("fecha_impresa") == "2026-09-27" and any("27/09/2026" in a for a in dm[0]["avisos"])
+    and not dm[1]["avisos"] and not dm[2]["avisos"] and "fecha_impresa" not in dm[1], "M-10: 85767 se queda el 20-09 con aviso de la fecha impresa; sin aviso si coincide o no se leyó")
+d0 = [dict(tipo="venta", fecha="2025-09-06", avisos=[])]; aplicar_fecha_carpeta(d0, "SEPTIEMBRE/6/comandas/85447 al 452.jpg")
+chk(d0[0]["fecha"] == "2025-09-06" and not d0[0]["avisos"], "M-10: sin fecha completa en la carpeta no toca nada")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

@@ -17,7 +17,7 @@ from ocr_module import orientacion
 from ocr_module.digitos import numeros_tesseract
 from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
-from parser_module.contable.documentos import PARSERS, _base as _base_doc
+from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de
 from parser_module.contable import referencia
@@ -315,6 +315,7 @@ def cont_escanear():
         return jsonify(ok=False, error=str(e))
     docs = _clasificar(leer_texto(texto, categoria) if docs is None else docs)
     for d in docs: d["origen"] = nombre
+    aplicar_fecha_carpeta(docs, nombre)     # M-10: «20 SEPT 26» manda sobre la fecha impresa
     return jsonify(ok=True, texto=texto, segundos=segundos, fuente=fuente, grados=grados, categoria=categoria, documentos=docs, avisos=avisos)
 
 

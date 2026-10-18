@@ -1,7 +1,7 @@
 """Texto plano (módulo 1) → documentos tipados: venta, gasto de caja, recibo de caja menor, factura de proveedor."""
 from __future__ import annotations
-import re, uuid
-from ..numeros import extraer_fecha, norm
+import datetime, re, uuid
+from ..numeros import _MES, _MN, extraer_fecha, norm
 
 MARCA = "=== DOCUMENTO ==="
 _MONTO = re.compile(r"\$?\s*(\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d{1,2})?(?!\d)")
@@ -268,6 +268,34 @@ def parse_cierre(texto):
 
 
 PARSERS = {"cierre": parse_cierre, "venta": parse_venta, "gasto_caja": parse_gasto, "caja_menor_manuscrito": parse_manuscrito, "factura": parse_factura}
+
+# M-10: cada escaneo trae papeles de una sola fecha y la carpeta «20 SEPT 26» la dice (manda sobre la impresa). El nombre del archivo
+# («cierre20261002_…») trae la fecha del escaneo, no la del papel, y una carpeta de solo el día («6/») es ambigua: ninguno cuenta.
+_CARPETA = re.compile(rf"(\d{{1,2}})\s*(?:de\s+)?({_MN})\.?\s*(?:de\s+)?(\d{{4}}|\d{{2}})")
+
+
+def fecha_de_carpeta(ruta: str) -> str | None:
+    """ISO de la carpeta más honda con día, mes y año completos; None si ninguna lo tiene (o la fecha no existe)."""
+    for p in reversed(re.split(r"[\\/]", ruta or "")[:-1]):
+        m = _CARPETA.fullmatch(norm(p).strip())
+        if not m: continue
+        a = int(m.group(3)); a += 2000 if a < 100 else 0
+        try: return datetime.date(a, _MES[m.group(2)], int(m.group(1))).isoformat()
+        except ValueError: return None
+    return None
+
+
+def aplicar_fecha_carpeta(docs: list, ruta: str) -> list:
+    """Pone la fecha de la carpeta en cada papel; si la impresa (leída) era otra, la guarda en `fecha_impresa` y avisa."""
+    f = fecha_de_carpeta(ruta)
+    if not f: return docs
+    dmy = lambda iso: "/".join(reversed(iso.split("-")))
+    for d in docs:
+        if d.get("fecha") and d["fecha"] != f:
+            d["fecha_impresa"] = d["fecha"]
+            d.setdefault("avisos", []).append(f"Fecha impresa {dmy(d['fecha'])} distinta de la carpeta {dmy(f)}: se usa la de la carpeta")
+        d["fecha"] = f
+    return docs
 
 
 def leer_texto(texto: str, categoria: str = "") -> list:

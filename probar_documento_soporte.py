@@ -657,6 +657,12 @@ import pymupdf as _fz
 _pd = _fz.open(); _pd.new_page().insert_text((72, 72), "FACTURA DE VENTA 77\nCarlos Cordero NIT 1047123456\nPapa criolla 5.000\nTOTAL 5.000\nMedio de pago: efectivo"); _pdf = _pd.tobytes()
 r = cl.post("/api/contable/escanear", data={"foto": (io.BytesIO(_pdf), "f.pdf"), "motor": "local"}, content_type="multipart/form-data")
 chk(r.get_json()["ok"] and r.get_json()["fuente"] == "texto", "T20: un PDF con texto se sigue leyendo sin OCR")
+_pd = _fz.open(); _pd.new_page().insert_text((72, 72), "FACTURA DE VENTA 78\nFecha: 27/09/2026\nCarlos Cordero NIT 1047123456\nTOTAL 5.000"); _pdf10 = _pd.tobytes()
+r = cl.post("/api/contable/escanear", data={"foto": (io.BytesIO(_pdf10), "f.pdf"), "ruta": "SEPT/20 SEPT 26/GASTOS/gastos20261002_1.pdf", "motor": "local"},
+            content_type="multipart/form-data")
+d10 = (r.get_json().get("documentos") or [{}])[0]
+chk(d10.get("fecha") == "2026-09-20" and d10.get("fecha_impresa") == "2026-09-27" and any("carpeta" in a for a in d10.get("avisos", [])),
+    f"M-10: /api/contable/escanear usa la fecha de la carpeta y avisa de la impresa: {d10.get('fecha')}, {d10.get('fecha_impresa')}")
 T20 = Path(tempfile.mkdtemp()); web.RUTA_SOPORTE, web.RUTA_LIBRO, web.RUTA_CONT = T20 / "soporte.db", T20 / "libro.json", T20 / "contable.json"
 f20 = {**r.get_json()["documentos"][0], "fecha": "2026-09-14", "valor": 15000, "tercero": "Carlos Cordero", "origen": "foto1.jpg"}   # una factura como la deja el PC de lectura
 a20 = _crudo({"2026-09-14": {"documentos": [f20]}})
