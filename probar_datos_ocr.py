@@ -286,4 +286,15 @@ if LIB.exists():
     malos = [f for f in lib if f not in li or li[f]["documentos"] != lib[f]["documentos"] or li[f]["filas"] != esp[f]["filas"]]
     chk(not ji["invalidos"] and len(ji["nuevos"]) == len(lib) and not malos, f"T19: libro.json real ({len(lib)} días) export → import en vacío: mismos documentos y filas (distintos: {malos[:3]})")
     chk([asdict(g) for g in _sop.semanas(li, None, None, hoy)] == [asdict(g) for g in _sop.semanas(lib, None, None, hoy)], "T19: libro real → mismas semanas")
+# M-6: con el extracto escrito, la propina y el domicilio de las comandas pagadas al banco siguen yendo a 2815 (no todo a ingresos)
+from parser_module.contable.asientos import PROPINAS, DOMICILIOS, RESTAURANTE
+b6 = dict(efectivo=0, tarjeta=0, transf=0, credito=0, descuento=0, cortesia=0, medio_transf="", avisos=[])
+m6 = [{**v, **b6, "id": "m6a", "numero": "85900", "consumo": 48000, "propina": 5000, "domicilio": 15000, "transf": 68000, "medio": "Transferencia", "medio_transf": "Transferencia"},
+      {**v, **b6, "id": "m6b", "numero": "85901", "consumo": 40000, "propina": 4000, "domicilio": 0, "tarjeta": 44000, "medio": "Tarjeta"}]
+r6 = construir("2026-09-18", m6, {"qr": 70000, "tarjetas": 43000})
+neto = lambda c: sum(f_["credito"] - f_["debito"] for f_ in r6["filas"] if f_["codigo"] == c)
+chk((neto(PROPINAS), neto(DOMICILIOS), neto(RESTAURANTE)) == (9000, 15000, 113000 - 24000) and r6["debito"] == r6["credito"],
+    f"M-6: extracto 113.000 → propinas 9.000 y domicilios 15.000 a 2815, ingresos 89.000: {(neto(PROPINAS), neto(DOMICILIOS), neto(RESTAURANTE))}")
+_, mov6 = movimientos(load_workbook(io.BytesIO(libro_a_excel({"2026-09-18": r6["filas"]}, datos={"2026-09-18": r6["datos"]}))))
+chk([(int(d), int(c)) for _, d, c in mov6] == [(f_["debito"], f_["credito"]) for f_ in r6["filas"]], "M-6: en Excel, las fórmulas de esas filas dan lo mismo que construir()")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

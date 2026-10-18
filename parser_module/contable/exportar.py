@@ -46,7 +46,8 @@ def formula(fx, fila: int, ref_fila, ref_dato) -> str:
     op, *a = fx
     if op == "sum":
         col, crit = a
-        pares = [(DC["fecha"], f"$A{fila}"), (DC["estado"], '"ok"')] + [(DC[k], _criterio(v)) for k, v in crit.items()]
+        est = _criterio(crit["estado"]) if "estado" in crit else '"ok"'   # M-6: «en extracto» para la propina/domicilio que cubre el extracto
+        pares = [(DC["fecha"], f"$A{fila}"), (DC["estado"], est)] + [(DC[k], _criterio(v)) for k, v in crit.items() if k != "estado"]
         return f"SUMIFS({D}{DC[col]}:{DC[col]}," + ",".join(f"{D}{c}:{c},{x}" for c, x in pares) + ")"
     if op == "dato": return ref_dato(a[0])
     if op == "fila": return ref_fila(a[0])

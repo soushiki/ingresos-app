@@ -221,7 +221,18 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     jb = [fila(BANCO, "Consumidor Final", x["detalle"], deb=x["valor"], reporta=cfg["reporta_banco"], medio=x["medio"], grupo="venta", fx=["dato", i]) for i, x in ext]
     if total_b:
         cta = f"Recaudos pagados a la cta.{cfg['cuenta_recaudo']}" if cfg["cuenta_recaudo"] else "Recaudos pagados a la cuenta"
-        fila(RESTAURANTE, "Consumidor Final", cta, cre=total_b, reporta=cfg["reporta_banco"], grupo="venta", fx=["+", *F(*jb)])
+        # M-6: la propina y el domicilio de las comandas que cubre el extracto no son ingreso: van a 2815, con tope en lo que trae el extracto
+        enx = [(i, x) for i, x in enumerate(datos) if x["estado"] == "en extracto" and x["bloque"] == "venta"]
+        pro_x, dom_x = suma(enx, "propina"), suma(enx, "domicilio"); tot = ["+", *F(*jb)]; ex = dict(bloque="venta", estado="en extracto")
+        if pro_x + dom_x > total_b:
+            avisos.append("El extracto no alcanza para cubrir las propinas y domicilios de las comandas pagadas al banco")
+            pro_x = min(pro_x, total_b); dom_x = min(dom_x, total_b - pro_x)
+        jp = jd = None
+        if pro_x: jp = fila(PROPINAS, "Consumidor Final", "Ordenes: " + abreviar_recibos(nums(enx, "propina")), cre=pro_x, reporta=cfg["reporta_banco"], grupo="venta",
+                            fx=["min", S("propina", **ex), tot])
+        if dom_x: jd = fila(DOMICILIOS, "Consumidor Final", "Ordenes: " + abreviar_recibos(nums(enx, "domicilio")), cre=dom_x, reporta=cfg["reporta_banco"], grupo="venta",
+                            fx=["min", S("domicilio", **ex), ["-", tot, *F(jp)]])
+        fila(RESTAURANTE, "Consumidor Final", cta, cre=total_b - pro_x - dom_x, reporta=cfg["reporta_banco"], grupo="venta", fx=["-", tot, *F(jp, jd)])
     for i, x in de("rappi"):   # Rappi te consigna lo que te debía: entra al banco y baja la cuenta por cobrar (no es una venta nueva)
         j = fila(BANCO, "Rappi", x["detalle"], deb=x["valor"], reporta=cfg["reporta_banco"], medio=x["medio"], grupo="venta", fx=["dato", i])
         fila(POR_COBRAR, "Rappi", x["detalle"], cre=x["valor"], reporta=cfg["reporta_banco"], grupo="venta", fx=["fila", j])

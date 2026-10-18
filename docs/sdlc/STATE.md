@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 8-maintain   # v1.0.1 publicada (tag en 78599fb, rama pusheada); M-4 en la rama y versiones fijas (sin commit), sin publicar; espera al usuario: M-5 (datos), #9 (contabilidad); luego #2/#4 (ciclo S, desde 0-triage)
+next: 8-maintain   # v1.0.1 publicada (tag en 78599fb, rama pusheada); M-4 (ff5ca34) y versiones fijas (3434f8c) en la rama, 3434f8c sin push; espera al usuario: M-5 (datos), #9 (contabilidad); luego #2/#4 (ciclo S, desde 0-triage)
 
 ## Stages
 - [x] 0-triage
@@ -101,3 +101,9 @@ next: 8-maintain   # v1.0.1 publicada (tag en 78599fb, rama pusheada); M-4 en la
 2026-10-17 | 8-maintain | pip-audit adelantado (venv aparte, 21 paquetes instalados): sin vulnerabilidades; falta fijar versiones en requirements.txt. Lo demás sigue esperando al usuario (M-5, #9, push de M-4)
 2026-10-17 | 8-maintain | requirements.txt con `==` a las versiones auditadas (+werkzeug, jinja2); resuelve en Python 3.12/3.13/3.15 Windows; suites verdes. Sin commit. Lo demás espera al usuario (M-5, #9)
 2026-10-17 | 8-maintain | Revisión: nada nuevo que se pueda hacer sin el usuario. Listo para commit: requirements.txt fijo (+ STATE). Esperan: M-5 (datos), #9 (contabilidad), push de M-4; chequeo mensual 2026-11-17
+2026-10-17 | 8-maintain | Revisión: requirements.txt ya estaba en 3434f8c (docs decían «sin commit», corregido); rama 1 commit por delante de origin. Esperan al usuario: push, M-5, #9; chequeo 2026-11-17
+2026-10-17 | 8-maintain | Ciclo documento soporte archivado (01–07, spike → docs/sdlc/archive/documento-soporte/; adr/ sigue). Sin commit. Esperan al usuario: push de 3434f8c, M-5, #9; luego #2/#4 desde 0-triage
+2026-10-17 | 8-maintain | Revisión: ADR-002 apuntaba al spike en su ruta vieja → corregido; sin otras referencias rotas. Sin commit (archivo + ADR). Esperan al usuario: commit/push, M-5, #9; chequeo 2026-11-17
+2026-10-17 | 8-maintain | M-5 cerrado con el usuario: 85767→20-09, 85726→19-09, 5 números corregidos (8 papeles); 7 días recalculados, débito=crédito, ningún aviso de secuencia; respaldos en datos/. Regla: la fecha del escaneo manda
+2026-10-17 | 8-maintain | Extracto 1–23 sept. cargado en las casillas del banco (qr 23,96 M, llave 6,35 M, tarjetas 3,29 M netas, Rappi 1,39 M, transf. 0,15 M); 23 días recalculados, débito=crédito; respaldo libro.backup-antes-banco-1-23sept.json. Falta 24–30
+2026-10-17 | 8-maintain | M-6 cerrado test-first: con extracto, propina/domicilio de comandas cubiertas → 2815 (asientos.construir + SUMIFS «en extracto»); 2 checks; suites verdes; 1–23 sept. recalculados (ingresos 36,83 M). Sin commit. Abierto: M-7 (comandas sin medio), extracto 24–30
