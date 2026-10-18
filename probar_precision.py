@@ -84,6 +84,11 @@ infp = medir_precision.ejecutar("2026-09", d, "MOTOR", leer_c, datos=d, variante
 chk(infp["peores"] == 1 and infp["total"] <= 2, "--completo funciona con --peores")
 infm = medir_precision.ejecutar("2026-09", d, "MOTOR", leer_c, datos=d, variante="completo", leer_texto=parsear_c, muestra=1)
 chk(infm["muestra"] == 1, "--completo funciona con --muestra")
+# FIX-8 · R5: una página de un PDF de varias páginas no trae todo el lote del nombre → completa=False
+blanca = Image.new("RGB", (40, 40), "white")
+blanca.save(d / "largo.pdf", save_all=True, append_images=[blanca.copy()]); blanca.save(d / "corto.pdf")
+llamadas.clear(); leer_c(d / "largo.pdf", 2, "MOTOR"); leer_c(d / "corto.pdf", 1, "MOTOR"); leer_c(d / "h1.jpg", 1, "MOTOR")
+chk([c.get("completa") for c in llamadas] == [False, True, True], "--completo: PDF de varias páginas → completa=False; 1 página o foto → True")
 # FIX-2 · dudoso se cuenta por `estado`, no por tener avisos: «Foto borrosa» en un recibo validado no es dudoso
 from parser_module.contable.referencia import medir
 def _doc(n, total, **extra):

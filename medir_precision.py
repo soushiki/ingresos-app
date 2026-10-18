@@ -67,8 +67,9 @@ def lector_completo(catalogo=None, leer_digitos=None, separar=None, preparar=Non
     ultimo = {}
 
     def leer(ruta: Path, pagina, motor):
-        data = ruta.read_bytes()
+        data = ruta.read_bytes(); completa = True
         if ruta.suffix.lower() == ".pdf":
+            completa = pdflib.info(data)["paginas"] == 1     # R5: una página de un PDF largo no trae todo el lote del nombre
             texto, data = pdflib.pagina(data, pagina)
             if texto is not None: ultimo["docs"] = parsear_texto(texto, "comandas"); return "completo"
         png, _ = preparar(data, "auto")
@@ -76,7 +77,7 @@ def lector_completo(catalogo=None, leer_digitos=None, separar=None, preparar=Non
         nombre = ruta.name if en_comandas else ""
         esperados = numeros_de_nombre(nombre) if nombre else None
         trozos = separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
-        h = hoja(trozos, motor, "comandas" if en_comandas else "", nombre,
+        h = hoja(trozos, motor, "comandas" if en_comandas else "", nombre, completa=completa,
                  separar=separar, catalogo=catalogo, leer_digitos=leer_digitos)
         docs = h["documentos"]
         for d in docs:

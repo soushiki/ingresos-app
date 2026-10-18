@@ -6,7 +6,7 @@ size: M      # varios días; toca ocr_module y el parser; sin datos externos nue
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
 next: 5-implement   # iteración 5: FIX-1..11 + R3b (06-test-report)
-current task: FIX-7 hecho; sigue FIX-8
+current task: FIX-8 hecho; sigue FIX-9
 
 ## Stages
 - [x] 0-triage       (propuesto 2026-10-17; preguntas abiertas en el log)
@@ -66,3 +66,4 @@ current task: FIX-7 hecho; sigue FIX-8
 2026-10-18 | 5-implement | FIX-5: regla_items apagada por defecto (CONFIG), se enciende por ctx; probar_validar +1 check; suite verde
 2026-10-18 | 5-implement | FIX-6: fecha ya no es editable en Revisión (400); probar_revision +2 checks; suite verde
 2026-10-18 | 5-implement | FIX-7: recortes.guardar renueva el mtime al reusar un recorte (borrar por rango ya no se lo lleva); probar_recortes +2 checks; suite verde
+2026-10-18 | 5-implement | FIX-8: lector_completo pasa completa=False en páginas de un PDF de varias páginas (como app.py); probar_precision +1 check; suite verde
