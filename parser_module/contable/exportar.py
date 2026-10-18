@@ -168,7 +168,7 @@ def crudo(lib: dict, desde: str = "", hasta: str = "") -> bytes:
                            sha256=huella(dias), dias=dias), ensure_ascii=False, indent=1).encode("utf-8")
 
 
-TIPOS_CRUDO = {"cierre", "venta", "gasto_caja", "caja_menor_manuscrito", "factura", "otro"}   # los de documentos.PARSERS más «otro»
+TIPOS_CRUDO = {"cierre", "venta", "gasto_caja", "caja_menor_manuscrito", "factura", "otro", "faltante"}   # los de documentos.PARSERS más «otro» y el marcador de ADR-008
 MAX_VALOR, MAX_TEXTO, MAX_DOCS, MAX_HONDO = 10**10, 20000, 2000, 6   # texto OCR real ya llega a ~4.000 (FIX-14)
 
 

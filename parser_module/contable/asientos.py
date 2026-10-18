@@ -176,7 +176,7 @@ def marcar_duplicados(docs: list) -> list:
             if par: usados.add(par[1]); d["dup_de"] = par[1]
             else: d["dup_de"] = ""
     for d in docs:
-        if not d.get("manual_contar"): d["contar"] = not d.get("dup_de") and d.get("tipo") not in ("otro", "cierre")
+        if not d.get("manual_contar"): d["contar"] = not d.get("dup_de") and d.get("tipo") not in ("otro", "cierre", "faltante")
     return docs
 
 
@@ -200,6 +200,7 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
     if int(banco.get("rappi") or 0): dato(tipo="extracto", archivo="extracto bancario", detalle="Pagos interbancarios Rappi", valor=int(banco["rappi"]), medio="Transferencia", cuenta=BANCO, bloque="rappi")
     en_ext = any(int(banco.get(k) or 0) for k, _, _ in RECAUDOS_BANCO)
     for d in todos:
+        if d["tipo"] == "faltante": continue   # ADR-008: el marcador no es un papel leído; no tiene fila en DATOS OCR
         if not d.get("contar") or d["tipo"] == "cierre":
             dato(d, valor=d.get("valor") or d.get("consumo") or 0, estado="no cuenta",
                  aviso=f"duplicado de {d['dup_de']}" if d.get("dup_de") else ("cierre de caja (se usa para cruzar)" if d["tipo"] == "cierre" else (d.get("motivo") or "desmarcado")))

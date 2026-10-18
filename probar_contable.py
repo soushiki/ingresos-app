@@ -209,4 +209,23 @@ chk([d["fecha"] for d in d0] == ["2026-09-06"] * 4 and [bool(d["avisos"]) for d 
     "M-10: «SEPTIEMBRE/6/» con el año más común de las fechas impresas (2026): el «2025» de M-12 queda 2026-09-06 con aviso")
 d1 = [dict(tipo="venta", fecha="2025-09-06", avisos=[])]; aplicar_fecha_carpeta(d1, "6/comandas/a.jpg")
 chk(d1[0]["fecha"] == "2025-09-06" and not d1[0]["avisos"], "M-10: sin mes en la ruta no toca nada")
+# M-13 T2 · fitness ADR-008: un documento marcador tipo "faltante" no mueve nada
+from parser_module.contable import faltantes as _falt
+from parser_module.contable.validar import faltantes as _validar_falt
+_base_t2 = [leer_texto(VENTA)[0], leer_texto(GASTO)[0]]   # mismos ids en las dos corridas
+def _dia(extra):
+    return construir("2026-09-12", [dict(d) for d in _base_t2] + extra)
+_sin, _con = _dia([]), _dia(_falt.crear([85999], "foto.jpg", "2026-09-12", "ab12cd34.jpg"))
+chk(any(d["tipo"] == "faltante" for d in _con["documentos"]), "T2: el marcador viaja en el día")
+chk(_sin["filas"] == _con["filas"] and _sin["datos"] == _con["datos"] and (_sin["debito"], _sin["credito"]) == (_con["debito"], _con["credito"]),
+    "ADR-008: un faltante movió los asientos")
+chk(_sin["avisos"] == _con["avisos"] and _sin["pendientes"] == _con["pendientes"] and _sin["cruces"] == _con["cruces"] and _sin["faltan"] == _con["faltan"],
+    "ADR-008: un faltante movió los avisos, pendientes o el cruce con el cierre")
+chk(not any(x["tipo"] == "faltante" for x in _con["datos"]), "ADR-008: el marcador no sale como fila de DATOS OCR (Excel)")
+_marca = _falt.crear([5], "f.jpg", "2026-09-12", "r.jpg")
+_ven = [dict(tipo="venta", numero="5")]
+chk(_validar_falt(_ven + _marca, [5, 6]) == [6] and _validar_falt(_marca, [5]) == [5], "ADR-008: un marcador cuenta como recibo leído")
+_lib = {"2026-09-12": dict(fecha="2026-09-12", documentos=_con["documentos"], banco={}, cierre={}, guardado="2026-09-12T08:00:00")}
+_d, _m = leer_crudo(crudo(_lib))
+chk(not _m and _d[0]["documentos"] == _con["documentos"], "T2: el marcador hace la ida y vuelta por el .json crudo")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

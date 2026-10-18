@@ -13,7 +13,7 @@
   — R1 — done when: `probar_faltantes.py` nuevo pasa (crear desde números y desde nombre no entendido; anotar → venta manual con
   `de_foto`; cerrar con motivo ≤ 200; reconciliar: anotado y no_existe no vuelven, abierto sí) — files: `parser_module/contable/faltantes.py`,
   `probar_faltantes.py` — model: Sonnet — hecho: faltantes.py puro (crear/anotar/cerrar/abiertos/reconciliar), 15 checks en probar_faltantes.py
-- [ ] T2 (M) Fitness ADR-008 + barrido de `tipo`: asientos, Excel, crudo, `validar.faltantes` y `medir` iguales con y sin marcador
+- [x] T2 (M) Fitness ADR-008 + barrido de `tipo`: asientos, Excel, crudo, `validar.faltantes` y `medir` iguales con y sin marcador — hecho: marcador excluido de contar (asientos.marcar_duplicados), sin fila en DATOS OCR, "faltante" aceptado en TIPOS_CRUDO; 5 checks en probar_contable; validar.faltantes y medir ya filtraban venta
   — R1, riesgo 1 — done when: prueba en `probar_contable.py` (asientos y filas de Excel idénticos con un marcador en el día) pasa;
   `grep 'tipo'` en `asientos.py`, `exportar.py`, `excel_export.py`, `soporte*.py` revisado y lo que no filtra `venta` corregido
   — files: `probar_contable.py`, `parser_module/contable/asientos.py`, `parser_module/contable/exportar.py`, `excel_export.py` — model: Sonnet
