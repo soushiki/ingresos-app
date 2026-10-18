@@ -69,3 +69,27 @@ Fuentes: cloud.google.com/vision/pricing · docs.cloud.google.com/document-ai/do
 learn.microsoft.com/azure/ai-services/document-intelligence/prebuilt/receipt · aws.amazon.com/textract/pricing ·
 arXiv 2210.07903 (CORD) · arXiv 2212.05525 (TrOCR SROIE) · arXiv 2008.02777 (binarizar) · arXiv 2509.17418, 2608.22366
 (OCR→VLM) · paddleocr.ai PP-OCRv5 · imagetotable.ai benchmark de recibos (proveedor) · transkribus.org/pricing
+
+## Resultado spike 2d · Google Vision vs. nuestro lector (2026-10-18)
+115 recortes de las 20 peores fotos; 96 enviados tapados (19 «revisar» quedaron en el PC, entre ellos uno con cliente
+con nombre y dirección: la red de seguridad sirvió). Comparables = 93 recibos de la referencia que estaban en recortes enviados.
+
+| 93 recibos | omitidos | dudosos | validados (con error) | leídos con algún campo mal |
+|---|---|---|---|---|
+| V0 qwen, 1 pasada | 13 | 18 | 62 (9) | 27 |
+| qwen bucle completo (T16) | 14 | 51 | 28 (3) | 23 |
+| Google, texto tal cual | 16 | 39 | 38 (22) | 61 |
+| Google, rearmado por filas | 16 | 10 | 67 (12) | 22 |
+
+- **Google no lee mejor los números que qwen**: en los 71 recibos que leen los dos, los campos mal son casi iguales
+  (Google 33, qwen 31); Google acierta 6 donde qwen falla y al revés 5.
+- **Lo que sí copió el spike de Google es el diseño**: su texto «tal cual» pone etiquetas y montos en bloques distintos
+  (61 recibos mal); rearmado por filas con sus cajas (misma altura, izquierda → derecha) baja a 22. La estructura por
+  palabra con caja es lo valioso, no el motor.
+- **Omite más** (16 vs. 14): en 11 de sus 16 el número de recibo ni aparece en su texto (lo lee mal o el corte lo deja fuera).
+- **15 «errores» son de los dos a la vez con el mismo valor** → no son de OCR: año impreso 2025 (5; el POS tiene mal el
+  reloj → regla M-10, fecha de la carpeta manda), descuento/domicilio/cortesía que la referencia guarda distinto de lo
+  impreso (8), 85582/85586 con el descuento cruzado. La tasa real de error de lectura es menor que la medida.
+- Conclusión: no vale pagar ni sacar fotos por Google. Siguientes pasos con más retorno: (1) aplicar M-10 a la fecha y
+  revisar esos 8 casos de la referencia; (2) omitidos: el corte y la lectura del número, no el motor; (3) lector por línea
+  (2c) solo para que R3 deje de dar falsas alarmas. Ingeniería inversa (d) tamaños/variantes no se corrió: Google no ganó.
