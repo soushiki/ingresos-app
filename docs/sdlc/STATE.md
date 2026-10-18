@@ -5,7 +5,7 @@ goal: Desde los gastos que la app ya registra, preparar los documentos soporte d
 size: M      # una función nueva de varios días; requisitos DIAN (Res. 000167/2021 y 000165/2023) que hay que confirmar antes de diseñar
 exposed: no  # app Flask local en 127.0.0.1, sin acceso desde la red
 regulated: yes  # documento tributario: consecutivo, campos y plazos los fija la DIAN; la app prepara, no transmite
-next: 8-maintain   # v1.0.1 commiteada (sin push ni tag); M-4 hecho sin commit; M-5 datos a corregir; #9 espera a contabilidad; luego #2/#4 (ciclo S)
+next: 8-maintain   # v1.0.1 publicada (tag en 78599fb, rama pusheada); M-4 en la rama y versiones fijas (sin commit), sin publicar; espera al usuario: M-5 (datos), #9 (contabilidad); luego #2/#4 (ciclo S, desde 0-triage)
 
 ## Stages
 - [x] 0-triage
@@ -96,3 +96,8 @@ next: 8-maintain   # v1.0.1 commiteada (sin push ni tag); M-4 hecho sin commit; 
 2026-10-17 | 8-maintain | M-1 (valor negativo fuera del cierre), M-2 (id repetido en el día) y M-3 («@» en Host) cerrados test-first; 3 checks nuevos; suites verdes, libro real va y vuelve. Commit v1.0.1 (sin push)
 2026-10-17 | 8-maintain | 01c #9 investigado: sin duplicados. La app sigue al POS y el manual al banco; al manual le falta el efectivo del 27-09 y el crédito/puente del 30-09. M-4 nuevo (comanda 85767 del 20-09 cayó en el 27-09)
 2026-10-17 | 8-maintain | M-4: aviso de comanda fuera de secuencia (salto_comanda 30); 2 checks; suites verdes. Datos reales: 6 días con aviso (85767, 85726 de otro día; 5 números mal leídos) → M-5. Sin commit
+2026-10-17 | 8-maintain | Revisión: M-4 ya commiteado (ff5ca34). Nada abierto se puede hacer sin el usuario: push/tag v1.0.1, M-5 (datos), #9 (contabilidad), #2/#4 (nuevo ciclo); chequeo mensual 2026-11-17
+2026-10-17 | 8-maintain | v1.0.1 publicada: tag anotado en 78599fb (el CHANGELOG deja M-4 sin publicar), push de feat/documento-soporte (hasta ff5ca34) y del tag. main sin tocar
+2026-10-17 | 8-maintain | pip-audit adelantado (venv aparte, 21 paquetes instalados): sin vulnerabilidades; falta fijar versiones en requirements.txt. Lo demás sigue esperando al usuario (M-5, #9, push de M-4)
+2026-10-17 | 8-maintain | requirements.txt con `==` a las versiones auditadas (+werkzeug, jinja2); resuelve en Python 3.12/3.13/3.15 Windows; suites verdes. Sin commit. Lo demás espera al usuario (M-5, #9)
+2026-10-17 | 8-maintain | Revisión: nada nuevo que se pueda hacer sin el usuario. Listo para commit: requirements.txt fijo (+ STATE). Esperan: M-5 (datos), #9 (contabilidad), push de M-4; chequeo mensual 2026-11-17
