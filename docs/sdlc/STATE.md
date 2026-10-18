@@ -13,7 +13,7 @@ next: 5-implement   # plan 2026-10-18
 - [x] 2-requirements   (aprobado 2026-10-17)
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
-- [ ] 5-implement      current task: T7 (leer_recibo + relectura, Opus)
+- [ ] 5-implement      current task: T8 (_leer_hoja usa C5 + rango_de_nombre, Opus)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -43,3 +43,4 @@ next: 5-implement   # plan 2026-10-18
 2026-10-18 | 5-implement | T4: estado_de(d) migra al leer (revisado viejo → «revisado», avisos → «dudoso», si no «validado»); _base usa estado; lectura completa ida y vuelta por crudo v1 (anidado 5); ojo T10: referencia.py:31 aún lee `revisado`
 2026-10-18 | 5-implement | T5: recortes.py (huella sha256[:16], gris JPEG) + GET /api/contable/recorte/<nombre> con 404 por patrón; probar_recortes 17 checks; suite verde; iteración 1 completa → f389140
 2026-10-18 | 5-implement | T6: preprocess.variantes (V0–V3) + nitidez (Laplaciano + Tenengrad, numpy, ≤1000 px); probar_variantes 12 checks; suite verde
+2026-10-18 | 5-implement | T7: relectura.leer_recibo (V0→validar→≤3 relecturas, voto por campo, borrosa pide par que coincida, tope de tiempo, MOTOR_LOCK, recorte C6); probar_relectura 28 checks; umbral_laplaciano=100 sin calibrar (T9)
