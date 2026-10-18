@@ -5,7 +5,7 @@ goal: Bajar el margen de error del OCR de recibos (hoy ≈40 % necesita correcci
 size: M      # varios días; toca ocr_module y el parser; sin datos externos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 6-test   # iteración 4 completa 2026-10-18
+next: 5-implement   # iteración 5: FIX-1..11 + R3b (06-test-report)
 
 ## Stages
 - [x] 0-triage       (propuesto 2026-10-17; preguntas abiertas en el log)
@@ -14,7 +14,7 @@ next: 6-test   # iteración 4 completa 2026-10-18
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
 - [x] 5-implement      T1–T16 hechos (T16: metas N3 no cumplidas, ver 08-maintenance)
-- [ ] 6-test
+- [x] 6-test         → 06-test-report.md (suite verde; 10 hallazgos → FIX-1..10)
 - [ ] 7-release
 - [ ] 8-maintain
 
@@ -56,3 +56,4 @@ next: 6-test   # iteración 4 completa 2026-10-18
 2026-10-18 | 5-implement | T15: referencia.exportar_entrenamiento (jpg + json por recibo; sin recorte → lista sin_recorte) + recortes.borrar_huerfanos + medir_precision --exportar/--borrar-recortes/--borrar-huerfanos; probar_entrenamiento 6 checks; suite verde; flags CLI sin correr
 2026-10-18 | 5-implement | T16: --completo + R3/R6 cableados; 107 recibos: con error 12,2→3,4 %, omitidos 15,9→16,8 %, dudosos 20→58 (35 falsa alarma, R3 ciego en recorte entero); metas N3 no cumplidas; LEEME §7 fotos; 01d fuentes OCR + spike Google Vision preparado (tapa NIT/dirección/tel./domicilio/<NOMBRE>)
 2026-10-18 | 5-implement | Spike 2d Google Vision (5088d61): no lee mejor que qwen; rearmar por filas sí importa; 15 «errores» son de la referencia. R3 cambiado por el usuario (02-requirements): no ver → nota suave; distinto con contexto → dudoso; a implementar tras 6-test
+2026-10-18 | 6-test | It. 1–4: 17 suites verdes; R-ids cubiertos salvo N4 y R3b; code-review high 10 hallazgos (peor: releer pierde «revisado») → it. 5 FIX-1..11 + R3b; smoke pendiente del usuario
