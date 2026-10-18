@@ -379,6 +379,7 @@ function tarjetaRev(r){const d=r.documento,card=el("div",{class:"card rv"}),img=
  if(r.recorte)img.append(el("img",{src:"/api/contable/recorte/"+encodeURIComponent(r.recorte),alt:"Recorte del recibo "+(r.numero||"")}));else img.append(el("div",{class:"m",style:"padding:20px"},"Sin recorte guardado"));
  const f=el("div",{class:"rf"}),L=r.lectura||{};f.append(el("h3",null,`Recibo ${r.numero||"(sin número)"} · ${fmtF(r.fecha)}`));
  if(r.estado==="revisado")f.append(el("div",{class:"mot ok"},"✓ Revisado: ya cuenta en el día. Puedes corregirlo otra vez."));else f.append(el("div",{class:"mot"},el("b",null,"Motivo: "),(r.motivos.length?r.motivos:["Sin motivo registrado"]).join(" · ")));
+ if((d.notas||[]).length)f.append(el("div",{class:"pas"},"ℹ "+d.notas.join(" · ")));
  if(L.pasadas&&L.pasadas.length)f.append(el("div",{class:"pas"},"Pasadas: "+L.pasadas.map(p=>`${p.variante}${p.error?" (error)":p.motivos&&p.motivos.length?" ✗"+p.motivos.length:" ✓"}`).join(" · ")+(L.borrosa?" · foto borrosa":"")));
  const g=el("div",{class:"rg"});g.append(campoRev("numero","Número",r),campoRev("hora","Hora",r),campoRev("medio","Medio",r,RV_MED));for(const [k,et] of RV_ENT)g.append(campoRev(k,et,r));g.append(campoRev("detalle","Detalle",r));f.append(g);
  const ok=el("button",{type:"button"},"✓ Confirmar así"),ed=el("button",{type:"button",class:"g"},"✎ Guardar corrección");

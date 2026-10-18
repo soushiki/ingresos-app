@@ -5,7 +5,7 @@ ctx (todo opcional):
   tolerancia   pesos de diferencia aceptados en cada suma (por defecto 0)
   regla_items  True enciende «ítems → subtotal»; apagada por defecto (T2: la suma de ítems solo cuadra en ~72 % de los recibos de septiembre)
   esperados    números que trae el nombre de la foto (R5); `rango` (desde, hasta) sirve igual
-  digitos      números que vio Tesseract (R3); None/ausente se salta
+  digitos      números que vio Tesseract (R3b): leer otro número del nombre → motivo; no verlo → nota (notas_digitos); None/ausente se salta
   catalogo     {PRODUCTO: precio unitario} de catalogo.cargar() (R6); ausente/vacío se salta
   vecinos      los demás recibos de la misma foto (R5: montos idénticos con distinta mesa u hora)
 """
@@ -95,13 +95,26 @@ def cruces(doc: dict, vecinos: list) -> list:
     return out
 
 
-def _digitos(doc: dict, vistos) -> list:
-    """R3: número, total y pagado deben estar entre los números que vio Tesseract. vistos=None → se salta."""
-    if vistos is None: return []
+def _pedidos(doc: dict) -> list:
     g = lambda k: doc.get(k) or 0
-    pedidos = [("el número de recibo", _num(doc), str), ("el total", g("consumo") + g("domicilio") + g("propina"), _p),
-               ("lo pagado", g("pagado"), _p)]
-    return [f"Tesseract no ve {et} ({f(n)}) en la imagen" for et, n, f in pedidos if n and n not in vistos]
+    return [("el número de recibo", _num(doc), str), ("el total", g("consumo") + g("domicilio") + g("propina"), _p),
+            ("lo pagado", g("pagado"), _p)]
+
+
+def notas_digitos(doc: dict, ctx: dict | None) -> list:
+    """R3b · nota suave (NO motivo): número, total o pagado que Tesseract no ve. ctx["digitos"]=None/ausente → sin notas."""
+    vistos = (ctx or {}).get("digitos")
+    if vistos is None or doc.get("tipo", "venta") != "venta": return []
+    return [f"Sin confirmar por segundo lector: {et} ({f(n)})" for et, n, f in _pedidos(doc) if n and n not in vistos]
+
+
+def _digitos(doc: dict, vistos, esperados=None) -> list:
+    """R3b · «dudoso» solo si Tesseract lee OTRO número con contexto: el número de recibo no aparece pero sí otro número del nombre
+    de la foto (R5). No verlo es solo nota (notas_digitos). vistos=None → se salta."""
+    n = _num(doc)
+    if vistos is None or not n or n in vistos: return []
+    otros = sorted(set(esperados or ()) & set(vistos) - {n})
+    return [f"Tesseract lee el recibo {otros[0]} y no el {n} en la imagen"] if otros else []
 
 
 def _carta(doc: dict, precios) -> list:
@@ -130,7 +143,7 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
     if esp and _num(doc) is not None and _num(doc) not in set(esp):
         m.append(f"El recibo {_num(doc)} no está en el nombre de la foto ({_lista(esp)})")
     if c.get("vecinos"): m += cruces(doc, c["vecinos"])
-    if doc.get("cortesia"): return m + _digitos(doc, c.get("digitos")) + _carta(doc, c.get("catalogo"))
+    if doc.get("cortesia"): return m + _digitos(doc, c.get("digitos"), esp) + _carta(doc, c.get("catalogo"))
     items, sub = doc.get("items") or [], g("subtotal")
     if c["regla_items"] and items and sub:
         s = sum(i.get("valor", 0) for i in items)
@@ -145,4 +158,4 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
         medios = g("efectivo") + g("tarjeta") + g("transf") + g("credito")
         if abs(pagado - g("cambio") - medios) > tol:
             m.append(f"Los medios de pago suman {_p(medios)} y pagado − cambio es {_p(pagado - g('cambio'))}")
-    return m + _digitos(doc, c.get("digitos")) + _carta(doc, c.get("catalogo"))
+    return m + _digitos(doc, c.get("digitos"), esp) + _carta(doc, c.get("catalogo"))

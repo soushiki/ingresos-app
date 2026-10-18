@@ -19,6 +19,7 @@
     (a) **distinto con contexto** (nombre de la foto R5, sumas R1) → «dudoso», como arriba; (b) **no lo ve** → nota suave
     «sin confirmar por segundo lector», visible en Revisión pero sin marcar «dudoso», salvo que otra regla también falle;
     (c) cuando el lector por línea (01d-2c) vea el valor impreso en ≥ 90 % de los casos, (b) pasa a «dudoso». Siguiente ciclo, tras 6-test.
+    *Aceptado por el usuario 2026-10-18 (R3b):* en (a) solo el número de recibo cuenta como «distinto con contexto»; total o pagado distinto → solo nota, porque R1 ya marca las sumas que no cuadran.
 - **R4 (Should) Detectar foto borrosa.** Como contador, quiero que la app sepa cuándo una foto es mala, para que la lea con más cuidado.
   - Dada una foto o un recorte, se calculan la nitidez (varianza del Laplaciano) y el tiempo de OCR. Bajo el umbral (configurable, calibrado con N3), la foto recibe más pasadas y un aviso «foto borrosa».
   - Los dos valores quedan guardados por papel, para calibrar el umbral.

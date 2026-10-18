@@ -9,7 +9,7 @@ import json, threading, time
 from collections import Counter
 from ocr_module.preprocess import nitidez, variante
 from .documentos import MARCA, leer_texto, parse_venta
-from .validar import FALTA, cruces, faltantes, numeros_de_nombre, validar
+from .validar import FALTA, cruces, faltantes, notas_digitos, numeros_de_nombre, validar
 from . import recortes
 
 # umbral_laplaciano: sin calibrar (T9 lo fija con N3); 100 sobre ≤1000 px es la regla usual de «borrosa».
@@ -54,7 +54,7 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
                 umbral=None, reloj=time.monotonic, leer_digitos=None) -> dict:
     """Recorte (PIL) → documento con `estado`, `motivos`, `lectura` y, si hay `carpeta`, el nombre del `recorte` guardado.
     leer_digitos: imagen → set de enteros (ocr_module.digitos.numeros_tesseract) o None; se calcula en cada pasada con SU imagen
-    y va a ctx["digitos"] (R3). ctx["catalogo"] (R6) lo pone quien llama. Sin leer_digitos nada cambia.
+    y va a ctx["digitos"] (R3b: otro número del nombre → motivo; no verlo → doc["notas"], sin marcar dudoso). ctx["catalogo"] (R6) lo pone quien llama. Sin leer_digitos nada cambia.
     limite_s: tope de segundos para este recorte; al pasarlo no se relee más y, si no validó, queda «dudoso» por tiempo."""
     max_relecturas = CONFIG["max_relecturas"] if max_relecturas is None else max(0, min(int(max_relecturas), 3))
     umbral = CONFIG["umbral_laplaciano"] if umbral is None else umbral
@@ -74,7 +74,7 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
         dig = leer_digitos(img) if leer_digitos else None
         if not i: dig0 = dig
         doc = parsear(texto); mot = validar(doc, dict(ctx or {}, digitos=dig) if dig is not None else ctx)
-        cands.append(dict(variante=var, doc=doc, motivos=mot))
+        cands.append(dict(variante=var, doc=doc, motivos=mot, dig=dig))
         pasadas.append(dict(variante=var, segundos=round(reloj() - t, 2), motivos=mot))
         validos = [c for c in cands if not c["motivos"]]
         if not borrosa and validos: ganador = validos[0]; break
@@ -91,6 +91,8 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
     doc["avisos"] = list(doc.get("avisos") or []) + (["Foto borrosa"] if borrosa else [])
     doc["estado"] = "dudoso" if motivos else "validado"
     doc["motivos"] = motivos
+    visto = (ganador or (validos[0] if validos else None) or {}).get("dig", dig0)   # R3b: nota suave del lector que respalda al documento
+    doc["notas"] = notas_digitos(doc, dict(ctx or {}, digitos=visto))
     doc["lectura"] = dict(
         pasadas=pasadas, nitidez=round(nit["laplaciano"], 1), tenengrad=round(nit["tenengrad"], 1), borrosa=borrosa,
         segundos=round(reloj() - t0, 2),

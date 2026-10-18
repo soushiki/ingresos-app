@@ -31,8 +31,19 @@ doc = dict(tipo="venta", numero="85560", hora="20:01", detalle="Mesa M2", medio=
            consumo=45000, domicilio=0, propina=0, pagado=60000, cambio=15000, efectivo=45000)
 chk(validar(doc, {"digitos": {85560, 45000, 60000}}) == [], "R3: todo aparece → sin motivos")
 chk(validar(doc, {"digitos": None}) == [] and validar(doc) == [], "R3: None o ausente → se salta")
-chk(validar(doc, {"digitos": {45000, 60000}}) == ["Tesseract no ve el número de recibo (85560) en la imagen"], "R3: falta número")
-chk(validar(doc, {"digitos": {85560, 60000}}) == ["Tesseract no ve el total (45.000) en la imagen"], "R3: falta total")
-chk(validar(doc, {"digitos": {85560, 45000}}) == ["Tesseract no ve lo pagado (60.000) en la imagen"], "R3: falta pagado")
-chk(len(validar(doc, {"digitos": set()})) == 3, "R3: nada visto → tres motivos")
+from parser_module.contable.validar import notas_digitos
+N = lambda v, **c: notas_digitos(doc, {**c, "digitos": v})
+# R3b: no ver → nota suave, nunca motivo
+chk(validar(doc, {"digitos": {45000, 60000}}) == [] and validar(doc, {"digitos": set()}) == [], "R3b: no ver ≠ dudoso (sin motivos)")
+chk(N({45000, 60000}) == ["Sin confirmar por segundo lector: el número de recibo (85560)"], "R3b: nota del número")
+chk(N({85560, 60000}) == ["Sin confirmar por segundo lector: el total (45.000)"], "R3b: nota del total")
+chk(N({85560, 45000}) == ["Sin confirmar por segundo lector: lo pagado (60.000)"], "R3b: nota de lo pagado")
+chk(len(N(set())) == 3 and N({85560, 45000, 60000}) == [] and N(None) == [] and notas_digitos(doc, None) == [], "R3b: nada visto → 3 notas; todo visto/None → ninguna")
+# distinto con contexto → dudoso
+m = validar(doc, {"digitos": {85561, 45000, 60000}, "esperados": [85560, 85561]})
+chk(len(m) == 1 and "85561" in m[0] and "85560" in m[0], f"R3b: ve otro número del nombre de la foto → dudoso ({m})")
+chk(validar(doc, {"digitos": {85561, 45000, 60000}}) == [] and validar(doc, {"digitos": {85561, 45000, 60000}, "esperados": [85560, 85562]}) == [],
+    "R3b: sin contexto (o si el otro no está en el nombre) solo hay nota")
+chk(validar(doc, {"digitos": {85560, 45000, 60000}, "esperados": [85560, 85561]}) == [], "R3b: ve el suyo además de otro → bien")
+m = validar(doc, {"digitos": {85560, 30000, 60000}}); chk(m == [], "R3b: ve otro monto cualquiera → solo nota (las sumas ya son R1)")
 sys.exit(1 if fallos else 0)
