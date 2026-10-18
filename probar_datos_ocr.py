@@ -315,4 +315,12 @@ ie, im, ii = cab.index("Recibo"), cab.index("Motivo si es dudoso"), cab.index("I
 fl = [f_ for f_ in ws12.iter_rows(min_row=2, values_only=True) if f_[ii] == "dud1"]
 chk(fl and fl[0][ie] == "dudoso" and "51.500" in fl[0][im], f"Excel: columnas Recibo y Motivo ({cab[ie]}, {cab[im]})")
 chk(all(f_[ie] in ("validado", "dudoso", "revisado") for f_ in ws12.iter_rows(min_row=2, values_only=True) if f_[ii]), "Excel: todo papel trae su estado")
+
+# FIX-12 · «dudoso» lleva su propio color en DATOS OCR; los demás avisos siguen en amarillo
+from parser_module.contable.exportar import AMARILLO, NARANJA
+color = lambda id_: [f_[0].fill.fgColor.rgb[-6:] for f_ in ws12.iter_rows(min_row=2) if f_[ii].value == id_]
+chk(color("dud1") and all(c == NARANJA for c in color("dud1")), "Excel: la fila de un dudoso va en su color propio (no amarillo)")
+ia, ix = cab.index("Aviso"), cab.index("Estado")
+otras = [f_[0].fill.fgColor.rgb[-6:] for f_ in ws12.iter_rows(min_row=2) if f_[ie].value != "dudoso" and (f_[ia].value or f_[ix].value != "ok")]
+chk(otras and all(c == AMARILLO for c in otras), f"Excel: otra fila con aviso sigue en amarillo ({len(otras)})")
 print("\nTODO BIEN" if ok else "\nHAY FALLOS")

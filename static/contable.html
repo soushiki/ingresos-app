@@ -57,7 +57,7 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 .rv .rf{flex:1;min-width:0}.rv h3{margin:0 0 6px;font-size:15px}.rv .mot{background:var(--warn);border:1px solid var(--warnb);border-radius:8px;padding:6px 8px;margin-bottom:8px;font-size:13px}
 .rv .rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.rv label{display:block;font-size:11px;text-transform:uppercase;color:#17466f}.rv input[type=text],.rv select{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px}
 .rv .cd{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.rv .cd button{padding:1px 7px;font-size:12px;min-height:0;background:#fff;color:var(--pri2);border:1px solid var(--line);border-radius:99px}.rv .cd small{color:var(--mut)}
-.rv .pas{font-size:12px;color:var(--mut);margin:6px 0}.rv .ac{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.rv .mot.ok{background:#e2efda;border-color:#a9d08e}.rv .pas{font-size:12px;color:var(--mut);margin:6px 0}.rv .ac{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:1000px){.rv{flex-direction:column}.rv .rimg{flex:none;max-width:100%;width:100%;max-height:45vh}.rv .rf{width:100%}}
 @media(max-width:600px){.rv .rg{grid-template-columns:1fr}.rv .ac button{flex:1 1 140px}.rv input[type=text],.rv select{min-height:40px}}
 @media(max-height:500px) and (orientation:landscape){.rv{flex-direction:row}.rv .rimg{flex:0 0 40%;max-height:80vh}}
@@ -148,7 +148,7 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
   <div class="wrap" style="max-height:30vh;margin-top:8px"><table style="min-width:520px"><thead><tr><th>Nombre</th><th>ID</th><th>Municipio</th><th></th></tr></thead><tbody id="p_tb"></tbody></table></div></div>
 </section></main>
 <main id="m4" hidden><section class="col">
- <div class="bar"><b style="font-size:16px">Revisión de recibos dudosos</b><span class="m">Compara el recorte con lo leído, corrige y confirma: el día se recalcula.</span><span class="sp"></span><button class="g" id="rv_re">↻ Recargar</button></div>
+ <div class="bar"><b style="font-size:16px">Revisión de recibos</b><select id="rv_est" aria-label="Qué recibos ver"><option value="dudoso">Dudosos</option><option value="revisado">Revisados</option></select><span class="m">Compara el recorte con lo leído, corrige y confirma: el día se recalcula.</span><span class="sp"></span><button class="g" id="rv_re">↻ Recargar</button></div>
  <div id="rv_vacio" class="card m" style="text-align:center;padding:26px">No hay recibos dudosos por revisar.</div>
  <div id="rv_ls"></div>
 </section></main>
@@ -369,8 +369,8 @@ $("s_xl").onclick=()=>bajarXl("");$("s_res").addEventListener("click",e=>{if(e.t
 // ── ④ Revisión (T11 · R8): todo con textContent/DOM, nada de innerHTML con datos leídos ──
 const RV_ENT=[["consumo","Consumo"],["propina","Propina"],["domicilio","Domicilio"],["descuento","Descuento"],["cortesia","Cortesía"],["subtotal","Subtotal"],["efectivo","Efectivo"],["tarjeta","Tarjeta"],["transf","Transferencia"],["credito","Fiado"],["pagado","Pagado"],["cambio","Cambio"]],RV_MED=["Efectivo","Tarjeta","Transferencia","Crédito","Mixto"];
 function el(t,p,...k){const e=document.createElement(t);if(p)for(const x in p){if(x==="class")e.className=p[x];else if(x==="onclick")e.onclick=p[x];else e[x]=p[x]}for(const c of k)if(c!=null)e.append(c);return e}
-async function cargarRevision(){let j;try{const r=await fetch("/api/contable/revision?desde=2000-01-01");j=await r.json();if(!r.ok)throw new Error(j.error||r.status)}catch(e){return toast("No se pudo cargar la revisión: "+e.message)}
- $("b4").textContent=j.total;$("rv_vacio").style.display=j.recibos.length?"none":"";const ls=$("rv_ls");ls.replaceChildren(...j.recibos.map(tarjetaRev))}
+async function cargarRevision(){const est=$("rv_est").value;let j;try{const r=await fetch("/api/contable/revision?desde=2000-01-01&estado="+est);j=await r.json();if(!r.ok)throw new Error(j.error||r.status)}catch(e){return toast("No se pudo cargar la revisión: "+e.message)}
+ if(est==="dudoso")$("b4").textContent=j.total;$("rv_vacio").textContent=est==="dudoso"?"No hay recibos dudosos por revisar.":"Aún no hay recibos revisados.";$("rv_vacio").style.display=j.recibos.length?"none":"";const ls=$("rv_ls");ls.replaceChildren(...j.recibos.map(tarjetaRev))}
 function campoRev(k,et,r,sel){const doc=r.documento,cands=((r.lectura||{}).candidatos||{})[k]||[],v=doc[k],c=el("div");c.append(el("label",null,et));
  let inp;if(sel){inp=el("select");for(const o of sel){const op=el("option",null,o);op.value=o;inp.append(op)}if(!sel.includes(v)){const op=el("option",null,v||"—");op.value=v||"";inp.prepend(op)}inp.value=v||""}else{inp=el("input",{type:"text",value:v==null?"":String(v)});if(RV_ENT.some(x=>x[0]===k))inp.inputMode="numeric"}
  inp.dataset.k=k;c.append(inp);const vistos=new Map();for(const x of cands){if(x.valor==null||x.valor==="")continue;const q=String(x.valor);vistos.set(q,(vistos.get(q)||[]).concat(x.variante))}
@@ -378,7 +378,7 @@ function campoRev(k,et,r,sel){const doc=r.documento,cands=((r.lectura||{}).candi
 function tarjetaRev(r){const d=r.documento,card=el("div",{class:"card rv"}),img=el("div",{class:"rimg"});
  if(r.recorte)img.append(el("img",{src:"/api/contable/recorte/"+encodeURIComponent(r.recorte),alt:"Recorte del recibo "+(r.numero||"")}));else img.append(el("div",{class:"m",style:"padding:20px"},"Sin recorte guardado"));
  const f=el("div",{class:"rf"}),L=r.lectura||{};f.append(el("h3",null,`Recibo ${r.numero||"(sin número)"} · ${fmtF(r.fecha)}`));
- f.append(el("div",{class:"mot"},el("b",null,"Motivo: "),(r.motivos.length?r.motivos:["Sin motivo registrado"]).join(" · ")));
+ if(r.estado==="revisado")f.append(el("div",{class:"mot ok"},"✓ Revisado: ya cuenta en el día. Puedes corregirlo otra vez."));else f.append(el("div",{class:"mot"},el("b",null,"Motivo: "),(r.motivos.length?r.motivos:["Sin motivo registrado"]).join(" · ")));
  if(L.pasadas&&L.pasadas.length)f.append(el("div",{class:"pas"},"Pasadas: "+L.pasadas.map(p=>`${p.variante}${p.error?" (error)":p.motivos&&p.motivos.length?" ✗"+p.motivos.length:" ✓"}`).join(" · ")+(L.borrosa?" · foto borrosa":"")));
  const g=el("div",{class:"rg"});g.append(campoRev("numero","Número",r),campoRev("hora","Hora",r),campoRev("medio","Medio",r,RV_MED));for(const [k,et] of RV_ENT)g.append(campoRev(k,et,r));g.append(campoRev("detalle","Detalle",r));f.append(g);
  const ok=el("button",{type:"button"},"✓ Confirmar así"),ed=el("button",{type:"button",class:"g"},"✎ Guardar corrección");
@@ -387,8 +387,8 @@ function tarjetaRev(r){const d=r.documento,card=el("div",{class:"card rv"}),img=
  ok.onclick=()=>enviar(null);
  ed.onclick=()=>{const c={};for(const i of g.querySelectorAll("[data-k]")){const k=i.dataset.k,a=i.value.trim(),v=d[k];if(RV_ENT.some(x=>x[0]===k)){const n=a===""?0:Number(a.replace(/[.\s$]/g,""));if(!Number.isInteger(n)||n<0){i.classList.add("bad");return toast(`${k}: escribe un número entero`)}if(n!==(v||0))c[k]=n}else if(a!==String(v==null?"":v)&&(k!=="medio"||a))c[k]=a}
   if(!Object.keys(c).length)return toast("No cambiaste nada: usa «Confirmar así»");enviar(c)};
- f.append(el("div",{class:"ac"},ok,ed));card.append(img,f);return card}
-$("rv_re").onclick=cargarRevision;
+ f.append(r.estado==="revisado"?el("div",{class:"ac"},ed):el("div",{class:"ac"},ok,ed));card.append(img,f);return card}
+$("rv_re").onclick=$("rv_est").onchange=cargarRevision;
 function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;$("m4").hidden=n!=4;if(n==2)cargarLibro();if(n==3)cargarSoporte();if(n==4)cargarRevision()}
 $("tabs").onclick=e=>{const t=e.target.closest("button");if(t)irTab(t.dataset.tab)};
 $("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};

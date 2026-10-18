@@ -17,6 +17,7 @@ FINO = Border(bottom=Side(style="hair", color="BFBFBF"))
 DATOS_HEAD = {"fecha": "Fecha", "archivo": "Archivo de origen", "tipo": "Tipo", "numero": "Número", "tercero": "Tercero", "detalle": "Detalle", "valor": "Valor",
               "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id", "recibo": "Recibo", "motivo": "Motivo si es dudoso"}
 AMARILLO = "FFF2CC"
+NARANJA = "F8CBAD"   # FIX-12: recibo dudoso, distinto del amarillo de cualquier aviso
 
 
 def texto(c):
@@ -59,7 +60,7 @@ def formula(fx, fila: int, ref_fila, ref_dato) -> str:
 
 
 def hoja_datos(wb, datos: dict) -> dict:
-    """DATOS OCR (R9, ADR-002), primera hoja: una fila por papel y medio de pago. Lo que no está «ok» o trae aviso va en amarillo.
+    """DATOS OCR (R9, ADR-002), primera hoja: una fila por papel y medio de pago. Un recibo dudoso va en naranja; lo demás que no está «ok» o trae aviso, en amarillo.
     Devuelve {fecha: fila de la hoja donde empieza ese día} para que MOVIMIENTOS apunte a sus datos."""
     ws = wb.create_sheet("DATOS OCR"); ws.append(list(DATOS_HEAD.values())); inicio = {}
     for c in ws[1]: c.font = Font(bold=True); c.fill = _f(AZUL); c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -70,7 +71,9 @@ def hoja_datos(wb, datos: dict) -> dict:
             k = ws.max_row; ws.cell(k, 1).number_format = "dd/mm/yyyy"
             for c in ws[k]: texto(c)
             for i in (7, 12, 13): ws.cell(k, i).number_format = '$ #,##0;-$ #,##0;"$ -"'
-            if r["estado"] != "ok" or r["aviso"] or r["recibo"] == "dudoso":
+            if r["recibo"] == "dudoso":
+                for c in ws[k]: c.fill = _f(NARANJA)
+            elif r["estado"] != "ok" or r["aviso"]:
                 for c in ws[k]: c.fill = _f(AMARILLO)
     for i, w in enumerate([12, 40, 14, 10, 26, 30, 14, 16, 11, 12, 36, 12, 12, 10, 10, 12, 44], 1): ws.column_dimensions[L(i)].width = w
     ws.freeze_panes = "A2"; ws.auto_filter.ref = f"A1:{L(len(DATOS_HEAD))}{max(ws.max_row, 2)}"
