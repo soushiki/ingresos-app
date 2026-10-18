@@ -92,6 +92,15 @@ def cruces(doc: dict, vecinos: list) -> list:
     return out
 
 
+def _digitos(doc: dict, vistos) -> list:
+    """R3: número, total y pagado deben estar entre los números que vio Tesseract. vistos=None → se salta."""
+    if vistos is None: return []
+    g = lambda k: doc.get(k) or 0
+    pedidos = [("el número de recibo", _num(doc), str), ("el total", g("consumo") + g("domicilio") + g("propina"), _p),
+               ("lo pagado", g("pagado"), _p)]
+    return [f"Tesseract no ve {et} ({f(n)}) en la imagen" for et, n, f in pedidos if n and n not in vistos]
+
+
 def validar(doc: dict, ctx: dict | None = None) -> list:
     c = {**CONFIG, **(ctx or {})}; tol = c["tolerancia"]; m = []
     if doc.get("tipo", "venta") != "venta": return m
@@ -104,7 +113,7 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
     if esp and _num(doc) is not None and _num(doc) not in set(esp):
         m.append(f"El recibo {_num(doc)} no está en el nombre de la foto ({_lista(esp)})")
     if c.get("vecinos"): m += cruces(doc, c["vecinos"])
-    if doc.get("cortesia"): return m
+    if doc.get("cortesia"): return m + _digitos(doc, c.get("digitos"))
     items, sub = doc.get("items") or [], g("subtotal")
     if c["regla_items"] and items and sub:
         s = sum(i.get("valor", 0) for i in items)
@@ -119,4 +128,4 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
         medios = g("efectivo") + g("tarjeta") + g("transf") + g("credito")
         if abs(pagado - g("cambio") - medios) > tol:
             m.append(f"Los medios de pago suman {_p(medios)} y pagado − cambio es {_p(pagado - g('cambio'))}")
-    return m
+    return m + _digitos(doc, c.get("digitos"))
