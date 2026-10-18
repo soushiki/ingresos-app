@@ -19,7 +19,7 @@ from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS
-from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes
+from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
 from datetime import date
@@ -252,17 +252,22 @@ def _pdf_ok() -> bool:
     except RuntimeError: return False
 
 
-def _leer_hoja(img_bytes: bytes, eng, giro="auto") -> tuple:
-    """Una hoja (foto o página escaneada) → (texto con varios papeles separados por MARCA, segundos, grados girados)."""
+def _motor(eng):
+    """El motor de C5: un recorte (PIL) → texto, con el mismo OCR de siempre (digitize). Un error sube."""
+    def leer(img):
+        b = io.BytesIO(); img.save(b, "PNG"); res = digitize(b.getvalue(), eng)
+        if not res.ok: raise RuntimeError(res.error)
+        return res.text
+    leer.nombre = getattr(eng, "model", None) or getattr(eng, "name", "local"); return leer
+
+
+def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", completa=True) -> dict:
+    """Una hoja (foto o página escaneada) → documentos (T8: cada venta por C5 leer_recibo, R5 con el nombre de la foto),
+    texto con los papeles separados por MARCA, segundos, grados girados y avisos de la hoja («Falta el recibo …»)."""
     png, grados = orientacion.preparar_pagina(img_bytes, giro)
     trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"))
-    textos, seg = [], 0.0
-    for t in trozos:
-        b = io.BytesIO(); t.save(b, "PNG")
-        res = digitize(b.getvalue(), eng)
-        if not res.ok: raise RuntimeError(res.error)
-        textos.append(res.text); seg += res.seconds
-    return f"\n{MARCA}\n".join(textos), round(seg, 2), grados
+    h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar)
+    return {**h, "grados": grados}
 
 
 @app.post("/api/contable/escanear")
@@ -275,21 +280,24 @@ def cont_escanear():
     nombre = request.form.get("ruta") or f.filename or ""
     categoria = request.form.get("categoria", "") or _categoria_por_nombre(nombre)
     giro = request.form.get("giro", "auto"); giro = giro if giro == "auto" else int(giro)
-    data = f.read(); fuente, segundos, grados = "ocr", 0, 0
+    data = f.read(); fuente, segundos, grados, docs, avisos = "ocr", 0, 0, None, []
     try:
-        if (f.filename or "").lower().endswith(".pdf") or data[:4] == b"%PDF":
+        es_pdf = (f.filename or "").lower().endswith(".pdf") or data[:4] == b"%PDF"
+        if es_pdf:
             texto, img = pdflib.pagina(data, int(request.form.get("pagina") or 1), como_imagen=request.form.get("como_imagen") == "1")
             if texto is not None: fuente = "texto"
         else: texto, img = None, data
         if texto is None:
             if SIN_OCR: raise RuntimeError("Este PC está en modo sin OCR: lee las fotos en el PC de lectura e importa aquí sus datos crudos (.json).")
             eng = get_engine(motor, **({"model": modelo} if modelo and motor == "local" else {}))
-            texto, segundos, grados = _leer_hoja(img, eng, giro)
+            completa = not es_pdf or pdflib.info(data)["paginas"] == 1     # R5: una página de un PDF largo no trae todo el lote del nombre
+            h = _leer_hoja(img, eng, giro, categoria, nombre, completa)
+            texto, segundos, grados, docs, avisos = h["texto"], h["segundos"], h["grados"], h["documentos"], h["avisos"]
     except Exception as e:  # noqa: BLE001
         return jsonify(ok=False, error=str(e))
-    docs = _clasificar(leer_texto(texto, categoria))
+    docs = _clasificar(leer_texto(texto, categoria) if docs is None else docs)
     for d in docs: d["origen"] = nombre
-    return jsonify(ok=True, texto=texto, segundos=segundos, fuente=fuente, grados=grados, categoria=categoria, documentos=docs)
+    return jsonify(ok=True, texto=texto, segundos=segundos, fuente=fuente, grados=grados, categoria=categoria, documentos=docs, avisos=avisos)
 
 
 @app.post("/api/contable/releer")

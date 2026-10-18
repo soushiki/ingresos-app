@@ -8,8 +8,8 @@ from __future__ import annotations
 import json, threading, time
 from collections import Counter
 from ocr_module.preprocess import nitidez, variantes
-from .documentos import parse_venta
-from .validar import validar
+from .documentos import MARCA, leer_texto, parse_venta
+from .validar import FALTA, cruces, faltantes, numeros_de_nombre, validar
 from . import recortes
 
 # umbral_laplaciano: sin calibrar (T9 lo fija con N3); 100 sobre ≤1000 px es la regla usual de «borrosa».
@@ -82,3 +82,71 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
         candidatos={k: [dict(valor=c["doc"].get(k), variante=c["variante"], motor=nombre_motor) for c in cands] for k in CAMPOS})
     if carpeta is not None: doc["recorte"] = recortes.guardar(recorte, carpeta)
     return doc
+
+
+def _v0(motor, img, reloj):
+    t = reloj()
+    with MOTOR_LOCK: texto = motor(img)
+    return texto, round(reloj() - t, 2)
+
+
+def _con_v0(motor, texto):
+    """El motor de leer_recibo: la primera llamada (V0) ya se hizo; las relecturas sí van al motor."""
+    hecho = []
+    def leer(img):
+        if not hecho: hecho.append(1); return texto
+        return motor(img)
+    leer.nombre = getattr(motor, "nombre", "local"); return leer
+
+
+def _nums(docs) -> set:
+    return {int(d["numero"]) for d in docs if d.get("tipo") == "venta" and str(d.get("numero") or "").isdigit()}
+
+
+def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=None, separar=None, factor_tope=3.0,
+              tope_s=None, umbral=None, reloj=time.monotonic) -> dict:
+    """C7 · Los recortes de una hoja → documentos. R5, R2, N2.
+    1) V0 de cada recorte (lo de siempre) mide T. 2) Un recorte con UNA venta pasa por leer_recibo con los números del nombre
+    de la foto; los demás (cierres, gastos, varios papeles pegados en un texto) siguen como hoy y la venta solo se valida.
+    3) Si falta un número del nombre (`completa`: la foto es todo el lote), se re-segmenta cada recorte una vez y se relee
+       lo que se parta, si trae un faltante. 4) Montos idénticos entre vecinos → «dudoso».
+    Tope: factor_tope × T para toda la hoja (o `tope_s` segundos); al pasarlo no se relee más (leer_recibo marca «tiempo agotado»)."""
+    esperados = numeros_de_nombre(nombre) if categoria in ("", "comandas") else None
+    ctx = {"esperados": esperados} if esperados else None
+    t0 = reloj(); v0 = [_v0(motor, t, reloj) for t in trozos]
+    tope = t0 + (factor_tope * (reloj() - t0) if tope_s is None else tope_s)
+
+    def un_trozo(img, texto, seg):
+        docs = leer_texto(texto, categoria)
+        if len(docs) == 1 and docs[0]["tipo"] == "venta":
+            extra = [a for a in docs[0]["avisos"] if a not in parse_venta(texto)["avisos"]]   # p. ej. «lo subiste como comandas…»
+            d = leer_recibo(img, _con_v0(motor, texto), ctx, limite_s=max(0.0, tope - reloj()), carpeta=carpeta, umbral=umbral, reloj=reloj)
+            d["avisos"] = extra + d["avisos"]
+            d["lectura"]["pasadas"][0]["segundos"] = seg; d["lectura"]["segundos"] = round(d["lectura"]["segundos"] + seg, 2)
+            return [d], d["texto"]
+        ventas = [d for d in docs if d["tipo"] == "venta"]
+        nombre_rec = recortes.guardar(img, carpeta) if carpeta is not None and ventas else None
+        for d in ventas:
+            d["motivos"] = validar(d, ctx); d["estado"] = "dudoso" if d["motivos"] else "validado"
+            if nombre_rec: d["recorte"] = nombre_rec
+        return docs, texto
+
+    grupos = [un_trozo(img, *v) for img, v in zip(trozos, v0)]
+    todos = lambda: [d for g, _ in grupos for d in g]
+    falta = faltantes(todos(), esperados) if esperados and completa and _nums(todos()) else []
+    if falta and separar:
+        for i, img in enumerate(trozos):
+            if not falta or reloj() >= tope: break
+            partes = separar(img)
+            if len(partes) < 2: continue
+            nuevos = [un_trozo(p, *_v0(motor, p, reloj)) for p in partes]
+            docs = [d for g, _ in nuevos for d in g]
+            if (_nums(docs) - _nums(grupos[i][0])) & set(falta):
+                grupos[i] = (docs, f"\n{MARCA}\n".join(t for _, t in nuevos)); falta = faltantes(todos(), esperados)
+    ventas = [d for d in todos() if d["tipo"] == "venta"]
+    for d in ventas:
+        c = cruces(d, ventas)
+        if c: d["motivos"] = list(d.get("motivos") or []) + c; d["estado"] = "dudoso"
+    avisos = [FALTA.format(n) for n in falta]
+    if avisos and ventas: ventas[0]["avisos"] = list(ventas[0]["avisos"]) + avisos
+    return dict(documentos=todos(), texto=f"\n{MARCA}\n".join(t for _, t in grupos), segundos=round(reloj() - t0, 2), avisos=avisos)
