@@ -19,7 +19,7 @@ from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS
-from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs
+from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
 from datetime import date
@@ -316,6 +316,17 @@ def cont_aprender():
     if str(j.get("cuenta", "")) not in CATALOGO: return jsonify(error="Cuenta desconocida"), 400
     CLASIF.aprender(str(j["cuenta"]), str(j.get("tercero", "")), str(j.get("detalle", "")))
     return jsonify(ok=True)
+
+
+RUTA_RECORTES = DATOS / "recortes"
+
+
+@app.get("/api/contable/recorte/<nombre>")
+def cont_recorte(nombre):
+    """ADR-006: sirve solo nombres <16 hex>.jpg de datos/recortes."""
+    b = recortes.abrir(nombre, RUTA_RECORTES)
+    if b is None: return jsonify(error="sin recorte"), 404
+    return send_file(io.BytesIO(b), mimetype="image/jpeg")
 
 
 @app.get("/api/contable/libro")
