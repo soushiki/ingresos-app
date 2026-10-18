@@ -19,7 +19,9 @@ def leer_hoja_v0(ruta: Path, pagina: int, motor) -> str:
         if texto is not None: return texto
     png, _ = orientacion.preparar_pagina(data, "auto")
     out = []
-    for t in orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB")):
+    from parser_module.contable.validar import numeros_de_nombre
+    esperados = numeros_de_nombre(ruta.stem) if ruta.parent.name in ("comandas", "comanda") else None   # T8b, como app._leer_hoja
+    for t in orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None):
         b = io.BytesIO(); t.save(b, "PNG")
         r = digitize(b.getvalue(), motor)
         if not r.ok: raise RuntimeError(r.error)
