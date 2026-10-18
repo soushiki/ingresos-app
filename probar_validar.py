@@ -52,4 +52,27 @@ chk(cruces(a, [a, b]) == ["Mismos montos que el recibo 85561 con distinta mesa u
 chk(validar(a, {"vecinos": [a, doc(numero="85561", hora="21:15")]}) == ["Mismos montos que el recibo 85561 con distinta mesa u hora: posible cruce de valores"], "montos idénticos con otra hora, por ctx")
 chk(cruces(a, [doc(numero="85561")]) == [], "misma mesa y hora: no es cruce")
 chk(cruces(a, [doc(numero="85561", detalle="Mesa M5", cambio=500, pagado=52000)]) == [], "solo el consumo igual (otro pago): no es cruce")
+# T14 · R6: catálogo de precios (carta). Precio ≠ carta → motivo; línea ilegible → precio sugerido, a la vista
+import json, os, tempfile
+from parser_module.contable import catalogo
+carta = {"PLATO": 40000, "JUGO": 10000}
+chk(validar(doc(), {"catalogo": carta}) == [] and validar(doc(), {"catalogo": None}) == [], "R6: precios iguales o sin catálogo → nada")
+d = doc(items=[dict(cant=1, nombre="PLATO", valor=40000), dict(cant=1, nombre="jugo ", valor=12000)], subtotal=52000)
+chk(validar(d, {"catalogo": carta, "regla_items": False, "tolerancia": 99999}) == ["JUGO cuesta 12.000 en el recibo y 10.000 en la carta"], "R6: precio ≠ carta → motivo")
+d = doc(items=[dict(cant=2, nombre="JUGO", valor=20000), dict(cant=1, nombre="PLATO", valor=40000)], subtotal=60000)
+chk(validar(d, {"catalogo": carta, "tolerancia": 99999}) == [], "R6: cantidad 2 compara el precio unitario")
+d = doc(items=[dict(cant=2, nombre="JUGO", valor=0), dict(cant=1, nombre="PLATO", valor=40000)])
+mm = validar(d, {"catalogo": carta, "regla_items": False})
+chk(mm == ["Línea ilegible «JUGO»: precio sugerido por la carta 20.000"] and d["items"][0]["valor"] == 0, "R6: ilegible → sugerido en motivo, sin reemplazar el valor")
+chk(validar(doc(items=[dict(cant=1, nombre="RARO", valor=0)]), {"catalogo": carta, "regla_items": False}) == [], "R6: producto fuera de la carta → no inventa")
+# catálogo: solo validados/revisados, el más frecuente, «manual» sobrevive
+ok = lambda v, **k: doc(items=[dict(cant=1, nombre="Plato", valor=v)], **k)
+docs = [ok(40000), ok(40000), ok(39000), ok(99000, estado="dudoso"), ok(41000, estado="dudoso", revisado=True)]
+chk(catalogo.construir(docs) == {"PLATO": 40000}, "catálogo: ignora dudosos, toma el precio más frecuente")
+with tempfile.TemporaryDirectory() as t:
+    ruta = os.path.join(t, "datos", "catalogo.json")
+    chk(catalogo.cargar(ruta) == {}, "catálogo: sin archivo → vacío")
+    catalogo.reconstruir(docs, ruta)
+    j = json.load(open(ruta, encoding="utf-8")); j["manual"] = {"Jugo": 9000, "plato": 42000}; json.dump(j, open(ruta, "w", encoding="utf-8"))
+    chk(catalogo.reconstruir(docs, ruta) == {"PLATO": 42000, "JUGO": 9000}, "catálogo: lo manual gana y se conserva al reconstruir")
 print("\n" + ("TODO OK" if not fallos else f"{len(fallos)} FALLOS")); sys.exit(1 if fallos else 0)

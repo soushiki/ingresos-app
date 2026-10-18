@@ -5,6 +5,8 @@ ctx (todo opcional):
   tolerancia   pesos de diferencia aceptados en cada suma (por defecto 0)
   regla_items  False apaga «ítems → subtotal» (T2: la suma de ítems solo cuadra en ~72 % de los recibos de septiembre)
   esperados    números que trae el nombre de la foto (R5); `rango` (desde, hasta) sirve igual
+  digitos      números que vio Tesseract (R3); None/ausente se salta
+  catalogo     {PRODUCTO: precio unitario} de catalogo.cargar() (R6); ausente/vacío se salta
   vecinos      los demás recibos de la misma foto (R5: montos idénticos con distinta mesa u hora)
 """
 import re
@@ -101,6 +103,19 @@ def _digitos(doc: dict, vistos) -> list:
     return [f"Tesseract no ve {et} ({f(n)}) en la imagen" for et, n, f in pedidos if n and n not in vistos]
 
 
+def _carta(doc: dict, precios) -> list:
+    """R6: precio ≠ carta → dudoso; línea sin precio → se SUGIERE el de la carta (aviso, no reemplaza nada). precios=None/vacío → se salta."""
+    if not precios: return []
+    from .catalogo import clave, unitario, sugerencias
+    m = []
+    for i in doc.get("items") or []:
+        k, u = clave(i.get("nombre")), unitario(i)
+        if k in precios and u is not None and u != precios[k]:
+            m.append(f"{k} cuesta {_p(u)} en el recibo y {_p(precios[k])} en la carta")
+    m += [f"Línea ilegible «{k}»: precio sugerido por la carta {_p(v)}" for _, k, v in sugerencias(doc, precios)]
+    return m
+
+
 def validar(doc: dict, ctx: dict | None = None) -> list:
     c = {**CONFIG, **(ctx or {})}; tol = c["tolerancia"]; m = []
     if doc.get("tipo", "venta") != "venta": return m
@@ -113,7 +128,7 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
     if esp and _num(doc) is not None and _num(doc) not in set(esp):
         m.append(f"El recibo {_num(doc)} no está en el nombre de la foto ({_lista(esp)})")
     if c.get("vecinos"): m += cruces(doc, c["vecinos"])
-    if doc.get("cortesia"): return m + _digitos(doc, c.get("digitos"))
+    if doc.get("cortesia"): return m + _digitos(doc, c.get("digitos")) + _carta(doc, c.get("catalogo"))
     items, sub = doc.get("items") or [], g("subtotal")
     if c["regla_items"] and items and sub:
         s = sum(i.get("valor", 0) for i in items)
@@ -128,4 +143,4 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
         medios = g("efectivo") + g("tarjeta") + g("transf") + g("credito")
         if abs(pagado - g("cambio") - medios) > tol:
             m.append(f"Los medios de pago suman {_p(medios)} y pagado − cambio es {_p(pagado - g('cambio'))}")
-    return m + _digitos(doc, c.get("digitos"))
+    return m + _digitos(doc, c.get("digitos")) + _carta(doc, c.get("catalogo"))

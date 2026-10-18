@@ -13,7 +13,7 @@ next: 5-implement   # plan 2026-10-18
 - [x] 2-requirements   (aprobado 2026-10-17)
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
-- [ ] 5-implement      current task: T13 hecho; sigue T14
+- [ ] 5-implement      current task: T14 hecho; sigue T15
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -52,3 +52,4 @@ next: 5-implement   # plan 2026-10-18
 2026-10-18 | 5-implement | T11: pestaña ④ Revisión (recorte, motivo, pasadas, candidatos clicables, confirmar/editar) + @media ancho/alto; probada en navegador: corregir 85299 recalcula el 01/09; 375 px sin scroll; datos restaurados
 2026-10-18 | 5-implement | T12: DATOS OCR suma columnas Recibo (estado_de) y Motivo; fila amarilla si dudoso; avisos del día con motivo de cada venta dudosa (revisado no avisa); probar_datos_ocr +6 checks; suite verde; tocó asientos.py/exportar.py en vez de excel_export.py
 2026-10-18 | 5-implement | T13: digitos.numeros_tesseract (lista blanca, sin Tesseract → None + aviso) + R3 en validar (ctx["digitos"]; None → se salta); probar_digitos 10 checks; suite verde; OJO: relectura aún no pasa ctx["digitos"] → cablear en T14/T16
+2026-10-18 | 5-implement | T14: catalogo.py ({auto,manual} en datos/catalogo.json, manual gana; cargar/reconstruir/desde_libro) + R6 en validar (precio ≠ carta → dudoso; línea ilegible → «precio sugerido», no reemplaza); probar_validar +8 checks; suite verde; OJO T16: nadie llama desde_libro y relectura/app no pasan ctx["catalogo"] ni ctx["digitos"]
