@@ -5,7 +5,7 @@ goal: Bajar el margen de error del OCR de recibos (hoy ≈40 % necesita correcci
 size: M      # varios días; toca ocr_module y el parser; sin datos externos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 7-release   # v1.1.0 commiteada; falta smoke it. 5 del usuario → merge/tag/push
+next: 8-maintain   # v1.1.0 publicada; pendientes en 08-maintenance (metas N3, re-corrida T16)
 current task: —
 
 ## Stages
@@ -16,7 +16,7 @@ current task: —
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
 - [x] 5-implement      T1–T16 hechos (T16: metas N3 no cumplidas, ver 08-maintenance)
 - [x] 6-test         → 06-test-report.md (it. 5: suite verde; 1 hallazgo → FIX-14)
-- [ ] 7-release
+- [x] 7-release      → 07-release.md (v1.1.0)
 - [ ] 8-maintain
 
 (Mark skipped stages `- [~]`.)
@@ -76,3 +76,4 @@ current task: —
 2026-10-18 | 5-implement | FIX-14: _catalogo() siempre rehace «auto» con desde_libro (cargar solo si el libro falla; manual gana); probar_revision +2 checks, 1 ajustado; 17 suites verdes
 2026-10-18 | 7-release | v1.1.0 preparada: VERSION, CHANGELOG, 07-release.md (runbook al día); pre-flight verde (17/17, debug off, 127.0.0.1, sin claves). Bloqueo: 01b/01c con cifras reales en git desde 4e1c487 (sin push) → decidir antes de push
 2026-10-18 | 7-release | Historia sin push reescrita (sin 01b/01c ni nombre del local; respaldo backup/pre-rewrite-v1.1.0); spike lee nombre/dirección de .env; v1.1.0 commiteada; merge/tag/push tras smoke it. 5
+2026-10-18 | 7-release | v1.1.0 publicada: smoke it. 5 pasa (usuario); main merge --no-ff, tag v1.1.0, push main + tags
