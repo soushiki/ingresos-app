@@ -169,5 +169,21 @@ av = [c for c in wb["AVISOS"]["A"]] if "AVISOS" in wb.sheetnames else []
 chk(n_mov == 0 and any("sin código" in str(c.value) for c in av), f"fila sin código: {n_mov} filas en MOVIMIENTOS y aviso en la hoja AVISOS")
 wb2 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-13": r3["filas"]})))
 chk("AVISOS" not in wb2.sheetnames, "sin filas malas no hay hoja AVISOS")
+# T4 · estado/motivos/lectura/recorte: `_base` usa estado == "revisado" (migra el viejo `revisado`) y todo viaja por el .json crudo v1
+from parser_module.contable.asientos import estado_de
+from parser_module.contable.exportar import crudo, leer_crudo
+chk((estado_de({}), estado_de({"avisos": ["x"]}), estado_de({"avisos": ["x"], "revisado": True}), estado_de({"estado": "dudoso", "revisado": True})) == ("validado", "dudoso", "revisado", "dudoso"),
+    "T4: estado se migra al leer (sin estado: validado/dudoso; `revisado` viejo → revisado)")
+t4 = dict(leer_texto(VENTA)[0], avisos=["los pagos no cuadran"])
+av4 = lambda **k: construir("2026-09-12", [dict(t4, **k)])["avisos"]
+chk(any("los pagos no cuadran" in a for a in av4()) and any("los pagos no cuadran" in a for a in av4(estado="dudoso")), "T4: un recibo con avisos sin revisar los muestra")
+chk(not any("los pagos no cuadran" in a for a in av4(estado="revisado")) and not any("los pagos no cuadran" in a for a in av4(revisado=True)), "T4: estado «revisado» (o el viejo revisado) silencia sus avisos")
+cand = lambda v, var, m: dict(valor=v, variante=var, motor="qwen2.5vl")
+lec = dict(pasadas=3, candidatos={c: [cand(1000, "V0", 0), cand(1000, "V1", 0), cand(900, "V2", 0)] for c in ("consumo", "propina", "efectivo", "tarjeta", "numero")},
+           nitidez=0.8, tenengrad=123.5, segundos=14.2)
+t4l = dict(t4, id="2026-09-12/t4", estado="dudoso", motivos=["Los medios de pago suman 51.500 y pagado − cambio es 52.000"], lectura=lec, recorte="ab12cd34.jpg")
+lib4 = {"2026-09-12": dict(fecha="2026-09-12", documentos=[t4l], banco={}, cierre={}, guardado="2026-09-12T08:00:00")}
+d4, m4 = leer_crudo(crudo(lib4))
+chk(not m4 and d4[0]["documentos"][0] == t4l, "T4: documento con lectura completa (candidatos, motivos, recorte) hace la ida y vuelta por el .json crudo v1")
 import tempfile, os; open(os.path.join(tempfile.gettempdir(), "libro_prueba.xlsx"), "wb").write(x)
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

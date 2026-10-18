@@ -229,6 +229,13 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
     return datos
 
 
+def estado_de(d: dict) -> str:
+    """Estado del recibo: validado | dudoso | revisado (03 §4). Migración al leer, sin tocar el documento: sin `estado`, el viejo
+    `revisado: true` pasa a «revisado»; si no, «validado» sin avisos y «dudoso» con avisos."""
+    if d.get("estado") in ("validado", "dudoso", "revisado"): return d["estado"]
+    return "revisado" if d.get("revisado") else "dudoso" if d.get("avisos") else "validado"
+
+
 def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None) -> dict:
     cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; banco = banco or {}; filas, avisos, pendientes = [], [], []
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
@@ -349,7 +356,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         j = fila(x["cuenta"], ter, desc, deb=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["dato", i])
         fila(EFECTIVO if ef else BANCO, ter, desc, cre=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["fila", j])
     for d in docs:
-        if d["tipo"] in ("venta", "gasto_caja", "factura") and d.get("avisos") and not d.get("revisado"):
+        if d["tipo"] in ("venta", "gasto_caja", "factura") and d.get("avisos") and estado_de(d) != "revisado":
             avisos += [f"{d['tipo'].replace('_', ' ').capitalize()} {d['numero'] or ''}: {a}".replace("  ", " ") for a in d["avisos"]]
     cie = {**datos_cierre(todos), **{k: int(v) for k, v in (cierre or {}).items() if v is not None}}
     cruces, faltan = cruzar([d for d in todos if d["tipo"] != "cierre"], cie)

@@ -13,7 +13,7 @@ next: 5-implement   # plan 2026-10-18
 - [x] 2-requirements   (aprobado 2026-10-17)
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
-- [ ] 5-implement      current task: T4 (estado/motivos/lectura)
+- [ ] 5-implement      current task: T5 (recortes.py + GET recorte)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -40,3 +40,4 @@ next: 5-implement   # plan 2026-10-18
 2026-10-18 | 5-implement | T1: referencia.py + medir_precision.py + probar_precision.py (9 checks); suite verde; corrida real de línea base pendiente (fotos de sept. + Ollama)
 2026-10-18 | 5-implement | T2: parse_venta saca items/subtotal/pagado/cambio/hora; subtotal 95,3 % (450/472) sobre OCR guardado de sept.; suma de ítems = subtotal solo 71,6 % → regla de ítems de T3 con tolerancia/aviso
 2026-10-18 | 5-implement | T3: validar.py puro (4 campos + 4 sumas, tolerancia 0, regla_items apagable); probar_validar.py 16 checks; aún sin llamar (T8)
+2026-10-18 | 5-implement | T4: estado_de(d) migra al leer (revisado viejo → «revisado», avisos → «dudoso», si no «validado»); _base usa estado; lectura completa ida y vuelta por crudo v1 (anidado 5); ojo T10: referencia.py:31 aún lee `revisado`
