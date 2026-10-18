@@ -5,10 +5,10 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 1-research   # tras confirmar meta y tamaño (preguntas en el log)
+next: 1-research
 
 ## Stages
-- [x] 0-triage       (propuesto 2026-10-18; preguntas abiertas en el log)
+- [x] 0-triage       (confirmado por el usuario 2026-10-18)
 - [ ] 1-research     (ligera: los 13 omitidos uno por uno → causa: corte, número, lectura)
 - [ ] 2-requirements   (gate: user approval)
 - [ ] 3-design         (gate: user approval)
@@ -38,3 +38,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 ## Log
 <!-- YYYY-MM-DD | stage | one-line result -->
 2026-10-18 | 0-triage | Ciclo nuevo M-13 «recibos omitidos», tamaño M, exposed no; ciclo precisión OCR archivado (archive/precision-ocr/). Preguntas: (1) meta ≤ 2 % omitidos en la referencia [def. sí]; (2) primero «falta N» a mano en ④ y luego leer mejor [def. los dos, a mano primero]; (3) consejos de foto (fondo oscuro liso, una columna) en el LEEME, sin obligar [def. sí]
+2026-10-18 | 0-triage | Confirmado por el usuario: meta ≤ 2 % omitidos (N3); orden = «falta N» a mano en ④ primero, luego mejor corte/lectura; consejos de foto en el LEEME (sin obligar); tamaño M
