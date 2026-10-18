@@ -5,8 +5,8 @@ goal: Bajar el margen de error del OCR de recibos (hoy ≈40 % necesita correcci
 size: M      # varios días; toca ocr_module y el parser; sin datos externos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 6-test   # re-test tras la iteración 5 (FIX-1..13 + R3b)
-current task: iteración 5 completa
+next: 7-release   # smoke it. 5 pendiente del usuario
+current task: —
 
 ## Stages
 - [x] 0-triage       (propuesto 2026-10-17; preguntas abiertas en el log)
@@ -15,7 +15,7 @@ current task: iteración 5 completa
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
 - [x] 5-implement      T1–T16 hechos (T16: metas N3 no cumplidas, ver 08-maintenance)
-- [x] 6-test         → 06-test-report.md (suite verde; 10 hallazgos → FIX-1..10)
+- [x] 6-test         → 06-test-report.md (it. 5: suite verde; 1 hallazgo → FIX-14)
 - [ ] 7-release
 - [ ] 8-maintain
 
@@ -72,3 +72,5 @@ current task: iteración 5 completa
 2026-10-18 | 5-implement | FIX-11: spike_google_vision.py → spikes/ (BASE sube un nivel, sys.path a la raíz; usos en el docstring); suite verde
 2026-10-18 | 5-implement | FIX-12: ④ con selector Dudosos/Revisados (88/230); DATOS OCR pinta dudoso en naranja, otros avisos amarillo; probar_datos_ocr +2 checks; suite verde
 2026-10-18 | 5-implement | R3b: Tesseract no ve → nota «Sin confirmar por segundo lector» (ℹ en Revisión, no dudoso); dudoso solo si lee otro número del nombre; total/pagado distinto → nota (aceptado, R1 cubre); probar_digitos +8, probar_relectura +2; 17 suites verdes; iteración 5 completa
+2026-10-18 | 6-test | It. 5: 17 suites verdes; FIX-1..13 + R3b con checks; revisión a mano: catálogo R6 nunca se rehace si ya tiene precios → FIX-14; smoke it. 5 pendiente del usuario
+2026-10-18 | 5-implement | FIX-14: _catalogo() siempre rehace «auto» con desde_libro (cargar solo si el libro falla; manual gana); probar_revision +2 checks, 1 ajustado; 17 suites verdes

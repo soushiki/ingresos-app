@@ -272,10 +272,8 @@ def _catalogo() -> dict:
     global _PRECIOS
     if _PRECIOS is not None: return _PRECIOS
     from parser_module.contable import catalogo
-    precios = catalogo.cargar()
-    if not precios:
-        try: precios = catalogo.desde_libro(_leer_libro())
-        except Exception: precios = {}   # noqa: BLE001
+    try: precios = catalogo.desde_libro(_leer_libro())   # FIX-14: siempre rehace «auto» desde el libro (manual gana)
+    except Exception: precios = catalogo.cargar()   # noqa: BLE001  sin libro legible → lo que haya en el archivo
     _PRECIOS = precios; return precios
 
 

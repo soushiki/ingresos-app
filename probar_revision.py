@@ -116,9 +116,18 @@ from parser_module.contable import catalogo as cat
 llamadas = []
 cat.cargar, cat.desde_libro = (lambda *a, **k: llamadas.append("cargar") or {}), (lambda *a, **k: llamadas.append("desde_libro") or {"cafe": 3000})
 web._PRECIOS = None
-chk(web._catalogo() == {"cafe": 3000} and web._catalogo() == {"cafe": 3000} and llamadas == ["cargar", "desde_libro"], "catálogo: dos escaneos → se arma y escribe una sola vez")
+chk(web._catalogo() == {"cafe": 3000} and web._catalogo() == {"cafe": 3000} and llamadas == ["desde_libro"], "catálogo: dos escaneos → se arma y escribe una sola vez")
 r = cl.post(URL + "aaaa0001", json={})
 chk(r.status_code == 200 and web._PRECIOS is None and web._catalogo() == {"cafe": 3000} and llamadas.count("desde_libro") == 2, "catálogo: confirmar en Revisión lo vuelve a armar")
+
+# FIX-14: catalogo.json ya con precios + confirmar un precio nuevo → aparece en _catalogo()
+cat.cargar = lambda *a, **k: {"cafe": 3000}
+cat.desde_libro = lambda *a, **k: {"cafe": 3000, "te": 2000}
+web._PRECIOS = None
+chk(web._catalogo() == {"cafe": 3000, "te": 2000}, "catálogo con precios en archivo: el primer _catalogo() rehace desde el libro")
+cat.desde_libro = lambda *a, **k: {"cafe": 3000, "te": 2000, "pan": 1500}
+r = cl.post(URL + "aaaa0001", json={})
+chk(r.status_code == 200 and web._catalogo().get("pan") == 1500, "catálogo con precios + confirmar un precio nuevo → aparece en _catalogo()")
 
 # FIX-10: un recibo sin número se reemplaza por id (antes cada edición lo volvía a sumar)
 dsn = T / "ref_sin_numero.json"
