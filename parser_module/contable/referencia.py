@@ -73,7 +73,7 @@ def _valor(d, c): return d.get(c, "" if c in ("fecha", "medio") else 0)
 def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto) -> dict:
     """Relee cada foto de la referencia (V0, sin relectura) y compara por número de recibo.
     leer_hoja(ruta, pagina) → texto; leer_texto(texto, categoria) → documentos. Sin libro: no recibe ni escribe nada de él.
-    omitido = el número no aparece (o la foto no se pudo leer). validado = sin avisos; «validado con error» = validado y algún campo distinto."""
+    omitido = el número no aparece (o la foto no se pudo leer). validado = estado distinto de «dudoso»; «validado con error» = validado y algún campo distinto."""
     carpeta = Path(carpeta_fotos)
     por_foto = {}
     for r in ref["documentos"]: por_foto.setdefault((r["foto"], r["pagina"]), []).append(r)
@@ -89,7 +89,7 @@ def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto) -> dict:
             if got is None: omitidos.append(n); continue
             malos = [c for c in CAMPOS if _valor(got, c) != _valor(esp, c)]
             for c in CAMPOS: campos[c]["mal" if c in malos else "ok"] += 1
-            dudoso = bool(got.get("avisos"))
+            dudoso = estado_de(got) == "dudoso"   # por estado, no por avisos: «Foto borrosa» en un validado no es dudoso
             if dudoso: dudosos.append(n)
             elif malos: con_error.append(n)
             if malos: detalle.append({"numero": n, "dudoso": dudoso, "campos": {c: {"esperado": _valor(esp, c), "leido": _valor(got, c)} for c in malos}})

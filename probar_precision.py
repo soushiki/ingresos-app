@@ -84,5 +84,17 @@ infp = medir_precision.ejecutar("2026-09", d, "MOTOR", leer_c, datos=d, variante
 chk(infp["peores"] == 1 and infp["total"] <= 2, "--completo funciona con --peores")
 infm = medir_precision.ejecutar("2026-09", d, "MOTOR", leer_c, datos=d, variante="completo", leer_texto=parsear_c, muestra=1)
 chk(infm["muestra"] == 1, "--completo funciona con --muestra")
+# FIX-2 · dudoso se cuenta por `estado`, no por tener avisos: «Foto borrosa» en un recibo validado no es dudoso
+from parser_module.contable.referencia import medir
+def _doc(n, total, **extra):
+    x = leer_texto(recibo(n, total), "comandas")[0]; x.update(extra); return x
+ref2 = {"mes": "2026-09", "documentos": [{"numero": "100", "foto": "h1.jpg", "pagina": 1, "documento": _doc(100, 50000)},
+                                          {"numero": "101", "foto": "h1.jpg", "pagina": 1, "documento": _doc(101, 30000)},
+                                          {"numero": "102", "foto": "h1.jpg", "pagina": 1, "documento": _doc(102, 20000)}]}
+leidos2 = [_doc(100, 50000, estado="validado", avisos=["Foto borrosa"]), _doc(101, 3000, estado="validado", avisos=["Foto borrosa"]),
+           _doc(102, 20000, estado="dudoso", avisos=["Foto borrosa"], motivos=["x"])]
+inf4 = medir(ref2, d, lambda r, p: "t", lambda t, c: leidos2)
+chk(inf4["dudosos_numeros"] == ["102"], "FIX-2: solo el de estado dudoso cuenta como dudoso (avisos «Foto borrosa» validado no)")
+chk(inf4["validados_con_error_numeros"] == ["101"], "FIX-2: validado con avisos suaves y campo distinto cuenta como validado con error")
 chk(medir_precision.catalogo_del_libro(d / "nada.json") == medir_precision.catalogo_del_libro(d / "nada.json"), "catalogo_del_libro sin libro no falla")
 print("\n" + ("TODO OK" if not fallos else f"{len(fallos)} FALLOS")); sys.exit(1 if fallos else 0)
