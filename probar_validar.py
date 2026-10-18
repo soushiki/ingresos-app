@@ -16,7 +16,12 @@ def doc(**kw):
 chk(validar(doc()) == [], "recibo cuadrado: sin motivos")
 chk(validar(doc(numero="")) == ["Falta el número de recibo"], "falta número")
 chk(validar(doc(hora="")) == ["Falta la hora"], "falta hora")
-chk(validar(doc(detalle="Mesero Yorlin")) == ["Falta la mesa"], "falta mesa")
+sm = lambda **k: [x for x in validar(doc(**k)) if x == "Falta la mesa"]
+chk(sm(detalle="Mesero Yorlin", domicilio=0) == ["Falta la mesa"], "falta mesa")
+chk(sm(detalle="Mesero Yorlin", domicilio=2000) == [], "FIX-4: domicilio > 0 no pide mesa")
+chk(sm(detalle="DOMICILIO Calle 5", domicilio=0) == [], "FIX-4: detalle «domicilio» no pide mesa")
+chk(sm(detalle="Para LLEVAR", domicilio=0) == [], "FIX-4: detalle «llevar» no pide mesa")
+chk(sm(detalle="Para llévar", domicilio=0) == [], "FIX-4: acento no importa")
 chk(validar(doc(medio="")) == ["Falta el medio de pago"], "falta medio")
 chk(validar(doc(subtotal=60000, descuento=15000)) == ["Los ítems suman 50.000 y el subtotal dice 60.000"], "ítems ≠ subtotal")
 chk(validar(doc(subtotal=60000, descuento=15000), {"regla_items": False}) == [], "regla de ítems apagada por config")

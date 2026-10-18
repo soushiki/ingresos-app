@@ -6,7 +6,7 @@ size: M      # varios días; toca ocr_module y el parser; sin datos externos nue
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
 next: 5-implement   # iteración 5: FIX-1..11 + R3b (06-test-report)
-current task: FIX-3 hecho; sigue FIX-4
+current task: FIX-4 hecho; sigue FIX-5
 
 ## Stages
 - [x] 0-triage       (propuesto 2026-10-17; preguntas abiertas en el log)
@@ -62,3 +62,4 @@ current task: FIX-3 hecho; sigue FIX-4
 2026-10-18 | 5-implement | FIX-1: _conservar_revisados agrega el revisado que la relectura no trae y no reusa un previo; probar_revision +4 checks; suite verde
 2026-10-18 | 5-implement | FIX-2: medir cuenta dudoso por estado_de, no por avisos; probar_precision +2 checks; suite verde; re-corrida T16 pendiente (informes sin estado → requiere re-OCR de 107 recibos)
 2026-10-18 | 5-implement | FIX-3: voto que valida sin candidato entero → motivo propio SIN_CANDIDATO (sigue dudoso), ya no los motivos de V0; probar_relectura +4 checks; suite verde
+2026-10-18 | 5-implement | FIX-4: «Falta la mesa» no aplica si domicilio > 0 o detalle dice domicilio/llevar (sin tildes); probar_validar +4 checks; suite verde

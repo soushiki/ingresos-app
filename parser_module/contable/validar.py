@@ -10,6 +10,7 @@ ctx (todo opcional):
   vecinos      los demás recibos de la misma foto (R5: montos idénticos con distinta mesa u hora)
 """
 import re
+import unicodedata
 
 CONFIG = {"tolerancia": 0, "regla_items": True}
 
@@ -122,7 +123,8 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
     g = lambda k: doc.get(k) or 0
     if not doc.get("numero"): m.append("Falta el número de recibo")
     if not doc.get("hora"): m.append("Falta la hora")
-    if "mesa" not in (doc.get("detalle") or "").lower(): m.append("Falta la mesa")
+    det = unicodedata.normalize("NFD", (doc.get("detalle") or "").lower()).encode("ascii", "ignore").decode()
+    if "mesa" not in det and not g("domicilio") > 0 and "domicilio" not in det and "llevar" not in det: m.append("Falta la mesa")
     if not doc.get("medio"): m.append("Falta el medio de pago")
     esp = c.get("esperados") or (range(c["rango"][0], c["rango"][1] + 1) if c.get("rango") else None)
     if esp and _num(doc) is not None and _num(doc) not in set(esp):
