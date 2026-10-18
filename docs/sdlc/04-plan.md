@@ -9,10 +9,10 @@
 - Seguridad (exposed no): validación de `fecha`/`id`/cuerpo/lista blanca va en T4, no al final.
 
 ## Iteración 1 — demo: una foto con un recibo omitido → ④ «Faltan» → «Anotar» con la foto al lado → queda en el libro
-- [ ] T1 (M) `faltantes.py` puro: `crear`, `anotar`, `cerrar`, `abiertos`, `reconciliar` con el esquema del marcador (diseño §4)
+- [x] T1 (M) `faltantes.py` puro: `crear`, `anotar`, `cerrar`, `abiertos`, `reconciliar` con el esquema del marcador (diseño §4)
   — R1 — done when: `probar_faltantes.py` nuevo pasa (crear desde números y desde nombre no entendido; anotar → venta manual con
   `de_foto`; cerrar con motivo ≤ 200; reconciliar: anotado y no_existe no vuelven, abierto sí) — files: `parser_module/contable/faltantes.py`,
-  `probar_faltantes.py` — model: Sonnet
+  `probar_faltantes.py` — model: Sonnet — hecho: faltantes.py puro (crear/anotar/cerrar/abiertos/reconciliar), 15 checks en probar_faltantes.py
 - [ ] T2 (M) Fitness ADR-008 + barrido de `tipo`: asientos, Excel, crudo, `validar.faltantes` y `medir` iguales con y sin marcador
   — R1, riesgo 1 — done when: prueba en `probar_contable.py` (asientos y filas de Excel idénticos con un marcador en el día) pasa;
   `grep 'tipo'` en `asientos.py`, `exportar.py`, `excel_export.py`, `soporte*.py` revisado y lo que no filtra `venta` corregido

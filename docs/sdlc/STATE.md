@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: -
+- [ ] 5-implement      current task: T2 (siguiente)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -45,3 +45,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 3-design | Borrador 03-design.md + ADR-008 (faltante = documento marcador), 009 (nombre acortado: sufijo + aviso; foto 3 = 85334, 85338–341, 85343), 010 (cabecera ampliada solo con faltantes); espera aprobación
 2026-10-18 | 3-design | Aprobado por el usuario tal como está; ADR-008/009/010 aceptados
 2026-10-18 | 4-plan | 04-plan.md: I1 R1+R2+fitness ADR-008 (T1–T6, ≈ 5 h), I2 R3+R4+R6 (T7–T9), I3 compuerta R5 (T10) + R5 (T11, Opus)
+2026-10-18 | 5-implement | T1 faltantes.py puro + probar_faltantes.py (15 comprobaciones); todas las probar_*.py en verde. Ojo T4: lista blanca debe excluir id/fecha de campos
