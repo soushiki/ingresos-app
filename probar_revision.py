@@ -111,6 +111,28 @@ c100 = [d for d in dia()["documentos"] if d["tipo"] == "venta" and d["numero"] =
 chk(r.status_code == 200 and sum(d["id"] == "aaaa0001" for d in c100) == 1, "dos nuevos con la misma clave: el revisado entra una sola vez")
 chk(sorted(d["id"] for d in c100) == ["aaaa0001", "nnnn0006"], "dos nuevos con la misma clave: el segundo queda como lectura nueva")
 
+# M-13 T3: marcadores de foto y releer una foto ya resuelta
+from PIL import Image
+import io
+from parser_module.contable import faltantes, recortes
+web.RUTA_RECORTES = T / "recortes"
+buf = io.BytesIO(); Image.new("RGB", (3000, 2000), "white").save(buf, "PNG")
+ms = web._marcadores_de_foto(buf.getvalue(), [85628, 85630], "sep/85627 al 630.jpg", [venta("v1", "85627", 1000, "validado")])
+chk([m["numero"] for m in ms] == ["85628", "85630"] and all(m["tipo"] == "faltante" and m["fecha"] == FECHA for m in ms), "marcadores: uno por número, con la fecha de la foto")
+foto = recortes.abrir(ms[0]["recorte"], web.RUTA_RECORTES)
+chk(ms[0]["recorte"] == ms[1]["recorte"] and max(Image.open(io.BytesIO(foto)).size) <= 1600, "marcadores: foto entera guardada ≤ 1600 px, una sola")
+chk(web._marcadores_de_foto(b"no es imagen", [1], "x.jpg", [])[0]["recorte"] is None, "foto que no se puede guardar → recorte null")
+orig = "sep/85627 al 630.jpg"
+hecho = faltantes.anotar(faltantes.crear([85628], orig, FECHA, None)[0], {k: v for k, v in _base("venta", "").items() if k not in ("id", "tipo", "avisos")} | {"consumo": 5000, "efectivo": 5000, "medio": "Efectivo"})
+cerrado = faltantes.cerrar(faltantes.crear([85630], orig, FECHA, None)[0], "no existe")
+nuevo = faltantes.crear([85628, 85630, 85631], orig, FECHA, None)
+res = web._conservar_revisados([hecho, cerrado], nuevo)
+chk([d["numero"] for d in res if d["tipo"] == "faltante" and d["estado"] == "falta"] == ["85631"], "releer foto resuelta: solo vuelve el faltante aún abierto")
+chk(sum(d["numero"] == "85628" for d in res) == 1 and any(d["estado"] == "no_existe" for d in res), "releer foto resuelta: sin duplicar el anotado, el «no existe» se conserva")
+lib = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8")); lib[FECHA]["documentos"] += [hecho, cerrado]; web.RUTA_LIBRO.write_text(json.dumps(lib), encoding="utf8")
+r = cl.post("/api/contable/libro", json={"fecha": FECHA, "documentos": [venta("zzzz0001", "101", 20000, "validado")] + nuevo, "reemplazar": True})
+chk(r.status_code == 200 and [d["numero"] for d in dia()["documentos"] if d["tipo"] == "faltante" and d["estado"] == "falta"] == ["85631"], "POST /libro: releer foto resuelta no duplica marcadores")
+
 # FIX-9: el catálogo se arma una vez por arranque (no se reescribe en cada escaneo); confirmar lo invalida
 from parser_module.contable import catalogo as cat
 llamadas = []

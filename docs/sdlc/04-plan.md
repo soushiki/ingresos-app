@@ -17,11 +17,11 @@
   — R1, riesgo 1 — done when: prueba en `probar_contable.py` (asientos y filas de Excel idénticos con un marcador en el día) pasa;
   `grep 'tipo'` en `asientos.py`, `exportar.py`, `excel_export.py`, `soporte*.py` revisado y lo que no filtra `venta` corregido
   — files: `probar_contable.py`, `parser_module/contable/asientos.py`, `parser_module/contable/exportar.py`, `excel_export.py` — model: Sonnet
-- [ ] T3 (M) `relectura.leer_hoja` devuelve `falta`; `app._leer_hoja` guarda la foto entera (`recortes.guardar`, ≤ 1600 px) solo si hay
+- [x] T3 (M) `relectura.leer_hoja` devuelve `falta`; `app._leer_hoja` guarda la foto entera (`recortes.guardar`, ≤ 1600 px) solo si hay
   faltante y añade los marcadores; `_conservar_revisados` pasa por `reconciliar` — R1 — done when: `probar_relectura.py` cubre `falta`
   y `probar_revision.py` cubre releer una foto ya resuelta sin marcador duplicado; foto sin guardar → `recorte:null`
   — files: `parser_module/contable/relectura.py`, `app.py` (`_leer_hoja` ≈ l.280, `_conservar_revisados` ≈ l.388), `probar_relectura.py`,
-  `probar_revision.py` — model: Sonnet
+  `probar_revision.py` — model: Sonnet — hecho: leer_hoja devuelve `falta` (ints); app._marcadores_de_foto guarda la foto ≤1600 px y crea marcadores; _conservar_revisados reconcilia; 3 checks en probar_relectura + 7 en probar_revision
 - [ ] T4 (M) API: `GET /api/contable/revision?estado=falta`, `POST …/<fecha>/<id>/anotar` y `…/no_existe` bajo `LOCK` + `_bloqueos`
   — R1 — done when: `probar_revision.py` prueba anotar, no_existe, 409 en día transmitido, 400 con fecha/id malos, cuerpo > 64 KB,
   campo fuera de lista blanca, motivo > 200, y «anotar» sobre una venta normal → 400 — files: `app.py` (≈ l.408–460), `probar_revision.py`

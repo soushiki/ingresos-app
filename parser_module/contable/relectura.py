@@ -167,4 +167,5 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
         if c: d["motivos"] = list(d.get("motivos") or []) + c; d["estado"] = "dudoso"
     avisos = [FALTA.format(n) for n in falta]
     if avisos and ventas: ventas[0]["avisos"] = list(ventas[0]["avisos"]) + avisos
-    return dict(documentos=todos(), texto=f"\n{MARCA}\n".join(t for _, t in grupos), segundos=round(reloj() - t0, 2), avisos=avisos)
+    return dict(documentos=todos(), texto=f"\n{MARCA}\n".join(t for _, t in grupos), segundos=round(reloj() - t0, 2), avisos=avisos,
+                falta=[int(n) for n in falta])   # M-13: los números que el nombre promete y no se leyeron (app los vuelve marcadores)

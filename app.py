@@ -21,7 +21,7 @@ from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplic
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de
 from parser_module.contable import referencia
-from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura
+from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura, faltantes
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
 from datetime import date
@@ -285,7 +285,20 @@ def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", comp
     trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
     h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar,
                          catalogo=_catalogo(), leer_digitos=numeros_tesseract)
-    return {**h, "grados": grados}
+    h = {**h, "grados": grados}
+    if h.get("falta"): h["documentos"] = h["documentos"] + _marcadores_de_foto(png, h["falta"], nombre, h["documentos"])
+    return h
+
+
+def _marcadores_de_foto(png: bytes, falta: list, nombre: str, docs: list) -> list:
+    """M-13/ADR-008: un marcador por número que falta; la foto entera (≤ 1600 px) se guarda solo si hay faltante. Sin foto → recorte None."""
+    recorte = None
+    try:
+        img = Image.open(io.BytesIO(png)).convert("RGB"); img.thumbnail((1600, 1600))
+        recorte = recortes.guardar(img, RUTA_RECORTES)
+    except Exception: recorte = None   # noqa: BLE001  sin foto guardada el marcador sigue valiendo
+    fecha = next((d.get("fecha") for d in docs if d.get("tipo") == "venta" and d.get("fecha")), "")
+    return faltantes.crear(falta, nombre, fecha or "", recorte)
 
 
 @app.post("/api/contable/escanear")
@@ -372,7 +385,7 @@ def cont_confirmar():
         if fecha in lib and not j.get("reemplazar"): return jsonify(conflicto=[fecha]), 409
         b = _bloqueos(fecha, r["documentos"])
         if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
-        previos = [d for d in lib.get(fecha, {}).get("documentos", []) if estado_de(d) == "revisado"]
+        previos = [d for d in lib.get(fecha, {}).get("documentos", []) if estado_de(d) == "revisado" or (d.get("tipo") == "faltante" and d.get("estado") == "no_existe")]
         if previos:   # T10/R8: volver a leer un día nunca pisa un recibo «revisado»
             r = construir_asientos(fecha, _conservar_revisados(previos, j.get("documentos", [])), j.get("banco", {}), _cont_cfg(), j.get("cierre"))
         lib[fecha] = _dia(fecha, r, j.get("banco", {}), j.get("cierre"))
@@ -387,6 +400,7 @@ def _dia(fecha: str, r: dict, banco: dict, cierre) -> dict:
 
 def _conservar_revisados(previos: list, nuevos: list) -> list:
     """El papel «revisado» guardado gana sobre su relectura (mismo id, o mismo tipo+número+foto de origen)."""
+    nuevos = faltantes.reconciliar(previos, nuevos)   # M-13: un faltante ya anotado o «no existe» no reaparece al releer la foto
     clave = lambda d: (d.get("tipo"), str(d.get("numero", "")), d.get("origen", "")) if d.get("numero") else None
     por_id, por_clave = {d["id"]: d for d in previos}, {clave(d): d for d in previos if clave(d)}
     usados, out = set(), []
