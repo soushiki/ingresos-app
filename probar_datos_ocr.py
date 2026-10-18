@@ -283,7 +283,8 @@ if LIB.exists():
     T19b = Path(tempfile.mkdtemp()); web.RUTA_LIBRO, web.RUTA_CONT = T19b / "libro.json", LIB.parent / "contable.json"
     ji = imp(crudo(lib)).get_json(); li, cfg = web._leer_libro(), web._cont_cfg()
     esp = {f: construir(f, copy.deepcopy(d["documentos"]), d.get("banco", {}), cfg, d.get("cierre")) for f, d in lib.items()}
-    malos = [f for f in lib if f not in li or li[f]["documentos"] != lib[f]["documentos"] or li[f]["filas"] != esp[f]["filas"]]
+    # se compara con lo que construir() deja hoy: si el cálculo cambió (M-8: «duplicado de» se recalcula), lo guardado puede ser de antes
+    malos = [f for f in lib if f not in li or li[f]["documentos"] != esp[f]["documentos"] or li[f]["filas"] != esp[f]["filas"]]
     chk(not ji["invalidos"] and len(ji["nuevos"]) == len(lib) and not malos, f"T19: libro.json real ({len(lib)} días) export → import en vacío: mismos documentos y filas (distintos: {malos[:3]})")
     chk([asdict(g) for g in _sop.semanas(li, None, None, hoy)] == [asdict(g) for g in _sop.semanas(lib, None, None, hoy)], "T19: libro real → mismas semanas")
 # M-6: con el extracto escrito, la propina y el domicilio de las comandas pagadas al banco siguen yendo a 2815 (no todo a ingresos)

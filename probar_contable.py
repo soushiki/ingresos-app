@@ -117,6 +117,45 @@ chk([a.split(":")[0] for a in r6["avisos"] if "secuencia" in a] == ["Comanda 857
     f"comanda 85767 fuera de la secuencia del día (85873–85876) → aviso: {[a for a in r6['avisos'] if 'secuencia' in a]}")
 chk(not any("secuencia" in a for a in r4["avisos"]) and not any("secuencia" in a for a in construir("2026-09-27", sec, cfg={"salto_comanda": 200})["avisos"]),
     "comandas seguidas (90001–90005) sin aviso · el salto tolerado se configura (salto_comanda)")
+# M-8: mismo número de comanda no es duplicado si la hora de venta o la mesa cambian (el OCR leyó mal el número de otro recibo)
+def cmd_hm(n, hora, mesa, iid):
+    return dict(leer_texto(cmd(n, "PAGA CON VISA $40,000", extra=f"Mesa: {mesa}\n").replace("9:00:00 p. m.", hora))[0], id=iid)
+rep = [cmd_hm(85560, "6:42:34 p. m.", "M1", "a"), cmd_hm(85560, "6:42:34 p. m.", "M30", "b"), cmd_hm(85560, "7:39:13 p. m.", "M1", "c")]
+r8 = construir("2026-09-13", rep)
+chk([d["contar"] for d in r8["documentos"]] == [True, True, True] and not any(d["dup_de"] for d in r8["documentos"])
+    and [a for a in r8["avisos"] if "número repetido" in a] == ["Comanda 85560: número repetido en 3 recibos distintos (no coinciden hora, mesa y valores): revisa el número en el papel"],
+    f"85560 con otra mesa u otra hora → los 3 cuentan, con aviso «número repetido: revisa»: {[a for a in r8['avisos'] if 'repetido' in a]}")
+copias = [cmd_hm(85505, "8:10:00 p. m.", "M16", i) for i in "pqrst"]   # la misma foto cargada 5 veces (10-09)
+r9 = construir("2026-09-10", copias)
+chk([d["contar"] for d in r9["documentos"]] == [True, False, False, False, False] and all(d["dup_de"] == "p" for d in r9["documentos"][1:])
+    and not any("repetido" in a for a in r9["avisos"]), "misma comanda, misma hora y mesa (la foto cargada 5 veces) → sigue siendo duplicado, sin aviso")
+otra = lambda d, **k: dict(d, **{"texto": d["texto"] + "\n(otra lectura)", **k})   # mismo papel leído otra vez: el texto no es idéntico
+base = cmd_hm(85580, "7:00:00 p. m.", "M5", "m")
+casos = {"otro valor": [base, otra(base, id="n", consumo=52000, tarjeta=52000)],
+         "sin mesa": [base, otra(base, id="n", texto=base["texto"].replace("Mesa: M5\n", ""), detalle="")],
+         "sin hora": [base, otra(base, id="n", texto=base["texto"].replace("7:00:00 p. m.", ""))]}
+for caso, ds in casos.items():
+    rc = construir("2026-09-13", ds)
+    chk([d["contar"] for d in rc["documentos"]] == [True, True] and any("85580: número repetido en 2" in a for a in rc["avisos"]),
+        f"mismo número, misma hora/mesa pero {caso} → son 2 papeles (falta de datos no los junta), con aviso")
+par = [cmd_hm(85575, "9:09:18 p. m.", "M40", "u"), otra(cmd_hm(85575, "9:09:18 p. m.", "M40", "w"), consumo=0, tarjeta=0)]   # 13-09: uno leyó 0
+rp = construir("2026-09-13", par)
+chk([(d["contar"], d["dup_de"]) for d in rp["documentos"]] == [(True, ""), (False, "u")], "85575 13-09: misma hora y mesa, uno con valores en 0 (no leídos) → sigue siendo duplicado")
+sn = [dict(cmd_hm(85590, "8:00:00 p. m.", "M7", i), numero="") for i in "ghi"] + [dict(cmd_hm(85591, "8:20:00 p. m.", "M7", "j"), numero="")]
+rs = construir("2026-09-10", sn)
+chk([d["contar"] for d in rs["documentos"]] == [True, False, False, True] and rs["documentos"][1]["dup_de"] == "g",
+    "sin número: la misma foto cargada 3 veces cuenta una vez; otro papel sin número (otra hora) cuenta")
+viejo = [cmd_hm(85575, "6:00:00 p. m.", "M2", "x"), dict(cmd_hm(85579, "6:30:00 p. m.", "M4", "y"), dup_de="x", contar=False)]
+r10 = construir("2026-09-13", viejo)
+chk([(d["dup_de"], d["contar"]) for d in r10["documentos"]] == [("", True), ("", True)], "número corregido (85579): el «duplicado de» viejo se borra y vuelve a contar")
+fijo = [cmd_hm(85575, "6:00:00 p. m.", "M2", "x"), dict(cmd_hm(85579, "6:30:00 p. m.", "M4", "y"), dup_de="x", contar=False, manual_contar=True)]
+r11 = construir("2026-09-13", fijo)
+chk([(d["dup_de"], d["contar"]) for d in r11["documentos"]] == [("", True), ("x", False)], "si tú lo desmarcaste a mano (manual_contar) se respeta tal cual")
+
+# M-9: el OCR marca los papeles con «=== DOCUMENTO ===» pero a veces pega dos recibos en un bloque → se parte también por membrete
+pegados = "=== DOCUMENTO ===\n" + cmd(90101, "PAGA CON VISA $40,000") + "\n\n" + cmd(90102, "PAGA CON TRANSFEREN") + "\n=== DOCUMENTO ===\n" + cmd(90103, "EFECTIVO $40,000")
+chk([d["numero"] for d in leer_texto(pegados, "comandas")] == ["90101", "90102", "90103"],
+    f"M-9: dos recibos pegados en un bloque «DOCUMENTO» salen como dos papeles: {[d['numero'] for d in leer_texto(pegados, 'comandas')]}")
 
 # Excel
 x = libro_a_excel({"2026-09-12": r["filas"] + r2["filas"]}, "Mi restaurante", "900.000.000-1")

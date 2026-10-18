@@ -1,7 +1,7 @@
 """Documentos del día → filas del libro (débito/crédito) con tus cuentas y tus frases."""
 from __future__ import annotations
 import json, re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 AQUI = Path(__file__).parent
@@ -123,17 +123,51 @@ def cruzar(docs: list, c: dict) -> tuple:
     return out, falta
 
 
+def firma_venta(d: dict) -> tuple:
+    """M-8: (hora de «Fecha de Venta», mesa) de una comanda, leídas del texto; "" si no se leyó."""
+    t = (d.get("texto") or "").lower()
+    h = re.search(r"fecha de venta\W*\S+\s+(\d{1,2}:\d{2}(?::\d{2})?\s*[ap]\W*m)", t)
+    m = re.search(r"mesa\s*:?\s*([a-z0-9]+)", t) or re.search(r"mesa\s+([a-z0-9]+)", (d.get("detalle") or "").lower())
+    return (re.sub(r"\W", "", h.group(1)) if h else "", m.group(1) if m else "")
+
+
+def misma_venta(a: dict, b: dict) -> bool:
+    """Dos comandas son el mismo papel (foto cargada dos veces) solo si los datos coinciden de verdad: el texto es idéntico, o la hora
+    de «Fecha de Venta» y la mesa se leyeron en las dos y son iguales y los valores no se contradicen. Un dato sin leer NO es
+    coincidencia: papeles distintos cuentan aunque compartan número o no se lea el número (M-8). Un valor 0 cuenta como «no leído»."""
+    if a.get("texto") and a.get("texto") == b.get("texto"): return True
+    (ha, ma), (hb, mb) = firma_venta(a), firma_venta(b)
+    if not (ha and ma and ha == hb and ma == mb): return False
+    total = lambda d: d.get("efectivo", 0) + d.get("tarjeta", 0) + d.get("transf", 0) + d.get("credito", 0)
+    return all(not x or not y or x == y for x, y in ((a.get("consumo", 0), b.get("consumo", 0)), (total(a), total(b))))
+
+
+def numeros_repetidos(docs: list) -> dict:
+    """M-8: número de comanda → cuántas comandas que cuentan lo comparten (recibos distintos con el mismo número leído)."""
+    c = Counter(d["numero"] for d in docs if d.get("tipo") == "venta" and d.get("numero") and d.get("contar"))
+    return {n: k for n, k in c.items() if k > 1}
+
+
 def marcar_duplicados(docs: list) -> list:
-    """El gasto de caja impreso y su «recibo de caja menor» manuscrito son el MISMO gasto: se cuenta uno solo."""
-    vistos = {}
+    """El gasto de caja impreso y su «recibo de caja menor» manuscrito son el MISMO gasto: se cuenta uno solo.
+    Una comanda es duplicada solo si es el mismo papel (misma_venta): con número, frente a las de su número; sin número, frente a todas. En cada pasada se borra el «duplicado de»
+    anterior (si el número se corrigió, vuelve a contar), salvo que tú hayas marcado a mano si cuenta (manual_contar)."""
+    for d in docs:
+        if d.get("tipo") in ("gasto_caja", "venta") and not d.get("manual_contar"): d["dup_de"] = ""
+    vistos, ventas = {}, {}
     for d in docs:
         if d.get("tipo") == "gasto_caja" and d.get("numero"):
             if d["numero"] in vistos: d["dup_de"] = vistos[d["numero"]]
             else: vistos[d["numero"]] = d["id"]
         if d.get("tipo") == "venta" and d.get("numero"):
-            k = "v" + d["numero"]
-            if k in vistos: d["dup_de"] = vistos[k]
-            else: vistos[k] = d["id"]
+            igual = next((o for o in ventas.get(d["numero"], []) if misma_venta(o, d)), None)
+            if igual: d["dup_de"] = igual["id"]
+            else: ventas.setdefault(d["numero"], []).append(d)
+    for d in docs:   # sin número: se compara con todas las comandas que quedaron (con o sin número)
+        if d.get("tipo") == "venta" and not d.get("numero"):
+            igual = next((o for vs in ventas.values() for o in vs if misma_venta(o, d)), None)
+            if igual: d["dup_de"] = igual["id"]
+            else: ventas.setdefault("", []).append(d)
     impresos = {(x["valor"], x["id"]) for x in docs if x.get("tipo") == "gasto_caja" and not x.get("dup_de")}
     usados = set()
     for d in docs:
@@ -321,6 +355,8 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     cruces, faltan = cruzar([d for d in todos if d["tipo"] != "cierre"], cie)
     if faltan: avisos.insert(0, "Faltan comandas del cierre: " + ", ".join(map(str, faltan)))
     if faltan: avisos.append("Falta la comanda " + ", ".join(map(str, faltan)) + " (está en el rango del cierre)")
+    for n, k in sorted(numeros_repetidos(docs).items()):
+        avisos.append(f"Comanda {n}: número repetido en {k} recibos distintos (no coinciden hora, mesa y valores): revisa el número en el papel")
     raros = fuera_de_secuencia(docs, int(cfg["salto_comanda"]))
     if raros:
         ns = sorted({int(d["numero"]) for d in docs if d["tipo"] == "venta" and str(d.get("numero", "")).isdigit()} - set(raros))

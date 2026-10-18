@@ -27,9 +27,9 @@ def montos(s) -> list:
 def separar(texto: str) -> list:
     """Una foto puede traer varios papeles: el OCR los separa con «=== DOCUMENTO ===»."""
     partes = [p.strip() for p in re.split(r"^\s*=+\s*DOCUMENTO\s*=+\s*$", texto or "", flags=re.M | re.I) if p.strip()]
-    if len(partes) == 1 and len(re.findall(r"^\s*SU RESTAURANTE\s*$", partes[0], flags=re.M | re.I)) >= 2:   # sin marcas: parte por membrete
-        partes = [p.strip() for p in re.split(r"(?=^\s*SU RESTAURANTE\s*$)", partes[0], flags=re.M | re.I) if len(p.strip()) > 15]
-    return partes
+    # M-9: con o sin marcas, un bloque con dos membretes son dos recibos pegados por el OCR → se parte por membrete
+    return [q.strip() for p in partes for q in (re.split(r"(?=^\s*SU RESTAURANTE\s*$)", p, flags=re.M | re.I)
+                                                if len(re.findall(r"^\s*SU RESTAURANTE\s*$", p, flags=re.M | re.I)) >= 2 else [p]) if len(q.strip()) > 15]
 
 
 def _lineas(t): return [l.strip() for l in t.splitlines() if l.strip()]
