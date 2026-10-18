@@ -13,7 +13,7 @@ next: 5-implement   # plan 2026-10-18
 - [x] 2-requirements   (aprobado 2026-10-17)
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
-- [ ] 5-implement      current task: T2 (spike C3)
+- [ ] 5-implement      current task: T3 (validar)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -38,3 +38,4 @@ next: 5-implement   # plan 2026-10-18
 2026-10-18 | 3-design | Aprobado por el usuario: 03-design.md y ADR-005..007
 2026-10-18 | 4-plan | 16 tareas en 4 iteraciones (≈20 h); línea base N3 y spike C3 primero; crudo sigue version 1 (anidado 5 ≤ 6) → 04-plan.md
 2026-10-18 | 5-implement | T1: referencia.py + medir_precision.py + probar_precision.py (9 checks); suite verde; corrida real de línea base pendiente (fotos de sept. + Ollama)
+2026-10-18 | 5-implement | T2: parse_venta saca items/subtotal/pagado/cambio/hora; subtotal 95,3 % (450/472) sobre OCR guardado de sept.; suma de ítems = subtotal solo 71,6 % → regla de ítems de T3 con tolerancia/aviso

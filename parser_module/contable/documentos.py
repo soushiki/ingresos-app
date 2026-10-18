@@ -78,6 +78,30 @@ def _lineas_que(L, patron):
     return [l for l in L if re.search(patron, norm(l))]
 
 
+_ITEM = re.compile(r"^\W*(?P<nombre>[^|]*?[^\W\d_][^|]*?)\s*\|\s*(?P<cant>\d{1,3})\s*\|\s*\$?\s*(?P<valor>\d[\d.,]*)\s*\|?\s*$")
+
+
+def _hora(n: str) -> str:
+    """«Fecha de Venta: 16/09/2026 8:01:37 p. m.» → «20:01» (24 h); vacío si no se lee."""
+    m = re.search(r"fecha de venta\W[^\n]*?\b(\d{1,2}):(\d{2})(?::\d{2})?\s*(?:(a|p)\W*m\b)?", n)
+    if not m: return ""
+    h, mi = int(m.group(1)), int(m.group(2))
+    if h > 23 or mi > 59: return ""
+    if m.group(3) == "p" and h < 12: h += 12
+    if m.group(3) == "a" and h == 12: h = 0
+    return f"{h:02d}:{mi:02d}"
+
+
+def _items(L) -> list:
+    """Filas «| nombre | cant | valor |» (valor = total de la fila, como lo imprime el POS). Las de encabezado no entran."""
+    out = []
+    for l in L:
+        m = _ITEM.match(l)
+        if m and not re.search(r"descripcion|^\W*(?:sub)?total|\bcant\b", norm(m.group("nombre"))):
+            out.append(dict(cant=int(m.group("cant")), nombre=m.group("nombre").strip(" |"), valor=monto(m.group("valor"))))
+    return out
+
+
 def parse_venta(texto):
     """Comanda / recibo de venta del POS. Todo se lee por etiqueta («TOTAL CONSUMO», «PROPINA», «PAGADO», «PAGA CON …»)."""
     d = _base("venta", texto); L = _lineas(texto); n = norm(texto)
@@ -110,6 +134,7 @@ def parse_venta(texto):
     if len(unico) == 1 and not efe_lineas:
         k = unico[0]; total = pagado or (d["consumo"] + d["domicilio"] + d["propina"] if not cortesia else 0)
         if total and d[k] != total and (pagado or d[k] < total * 0.5): d[k] = total
+    d["items"], d["subtotal"], d["pagado"], d["cambio"], d["hora"] = _items(L), subtotal, pagado, cambio, _hora(n)
     cli = re.search(r"^\s*cliente\s*:?\s*(.+)$", texto, flags=re.M | re.I)
     if cli and not re.search(r"consumidor final", norm(cli.group(1))): d["cliente"] = cli.group(1).strip().title()
     mm = re.search(r"mesa\s*:?\s*([a-z0-9]+)", n); mesero = re.search(r"mesero\s*:?\s*([a-z]+)", n)
