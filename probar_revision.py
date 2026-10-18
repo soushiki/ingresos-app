@@ -99,5 +99,14 @@ chk(not any(d["id"] in ("nnnn0001", "nnnn0003") for d in dia()["documentos"]), "
 chk(any(d["id"] == "nnnn0002" for d in dia()["documentos"]), "releer: el no revisado sí se actualiza")
 chk(len([d for d in dia()["documentos"] if d["tipo"] == "venta"]) == 3, "releer: no se duplican recibos")
 
+# FIX-1: relectura sin ese número → el revisado se conserva; dos nuevos con la misma clave → el previo se usa una sola vez
+r = cl.post("/api/contable/libro", json={"fecha": FECHA, "documentos": [venta("nnnn0004", "101", 20000, "validado")], "reemplazar": True})
+chk(r.status_code == 200 and doc("aaaa0001")["consumo"] == 10000 and doc("aaaa0003")["consumo"] == 36000, "releer sin ese número: los revisados 100 y 102 se conservan")
+chk(len([d for d in dia()["documentos"] if d["tipo"] == "venta"]) == 3, "releer sin ese número: no sobran ni faltan recibos")
+r = cl.post("/api/contable/libro", json={"fecha": FECHA, "documentos": [venta("nnnn0005", "100", 1, "dudoso"), venta("nnnn0006", "100", 2, "dudoso")], "reemplazar": True})
+c100 = [d for d in dia()["documentos"] if d["tipo"] == "venta" and d["numero"] == "100"]
+chk(r.status_code == 200 and sum(d["id"] == "aaaa0001" for d in c100) == 1, "dos nuevos con la misma clave: el revisado entra una sola vez")
+chk(sorted(d["id"] for d in c100) == ["aaaa0001", "nnnn0006"], "dos nuevos con la misma clave: el segundo queda como lectura nueva")
+
 print("\nTODO BIEN" if not fallos else f"\n{len(fallos)} FALLO(S)")
 raise SystemExit(1 if fallos else 0)

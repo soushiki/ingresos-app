@@ -383,7 +383,13 @@ def _conservar_revisados(previos: list, nuevos: list) -> list:
     """El papel «revisado» guardado gana sobre su relectura (mismo id, o mismo tipo+número+foto de origen)."""
     clave = lambda d: (d.get("tipo"), str(d.get("numero", "")), d.get("origen", "")) if d.get("numero") else None
     por_id, por_clave = {d["id"]: d for d in previos}, {clave(d): d for d in previos if clave(d)}
-    return [por_id.get(d.get("id")) or por_clave.get(clave(d)) or d for d in nuevos]
+    usados, out = set(), []
+    for d in nuevos:
+        p = por_id.get(d.get("id")) or por_clave.get(clave(d))
+        if p is not None and p["id"] not in usados:   # un previo sustituye a una sola lectura nueva
+            usados.add(p["id"]); out.append(p)
+        else: out.append(d)
+    return out + [p for p in previos if p["id"] not in usados]   # el revisado que la relectura no trae se conserva
 
 
 # ── T10 · revisión de recibos dudosos (R8): listar, confirmar/editar → «revisado», recalcular el día, sumar a la referencia ──

@@ -6,6 +6,7 @@ size: M      # varios días; toca ocr_module y el parser; sin datos externos nue
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
 next: 5-implement   # iteración 5: FIX-1..11 + R3b (06-test-report)
+current task: FIX-1 hecho; sigue FIX-2
 
 ## Stages
 - [x] 0-triage       (propuesto 2026-10-17; preguntas abiertas en el log)
@@ -58,3 +59,4 @@ next: 5-implement   # iteración 5: FIX-1..11 + R3b (06-test-report)
 2026-10-18 | 5-implement | Spike 2d Google Vision (5088d61): no lee mejor que qwen; rearmar por filas sí importa; 15 «errores» son de la referencia. R3 cambiado por el usuario (02-requirements): no ver → nota suave; distinto con contexto → dudoso; a implementar tras 6-test
 2026-10-18 | 6-test | It. 1–4: 17 suites verdes; R-ids cubiertos salvo N4 y R3b; code-review high 10 hallazgos (peor: releer pierde «revisado») → it. 5 FIX-1..11 + R3b; smoke pendiente del usuario
 2026-10-18 | 5-implement | FIX-13 (pedido antes de la it. 5): revisado sin ⚠ ni Motivo viejo, aviso → avisos_resueltos; suite verde; 85313 «✓ revisado» en la app
+2026-10-18 | 5-implement | FIX-1: _conservar_revisados agrega el revisado que la relectura no trae y no reusa un previo; probar_revision +4 checks; suite verde
