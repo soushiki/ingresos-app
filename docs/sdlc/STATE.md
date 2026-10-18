@@ -5,14 +5,14 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 4-plan
+next: 5-implement
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
 - [x] 1-research     (2026-10-18: 3 corte, 10 cortados bien → número/tipo sin saber)
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
-- [ ] 4-plan
+- [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
 - [ ] 5-implement      current task: -
 - [ ] 6-test
 - [ ] 7-release
@@ -44,3 +44,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 2-requirements | Aprobado por el usuario con los 3 valores por defecto: anotados a mano no cuentan para N3; R2 avisa, no bloquea; +20 % de tiempo aceptable
 2026-10-18 | 3-design | Borrador 03-design.md + ADR-008 (faltante = documento marcador), 009 (nombre acortado: sufijo + aviso; foto 3 = 85334, 85338–341, 85343), 010 (cabecera ampliada solo con faltantes); espera aprobación
 2026-10-18 | 3-design | Aprobado por el usuario tal como está; ADR-008/009/010 aceptados
+2026-10-18 | 4-plan | 04-plan.md: I1 R1+R2+fitness ADR-008 (T1–T6, ≈ 5 h), I2 R3+R4+R6 (T7–T9), I3 compuerta R5 (T10) + R5 (T11, Opus)
