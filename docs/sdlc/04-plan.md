@@ -41,7 +41,7 @@
 - [x] FIX-6 (S) Revisión: quitar `fecha` de los campos editables (o mover el recibo de día) — R8 — files: `app.py`, `probar_revision.py` — model: Sonnet — hecho: `fecha` fuera de los editables (400 «campo no editable»); la pestaña ④ nunca la enviaba; probar_revision +2 checks
 - [x] FIX-7 (S) `recortes.guardar` actualiza el mtime si el archivo ya existe — N5 — files: `recortes.py`, `probar_recortes.py` — model: Sonnet
 - [x] FIX-8 (S) `lector_completo` pasa `completa=False` en páginas de PDF de varias páginas — R5, R9 — files: `medir_precision.py` — model: Sonnet
-- [ ] FIX-9 (S) `_catalogo`: no reconstruir/escribir en cada escaneo (una vez por arranque o al confirmar) — R6 — files: `app.py` — model: Sonnet
+- [x] FIX-9 (S) `_catalogo`: no reconstruir/escribir en cada escaneo (una vez por arranque o al confirmar) — R6 — files: `app.py` — model: Sonnet
 - [ ] FIX-10 (S) `referencia.agregar`: recibo sin número se reemplaza por id — R9 — files: `referencia.py`, `probar_revision.py` — model: Sonnet
 - [ ] FIX-11 (S) Sacar `spike_google_vision.py` del camino de release (mover a `spikes/` o `.gitignore`) — N1 — model: Sonnet
 - [ ] FIX-12 (S) Pestaña ④: selector Dudosos / Revisados (la API ya acepta `estado=revisado`) para ver lo confirmado; y en DATOS OCR un color propio para «dudoso» (hoy amarillo = dudoso o cualquier aviso, p. ej. «lo cubre el extracto»); hallado en el smoke de 6-test — R8, R7 — files: `static/contable.html`, `parser_module/contable/exportar.py` — model: Sonnet

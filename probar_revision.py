@@ -111,5 +111,14 @@ c100 = [d for d in dia()["documentos"] if d["tipo"] == "venta" and d["numero"] =
 chk(r.status_code == 200 and sum(d["id"] == "aaaa0001" for d in c100) == 1, "dos nuevos con la misma clave: el revisado entra una sola vez")
 chk(sorted(d["id"] for d in c100) == ["aaaa0001", "nnnn0006"], "dos nuevos con la misma clave: el segundo queda como lectura nueva")
 
+# FIX-9: el catálogo se arma una vez por arranque (no se reescribe en cada escaneo); confirmar lo invalida
+from parser_module.contable import catalogo as cat
+llamadas = []
+cat.cargar, cat.desde_libro = (lambda *a, **k: llamadas.append("cargar") or {}), (lambda *a, **k: llamadas.append("desde_libro") or {"cafe": 3000})
+web._PRECIOS = None
+chk(web._catalogo() == {"cafe": 3000} and web._catalogo() == {"cafe": 3000} and llamadas == ["cargar", "desde_libro"], "catálogo: dos escaneos → se arma y escribe una sola vez")
+r = cl.post(URL + "aaaa0001", json={})
+chk(r.status_code == 200 and web._PRECIOS is None and web._catalogo() == {"cafe": 3000} and llamadas.count("desde_libro") == 2, "catálogo: confirmar en Revisión lo vuelve a armar")
+
 print("\nTODO BIEN" if not fallos else f"\n{len(fallos)} FALLO(S)")
 raise SystemExit(1 if fallos else 0)

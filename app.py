@@ -263,13 +263,20 @@ def _motor(eng):
     leer.nombre = getattr(eng, "model", None) or getattr(eng, "name", "local"); return leer
 
 
+_PRECIOS = None   # FIX-9: el catálogo se arma una vez por arranque; confirmar en Revisión lo invalida
+
+
 def _catalogo() -> dict:
-    """R6: precios de la carta (datos/catalogo.json); si está vacío se arma del libro. Sin libro → {} (R6 no hace nada)."""
+    """R6: precios de la carta (datos/catalogo.json); si está vacío se arma del libro. Sin libro → {} (R6 no hace nada).
+    Queda en memoria: escanear no relee ni reescribe el archivo en cada foto."""
+    global _PRECIOS
+    if _PRECIOS is not None: return _PRECIOS
     from parser_module.contable import catalogo
     precios = catalogo.cargar()
-    if precios: return precios
-    try: return catalogo.desde_libro(_leer_libro())
-    except Exception: return {}   # noqa: BLE001
+    if not precios:
+        try: precios = catalogo.desde_libro(_leer_libro())
+        except Exception: precios = {}   # noqa: BLE001
+    _PRECIOS = precios; return precios
 
 
 def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", completa=True) -> dict:
@@ -446,6 +453,7 @@ def cont_revision_confirmar(fecha, doc_id):
         revisado = next(x for x in lib[fecha]["documentos"] if x.get("id") == doc_id)
         mes = str(revisado.get("fecha") or fecha)[:7]
         referencia.agregar(RUTA_REF / f"referencia_{mes}.json", mes, {**revisado, "fecha": revisado.get("fecha") or fecha})
+        global _PRECIOS; _PRECIOS = None   # FIX-9: un precio corregido entra al catálogo en el próximo escaneo
     return jsonify(ok=True, diferencia=r["diferencia"], estado="revisado")
 
 
