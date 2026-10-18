@@ -2,10 +2,11 @@
 `congelar` lee el libro (solo lectura) y escribe `referencia_<mes>.json`; `medir` relee las fotos con un lector inyectable
 y devuelve el informe (el llamador lo guarda en `informes/`). Aquí no hay ninguna escritura sobre libro.json."""
 from __future__ import annotations
-import hashlib, json
+import hashlib, json, re
 from datetime import datetime
 from pathlib import Path
 from .asientos import estado_de
+from . import recortes
 
 # campos que se comparan contra la referencia (los que mueven asientos)
 CAMPOS = ("fecha", "consumo", "propina", "domicilio", "descuento", "cortesia", "efectivo", "tarjeta", "transf", "credito", "medio")
@@ -49,6 +50,21 @@ def agregar(destino, mes: str, doc: dict) -> dict:
     destino.parent.mkdir(parents=True, exist_ok=True)
     tmp = destino.with_suffix(".tmp"); tmp.write_text(json.dumps(ref, ensure_ascii=False, indent=1), encoding="utf-8"); tmp.replace(destino)
     return ref
+
+
+def exportar_entrenamiento(ref: dict, carpeta_recortes, destino) -> dict:
+    """T15 · R10: por cada recibo de la referencia con recorte en disco escribe `<numero>_<huella>.jpg` + `.json` (el documento corregido)
+    en `destino`: pares imagen/etiqueta para entrenar o afinar un lector. Sin recorte → se cuenta en `sin_recorte` y no se exporta."""
+    destino = Path(destino); destino.mkdir(parents=True, exist_ok=True)
+    n, sin = 0, []
+    for r in ref["documentos"]:
+        d = r["documento"]; datos = recortes.abrir(d.get("recorte"), carpeta_recortes)
+        if datos is None: sin.append(r["numero"]); continue
+        base = f"{re.sub(r'[^0-9A-Za-z_-]', '_', r['numero']) or 'sn'}_{d['recorte'][:-4]}"
+        (destino / f"{base}.jpg").write_bytes(datos)
+        (destino / f"{base}.json").write_text(json.dumps({"imagen": f"{base}.jpg", "foto": r["foto"], "pagina": r["pagina"], "documento": d}, ensure_ascii=False, indent=1), encoding="utf-8")
+        n += 1
+    return {"exportados": n, "sin_recorte": sin}
 
 
 def _valor(d, c): return d.get(c, "" if c in ("fecha", "medio") else 0)

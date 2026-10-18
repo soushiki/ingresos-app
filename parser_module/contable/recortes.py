@@ -38,3 +38,10 @@ def huerfanos(usados, carpeta) -> list[str]:
     """Nombres en disco que ningún documento usa (`usados`: iterable de nombres)."""
     usados = set(usados)
     return sorted(p.name for p in Path(carpeta).glob("*.jpg") if NOMBRE.fullmatch(p.name) and p.name not in usados)
+
+
+def borrar_huerfanos(usados, carpeta) -> int:
+    """Borra los recortes que ningún documento usa. Devuelve cuántos."""
+    n = 0
+    for nombre in huerfanos(usados, carpeta): (Path(carpeta) / nombre).unlink(); n += 1
+    return n

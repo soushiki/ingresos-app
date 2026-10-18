@@ -82,6 +82,23 @@ def comparar(informes: list) -> dict:
                            "acierto": {c: v["acierto"] for c, v in i["por_campo"].items()}, "informe": i.get("archivo")} for i in informes]}
 
 
+def mantenimiento(a, datos=DATOS):
+    """T15 · R10, N5: exportar pares imagen/JSON y limpiar recortes. Solo LEE el libro."""
+    from datetime import date
+    from parser_module.contable import recortes, referencia
+    carpeta = datos / "recortes"
+    if a.exportar:
+        ref = json.loads((datos / "referencia" / f"referencia_{a.mes}.json").read_text(encoding="utf-8"))
+        r = referencia.exportar_entrenamiento(ref, carpeta, a.exportar)
+        print(f"exportados {r['exportados']} · sin recorte {len(r['sin_recorte'])}")
+    if a.borrar_recortes:
+        print("borrados por fecha:", recortes.borrar(date.fromisoformat(a.borrar_recortes[0]), date.fromisoformat(a.borrar_recortes[1]), carpeta))
+    if a.borrar_huerfanos:
+        libro = json.loads((datos / "libro.json").read_text(encoding="utf-8"))
+        usados = {d.get("recorte") for dia in libro.values() for d in dia.get("documentos", []) if d.get("recorte")}
+        print("huérfanos borrados:", recortes.borrar_huerfanos(usados, carpeta))
+
+
 def main():
     from functools import partial
     ap = argparse.ArgumentParser(description=__doc__)
@@ -91,7 +108,11 @@ def main():
     ap.add_argument("--muestra", type=int, help="solo N fotos al azar (las mismas para todas las variantes)")
     ap.add_argument("--semilla", type=int, default=7)
     ap.add_argument("--peores", type=int, help="solo las N fotos con más recibos «dudoso» en el libro")
+    ap.add_argument("--exportar", metavar="CARPETA", help="T15: exporta imagen + JSON por recibo de la referencia del mes (no mide)")
+    ap.add_argument("--borrar-recortes", nargs=2, metavar=("DESDE", "HASTA"), help="T15: borra recortes guardados entre dos fechas aaaa-mm-dd")
+    ap.add_argument("--borrar-huerfanos", action="store_true", help="T15: borra recortes que ningún recibo del libro usa")
     a = ap.parse_args()
+    if a.exportar or a.borrar_recortes or a.borrar_huerfanos: return mantenimiento(a)
     from ocr_module import get_engine
     from ocr_module.preprocess import _realesrgan_exe
     vs = [v.strip().upper() for v in a.variantes.split(",") if v.strip()]
