@@ -71,6 +71,15 @@ chk(r["propina"] == 1000, "voto: empate 2–2 en propina → el de V0")
 chk(r["estado"] == "dudoso", "voto sin candidato válido → dudoso")
 chk([x["valor"] for x in r["lectura"]["candidatos"]["hora"]] == ["20:01", "20:07", "20:07", ""], "candidatos por pasada en orden V0–V3")
 
+# FIX-3 · ningún candidato valida entero pero el voto sí: los motivos no son los de V0
+v0, v1, v2 = doc(cambio=8000), doc(propina=1000), doc(pagado=70000)
+m = Motor(v0, v1, v2, doc(hora="")); r = leer_recibo(img, m, **P)
+x = relectura.validar(v0)
+chk(x and relectura.validar(v1) and relectura.validar(v2) and not relectura.validar(r | dict(avisos=[])), "FIX-3 preparación: 3 candidatos inválidos, voto válido")
+chk(r["cambio"] == 8500 and r["propina"] == 4500 and r["pagado"] == 60000, "FIX-3: el voto repara cada campo")
+chk(not any(t in r["motivos"] for t in x), "FIX-3: voto válido → motivos sin los de V0")
+chk(r["estado"] == "dudoso" and r["motivos"] == [relectura.SIN_CANDIDATO], "FIX-3: sigue dudoso con motivo propio «sin candidato que valide entero»")
+
 # Foto borrosa: aunque V0 valide, hace falta una segunda lectura que coincida
 B = dict(parsear=dict, umbral=1e12)
 m = Motor(doc()); r = leer_recibo(img, m, **B)

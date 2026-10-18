@@ -28,6 +28,7 @@ MOTOR_LOCK = threading.Lock()
 CAMPOS = ("numero", "hora", "detalle", "medio", "items", "subtotal", "descuento", "consumo", "domicilio", "propina",
           "pagado", "cambio", "efectivo", "tarjeta", "transf", "credito", "cortesia")
 TIEMPO_AGOTADO = "Tiempo agotado: quedaron relecturas sin hacer"
+SIN_CANDIDATO = "Ninguna lectura validó entera: el voto por campo cuadra pero hay que revisarlo"
 BORROSA_SIN_PAR = "Foto borrosa: ninguna segunda lectura coincide"
 
 
@@ -85,7 +86,7 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
     elif validos:                               # borrosa: validó pero sin segunda lectura que coincida
         doc, motivos = dict(validos[0]["doc"]), [BORROSA_SIN_PAR]
     else:
-        doc = _votar(cands); motivos = validar(doc, dict(ctx or {}, digitos=dig0) if dig0 is not None else ctx) or list(cands[0]["motivos"])
+        doc = _votar(cands); motivos = validar(doc, dict(ctx or {}, digitos=dig0) if dig0 is not None else ctx) or [SIN_CANDIDATO]
     if agotado and not ganador: motivos.append(TIEMPO_AGOTADO)
     doc["avisos"] = list(doc.get("avisos") or []) + (["Foto borrosa"] if borrosa else [])
     doc["estado"] = "dudoso" if motivos else "validado"
