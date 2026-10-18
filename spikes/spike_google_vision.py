@@ -1,14 +1,15 @@
 """Spike 2d (01d-fuentes-ocr.md): Google Vision DOCUMENT_TEXT_DETECTION contra la referencia, en las 20 fotos con más dudosos.
 Nunca escribe libro.json. Tres pasos, cada uno se puede repetir:
-    python spike_google_vision.py preparar --fotos "D:/.../SEPTIEMBRE"   # recortes tapados + hoja de contacto (sin red)
-    python spike_google_vision.py enviar   [--max 150]                   # solo los recortes «ok» sin respuesta guardada
-    python spike_google_vision.py medir    --fotos "D:/.../SEPTIEMBRE"   # informe «google» y «google_filas»
+    python spikes/spike_google_vision.py preparar --fotos "D:/.../SEPTIEMBRE"   # recortes tapados + hoja de contacto (sin red)
+    python spikes/spike_google_vision.py enviar   [--max 150]                   # solo los recortes «ok» sin respuesta guardada
+    python spikes/spike_google_vision.py medir    --fotos "D:/.../SEPTIEMBRE"   # informe «google» y «google_filas»
 Privacidad: se tapan (blanco, a todo lo ancho) las líneas de la dirección, el teléfono, el NIT y la identificación del cliente, y «<NOMBRE>» si aparece. Un recorte
 donde no se halla nada que tapar ni el «RECIBO #» queda «revisar» y no se envía hasta marcarlo a mano en el manifiesto."""
 import argparse, base64, difflib, io, json, os, re, sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent
+BASE = Path(__file__).resolve().parent.parent   # spikes/ cuelga de la raíz del proyecto
+sys.path.insert(0, str(BASE))
 DATOS = BASE / "datos"
 CARPETA = DATOS / "referencia" / "google"
 MANIFIESTO = CARPETA / "manifiesto.json"
