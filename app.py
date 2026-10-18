@@ -431,9 +431,7 @@ def cont_revision_confirmar(fecha, doc_id):
             if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 10**9: return jsonify(error=f"{k}: entero entre 0 y 1000000000"), 400
         elif k in REV_TEXTOS:
             if not isinstance(v, str) or len(v) > 200 or (REV_TEXTOS[k] and v not in REV_TEXTOS[k]): return jsonify(error=f"{k}: valor inválido"), 400
-        elif k == "fecha":
-            if not isinstance(v, str) or not ISO.match(v): return jsonify(error="fecha: aaaa-mm-dd"), 400
-        else: return jsonify(error=f"campo no editable: {k}"), 400
+        else: return jsonify(error=f"campo no editable: {k}"), 400   # FIX-6: fecha tampoco; el recibo vive en el día del libro
         limpio[k] = v
     with LOCK:
         lib = _leer_libro(); dia = lib.get(fecha)
