@@ -26,10 +26,11 @@
   — R1 — done when: `probar_revision.py` prueba anotar, no_existe, 409 en día transmitido, 400 con fecha/id malos, cuerpo > 64 KB,
   campo fuera de lista blanca, motivo > 200, y «anotar» sobre una venta normal → 400 — files: `app.py` (≈ l.408–460), `probar_revision.py`
   — model: Sonnet — hecho: GET estado=falta, POST anotar y no_existe (helpers `_campos_revision`, `_cambiar_faltante`; lista blanca compartida con confirmar, sin id ni fecha; anotar rellena con `_base("venta","")`); +34 checks en probar_revision
-- [ ] T5 (M) ④ selector «Faltan»: tarjeta con la foto entera (o «sin foto guardada» + nombre), formulario manual con el número puesto,
+- [x] T5 (M) ④ selector «Faltan»: tarjeta con la foto entera (o «sin foto guardada» + nombre), formulario manual con el número puesto,
   botones «Anotar» y «No existe» (motivo); insignia de ④ con los abiertos; ① muestra el marcador como fila de solo lectura «falta».
   Todo con `textContent`/DOM (T11); reglas `@media` de teléfono y tableta (ancho y alto) — R1 — done when: en el navegador, una foto
   de prueba con faltante se anota y el aviso desaparece; «No existe» lo cierra; captura de pantalla — files: `static/contable.html` — model: Sonnet
+  — hecho: opción «Faltan» en `#rv_est`, `tarjetaFalta` (foto o «Sin foto guardada»), Anotar/No existe con validación en cliente; `#b4` = dudosos + faltan; ① fila `tr.falta` de solo lectura; @media teléfono/tableta/apaisado. Verificado en el navegador con datos temporales
 - [ ] T6 (S) Aviso R2: «quedan N recibos sin anotar» en «Pasar al libro» y en «⬇ Excel» (`confirm()`, no bloquea) — R2 — done when:
   con 1 faltante abierto sale el aviso y se puede seguir; con 0 no sale — files: `static/contable.html` — model: Sonnet
 

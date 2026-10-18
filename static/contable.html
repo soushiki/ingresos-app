@@ -58,6 +58,11 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 .rv .rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.rv label{display:block;font-size:11px;text-transform:uppercase;color:#17466f}.rv input[type=text],.rv select{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px}
 .rv .cd{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.rv .cd button{padding:1px 7px;font-size:12px;min-height:0;background:#fff;color:var(--pri2);border:1px solid var(--line);border-radius:99px}.rv .cd small{color:var(--mut)}
 .rv .mot.ok{background:#e2efda;border-color:#a9d08e}.rv .pas{font-size:12px;color:var(--mut);margin:6px 0}.rv .ac{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px solid var(--warnb);padding:6px 10px;white-space:normal}
+.rv .rg input.bad,.rv .nx input.bad{border-color:var(--bad);background:#fdeceb}.rv .nx{align-items:center}.rv .nx input{flex:1 1 220px;min-width:0}
+@media(min-width:601px) and (max-width:1000px) and (min-height:501px){.rv.falta .rg{grid-template-columns:repeat(2,1fr)}.rv.falta .rimg{max-height:50vh}}
+@media(max-width:600px) and (min-height:501px){.rv.falta .rimg{max-height:36vh}.rv.falta .nx{flex-direction:column;align-items:stretch}.rv.falta .nx input,.rv.falta .nx button{flex:none}.rv.falta .nx input,.rv.falta .nx button,.rv.falta .ac button{width:100%;min-height:44px}tr.falta td{font-size:13px}}
+@media(max-height:500px) and (orientation:landscape){.rv.falta .rimg{max-height:75vh}.rv.falta .rg{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1000px){.rv{flex-direction:column}.rv .rimg{flex:none;max-width:100%;width:100%;max-height:45vh}.rv .rf{width:100%}}
 @media(max-width:600px){.rv .rg{grid-template-columns:1fr}.rv .ac button{flex:1 1 140px}.rv input[type=text],.rv select{min-height:40px}}
 @media(max-height:500px) and (orientation:landscape){.rv{flex-direction:row}.rv .rimg{flex:0 0 40%;max-height:80vh}}
@@ -148,7 +153,7 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
   <div class="wrap" style="max-height:30vh;margin-top:8px"><table style="min-width:520px"><thead><tr><th>Nombre</th><th>ID</th><th>Municipio</th><th></th></tr></thead><tbody id="p_tb"></tbody></table></div></div>
 </section></main>
 <main id="m4" hidden><section class="col">
- <div class="bar"><b style="font-size:16px">Revisión de recibos</b><select id="rv_est" aria-label="Qué recibos ver"><option value="dudoso">Dudosos</option><option value="revisado">Revisados</option></select><span class="m">Compara el recorte con lo leído, corrige y confirma: el día se recalcula.</span><span class="sp"></span><button class="g" id="rv_re">↻ Recargar</button></div>
+ <div class="bar"><b style="font-size:16px">Revisión de recibos</b><select id="rv_est" aria-label="Qué recibos ver"><option value="dudoso">Dudosos</option><option value="revisado">Revisados</option><option value="falta">Faltan</option></select><span class="m">Compara el recorte con lo leído, corrige y confirma: el día se recalcula.</span><span class="sp"></span><button class="g" id="rv_re">↻ Recargar</button></div>
  <div id="rv_vacio" class="card m" style="text-align:center;padding:26px">No hay recibos dudosos por revisar.</div>
  <div id="rv_ls"></div>
 </section></main>
@@ -158,7 +163,7 @@ const $=s=>document.getElementById(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>
 const fmt=n=>Number(n||0).toLocaleString("es-CO"),fmtF=iso=>iso?iso.split("-").reverse().join("/"):"";
 const TIPOS={cierre:"Cierre de caja (POS)",venta:"Comanda (recibo de venta)",gasto_caja:"Gasto de caja",caja_menor_manuscrito:"Recibo manuscrito",factura:"Factura proveedor",otro:"Otro (ignorar)"};
 const GRUPOS=[["cierre","📋 Cierre"],["comandas","🧾 Comandas"],["gastos","💸 Gastos"],["otros","❔ Sin clasificar"]];
-const grupoDe=d=>({cierre:"cierre",venta:"comandas",gasto_caja:"gastos",caja_menor_manuscrito:"gastos",factura:"gastos"})[d.tipo]||"otros";
+const grupoDe=d=>({cierre:"cierre",venta:"comandas",faltante:"comandas",gasto_caja:"gastos",caja_menor_manuscrito:"gastos",factura:"gastos"})[d.tipo]||"otros";
 const BANCO0={llave:0,tarjetas:0,qr:0,nequi:0,transferencias:0,pse:0,rappi:0};
 const MEDIOS=["Efectivo","Transferencia","Nequi","Daviplata","QR","Bre-B","Tarjeta","PSE","Rappi","Crédito personal"],GASTOS=["gasto_caja","caja_menor_manuscrito","factura"];
 const CIE=[["venta_efectivo","Venta en efectivo"],["tarjetas_sin_prop","Tarjetas (sin propina)"],["tarjetas_con_prop","Tarjetas (con propina)"],["transferencias","Transferencias / App"],["propinas_total","Total propinas"],["gastos_caja","Gastos de caja"],["base_caja","Base de caja"],["efectivo_esperado","Efectivo esperado"],["efectivo_contado","Efectivo contado"],["faltante_impreso","Faltante / sobrante"]];
@@ -218,7 +223,11 @@ $("fotos").onclick=e=>{const r=e.target.dataset.rot;if(r){const f=FOTOS[r];dias.
 const campoN=(d,f,na)=>`<td class="${na?"na":""}"><input type="text" class="n" inputmode="numeric" data-id="${d.id}" data-f="${f}" value="${d[f]?fmt(d[f]):""}"></td>`;
 const campoT=(d,f)=>`<td><input type="text" data-id="${d.id}" data-f="${f}" value="${esc(d[f])}"></td>`;
 const revisado=d=>d.estado==="revisado"||(!d.estado&&!!d.revisado);   // FIX-13: igual que estado_de en asientos.py
-function filaDoc(d){const v=d.tipo==="venta",g=GASTOS.includes(d.tipo),c=d.tipo==="cierre",fo=FOTOS[d.foto];const dud=g&&d.contar&&(!d.cuenta||(d.conf<0.75&&!d.cuenta_manual));
+function filaFalta(d){/* ADR-008: marcador de solo lectura; el texto con datos se pone con textContent en renderDocs */
+ return `<tr class="falta" data-fid="${docs.indexOf(d)}"><td colspan="17"></td></tr>`}
+function pintaFaltas(){document.querySelectorAll("#tbd tr.falta").forEach(tr=>{const d=docs[+tr.dataset.fid];if(!d)return;const a=d.estado==="no_existe";
+ tr.firstElementChild.textContent=(a?"✕ no existe · ":"⚠ falta · ")+(d.numero?"recibo "+d.numero:"número sin identificar")+" · "+(d.origen||"")+(a&&d.motivo?" · "+d.motivo:"")+(a?"":" — anótalo en ④ Revisión → Faltan")})}
+function filaDoc(d){if(d.tipo==="faltante")return filaFalta(d);const v=d.tipo==="venta",g=GASTOS.includes(d.tipo),c=d.tipo==="cierre",fo=FOTOS[d.foto];const dud=g&&d.contar&&(!d.cuenta||(d.conf<0.75&&!d.cuenta_manual));
  return `<tr class="${d.contar||c?"":"dup"} ${sel===d.id?"sel":""}"><td class="f" data-sel="${d.id}" title="${esc((d.avisos||[]).join("\n"))}">${fo?(fo.pdf?"📄 ":`<img src="${fo.url}">`):""}${esc(d.origen==="manual"?"manual":(d.origen||"").slice(0,16))}${d.dup_de?'<span class="tag">duplicado</span>':""}${(d.avisos||[]).length&&(d.contar||c)&&!revisado(d)?'<span class="tag">⚠</span>':""}${revisado(d)?'<span class="tag">✓ revisado</span>':""}</td>
   <td><select data-id="${d.id}" data-f="tipo">${Object.entries(TIPOS).map(([k,t])=>`<option value="${k}" ${k===d.tipo?"selected":""}>${t}</option>`).join("")}</select></td>
   ${campoT(d,"numero")}${campoT(d,"tercero")}${campoT(d,"detalle")}${campoN(d,"consumo",!v)}${campoN(d,"propina",!v)}${campoN(d,"domicilio",!v)}${campoN(d,"efectivo",!v)}${campoN(d,"tarjeta",!v)}${campoN(d,"transf",!v)}${campoN(d,"credito",!v)}${campoN(d,"valor",v||c)}
@@ -227,8 +236,8 @@ function filaDoc(d){const v=d.tipo==="venta",g=GASTOS.includes(d.tipo),c=d.tipo=
   <td style="text-align:center">${c?"":`<input type="checkbox" data-id="${d.id}" data-f="contar" ${d.contar?"checked":""}>`}</td><td><button class="g" data-del="${d.id}">✕</button></td></tr>`}
 function renderDocs(){const volver=guardarFoco();let h="";
  for(const [g,tit] of GRUPOS){const L=docs.filter(d=>grupoDe(d)===g);if(L.length)h+=`<tr class="gh"><td colspan="17">${tit} · ${L.length}</td></tr>`+L.map(filaDoc).join("")}
- $("tbd").innerHTML=h;$("vacio").style.display=docs.length?"none":"block";
- document.querySelectorAll("#zonas i").forEach(i=>i.textContent=docs.filter(d=>grupoDe(d)===i.dataset.n).length);renderChips();botones();panel();volver()}
+ $("tbd").innerHTML=h;pintaFaltas();$("vacio").style.display=docs.length?"none":"block";
+ document.querySelectorAll("#zonas i").forEach(i=>i.textContent=docs.filter(d=>d.tipo!=="faltante"&&grupoDe(d)===i.dataset.n).length);renderChips();botones();panel();volver()}
 function guardarFoco(){const a=document.activeElement;if(!a||!a.closest||!a.closest("#tbd")||!a.dataset.id)return()=>{};const s=`#tbd [data-id="${a.dataset.id}"][data-f="${a.dataset.f}"]`,v=a.value,p=a.selectionStart;return()=>{const n=document.querySelector(s);if(n){n.value=v;n.focus();try{n.setSelectionRange(p,p)}catch(_){}}}}
 $("tbd").addEventListener("input",e=>{const t=e.target,d=docs.find(x=>x.id===t.dataset.id);if(!d||t.tagName==="SELECT"||t.type==="checkbox")return;const f=t.dataset.f;
  if(["consumo","propina","domicilio","efectivo","tarjeta","transf","credito","valor"].includes(f))d[f]=parseInt(t.value.replace(/\D/g,""),10)||0;else d[f]=t.value;recalcular()});
@@ -370,7 +379,24 @@ $("s_xl").onclick=()=>bajarXl("");$("s_res").addEventListener("click",e=>{if(e.t
 const RV_ENT=[["consumo","Consumo"],["propina","Propina"],["domicilio","Domicilio"],["descuento","Descuento"],["cortesia","Cortesía"],["subtotal","Subtotal"],["efectivo","Efectivo"],["tarjeta","Tarjeta"],["transf","Transferencia"],["credito","Fiado"],["pagado","Pagado"],["cambio","Cambio"]],RV_MED=["Efectivo","Tarjeta","Transferencia","Crédito","Mixto"];
 function el(t,p,...k){const e=document.createElement(t);if(p)for(const x in p){if(x==="class")e.className=p[x];else if(x==="onclick")e.onclick=p[x];else e[x]=p[x]}for(const c of k)if(c!=null)e.append(c);return e}
 async function cargarRevision(){const est=$("rv_est").value;let j;try{const r=await fetch("/api/contable/revision?desde=2000-01-01&estado="+est);j=await r.json();if(!r.ok)throw new Error(j.error||r.status)}catch(e){return toast("No se pudo cargar la revisión: "+e.message)}
- if(est==="dudoso")$("b4").textContent=j.total;$("rv_vacio").textContent=est==="dudoso"?"No hay recibos dudosos por revisar.":"Aún no hay recibos revisados.";$("rv_vacio").style.display=j.recibos.length?"none":"";const ls=$("rv_ls");ls.replaceChildren(...j.recibos.map(tarjetaRev))}
+ if(est in RV_N){RV_N[est]=j.total;pintaInsignia()}$("rv_vacio").textContent={dudoso:"No hay recibos dudosos por revisar.",falta:"No hay recibos faltantes por anotar."}[est]||"Aún no hay recibos revisados.";$("rv_vacio").style.display=j.recibos.length?"none":"";const ls=$("rv_ls");ls.replaceChildren(...j.recibos.map(est==="falta"?tarjetaFalta:tarjetaRev))}
+/* insignia de ④ = dudosos + faltantes abiertos (M-13 R1) */
+const RV_N={dudoso:0,falta:0},pintaInsignia=()=>{$("b4").textContent=RV_N.dudoso+RV_N.falta};
+async function insigniaRev(){for(const e of ["dudoso","falta"]){try{const j=await (await fetch("/api/contable/revision?desde=2000-01-01&estado="+e)).json();if(Number.isInteger(j.total))RV_N[e]=j.total}catch(_){}}pintaInsignia()}
+async function postFaltante(r,accion,cuerpo,btns){btns.forEach(b=>b.disabled=true);try{const x=await fetch(`/api/contable/revision/${encodeURIComponent(r.fecha)}/${encodeURIComponent(r.id)}/${accion}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cuerpo)}),j=await x.json().catch(()=>({}));
+ if(!x.ok){btns.forEach(b=>b.disabled=false);return toast(j.error||"No se pudo guardar",5000)}
+ toast(accion==="anotar"?"Anotado · diferencia del día: $ "+fmt(j.diferencia):"Cerrado como «no existe»");LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length;await cargarRevision();insigniaRev()}catch(e){btns.forEach(b=>b.disabled=false);toast("Error de red")}}
+function tarjetaFalta(r){const d=r.documento,card=el("div",{class:"card rv falta",id:"fa_"+r.id}),img=el("div",{class:"rimg"});
+ if(r.recorte)img.append(el("img",{src:"/api/contable/recorte/"+encodeURIComponent(r.recorte),alt:"Foto donde falta el recibo "+(r.numero||"")}));else img.append(el("div",{class:"m sf",style:"padding:20px"},"Sin foto guardada · "+(r.origen||"")));
+ const f=el("div",{class:"rf"});f.append(el("h3",null,`Falta el recibo ${r.numero||"(sin número)"} · ${fmtF(r.fecha)}`));
+ f.append(el("div",{class:"mot"},el("b",null,"Motivo: "),(r.motivos.length?r.motivos:["Sin motivo registrado"]).join(" · ")),el("div",{class:"pas"},"Foto de origen: "+(r.origen||"—")));
+ const g=el("div",{class:"rg"});g.append(campoRev("numero","Número",r),campoRev("hora","Hora",r),campoRev("medio","Medio",r,RV_MED));for(const [k,et] of RV_ENT)g.append(campoRev(k,et,r));g.append(campoRev("detalle","Detalle",r));f.append(g);
+ const ok=el("button",{type:"button",class:"fa_ok"},"✓ Anotar"),mot=el("input",{type:"text",class:"fa_mot",maxLength:200,placeholder:"Motivo (por qué no existe)"}),no=el("button",{type:"button",class:"g fa_no"},"✕ No existe");mot.setAttribute("aria-label","Motivo para cerrar como no existe");
+ ok.onclick=()=>{const c={};let alguno=false;for(const i of g.querySelectorAll("[data-k]")){const k=i.dataset.k,a=i.value.trim();
+   if(RV_ENT.some(x=>x[0]===k)){const n=a===""?0:Number(a.replace(/[.\s$]/g,""));if(!Number.isInteger(n)||n<0){i.classList.add("bad");return toast(`${k}: escribe un número entero`)}if(n){c[k]=n;alguno=true}}else if(a&&!(k==="medio"&&!RV_MED.includes(a)))c[k]=a}
+  if(!alguno)return toast("Escribe al menos un valor del recibo (consumo, efectivo…)");postFaltante(r,"anotar",{campos:c},[ok,no])};
+ no.onclick=()=>{const m=mot.value.trim();if(!m){mot.classList.add("bad");return toast("Escribe el motivo para cerrarlo como «no existe»")}postFaltante(r,"no_existe",{motivo:m},[ok,no])};
+ f.append(el("div",{class:"ac"},ok),el("div",{class:"ac nx"},mot,no));card.append(img,f);return card}
 function campoRev(k,et,r,sel){const doc=r.documento,cands=((r.lectura||{}).candidatos||{})[k]||[],v=doc[k],c=el("div");c.append(el("label",null,et));
  let inp;if(sel){inp=el("select");for(const o of sel){const op=el("option",null,o);op.value=o;inp.append(op)}if(!sel.includes(v)){const op=el("option",null,v||"—");op.value=v||"";inp.prepend(op)}inp.value=v||""}else{inp=el("input",{type:"text",value:v==null?"":String(v)});if(RV_ENT.some(x=>x[0]===k))inp.inputMode="numeric"}
  inp.dataset.k=k;c.append(inp);const vistos=new Map();for(const x of cands){if(x.valor==null||x.valor==="")continue;const q=String(x.valor);vistos.set(q,(vistos.get(q)||[]).concat(x.variante))}
@@ -400,5 +426,5 @@ function modoOCR(){const f=!!(SINOCR&&SINOCR.forzado),s=!!SINOCR&&(f||$("motor")
 $("motor").onchange=modoOCR;$("impo").onclick=()=>{irTab(2);$("impf").click()};
 window.addEventListener("beforeunload",e=>{if(dias.some(d=>d.docs.length)){e.preventDefault();e.returnValue=""}});
 async function estado(){try{const j=await (await fetch("/api/estado")).json(),c=$("chip");c.className="chip "+(j.ollama?"ok":"bad");c.textContent=j.forzado?"● Sin OCR · importa datos":j.ollama?"● Ollama conectado":"● Ollama sin conexión";SINOCR=j.sin_ocr?j:null;modoOCR();const m=$("modelo"),cur=m.value||j.modelo;let ms=j.modelos.length?j.modelos:[j.modelo];if(j.modelos.length&&!ms.includes(j.modelo))ms=[j.modelo,...ms];m.innerHTML=ms.map(x=>`<option ${x===cur?"selected":""}>${esc(x)}</option>`).join("")}catch(e){$("chip").textContent="● Servidor sin respuesta"}}
-(async()=>{CUENTAS=(await (await fetch("/api/contable/catalogo")).json()).cuentas.filter(c=>c.clase!=="PATRIMONIO");syncUI();await cargarLibro();estado();setInterval(estado,20000)})();
+(async()=>{CUENTAS=(await (await fetch("/api/contable/catalogo")).json()).cuentas.filter(c=>c.clase!=="PATRIMONIO");syncUI();await cargarLibro();insigniaRev();estado();setInterval(estado,20000)})();
 </script></body></html>
