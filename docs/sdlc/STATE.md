@@ -13,7 +13,7 @@ next: 5-implement   # plan 2026-10-18
 - [x] 2-requirements   (aprobado 2026-10-17)
 - [x] 3-design         (aprobado 2026-10-18) → 03-design.md + ADR-005..007
 - [x] 4-plan           → 04-plan.md (16 tareas, 4 iteraciones)
-- [ ] 5-implement      current task: T9 (medir variantes)
+- [ ] 5-implement      current task: T10 (API de revisión)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -47,3 +47,4 @@ next: 5-implement   # plan 2026-10-18
 2026-10-18 | 5-implement | T8: relectura.leer_hoja + R5 en validar (numeros_de_nombre, fuera del nombre, faltantes, cruces); 2 fotos reales leídas en la app; separar deja 30/40 fotos en una pieza → usuario aprueba spike T8b antes de T9
 2026-10-18 | 5-implement | T8b: separar(img, esperados=n) por columnas + huecos más anchos, sin bordes de papel; cuenta exacta 1/43 → 35/43 (81 %), a ojo ≈29/43 limpias; VLM y máscara de papel descartados; falla madera/mesa oscura y fotos de lado; sin esperados idéntico; probar_separar 9 checks
 2026-10-18 | 5-implement | T8b conectado: app._leer_hoja y medir_precision pasan esperados del nombre; la foto 1/85297 al 85302 sale en 6 recortes; suite verde
+2026-10-18 | 5-implement | T9: V4 Real-ESRGAN opcional + medir_precision --variantes/--peores; 20 fotos más dudosas: V0 59/107 enteros bien, suman V4 +9, V3 +4, V1 +1, V2 0 → config V0,V4,V3,V1,V2; iteración 2 completa

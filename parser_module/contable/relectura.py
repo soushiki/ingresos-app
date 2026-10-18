@@ -7,13 +7,23 @@ Foto borrosa (laplaciano < umbral): aunque valide, se relee hasta que una segund
 from __future__ import annotations
 import json, threading, time
 from collections import Counter
-from ocr_module.preprocess import nitidez, variantes
+from ocr_module.preprocess import nitidez, variante
 from .documentos import MARCA, leer_texto, parse_venta
 from .validar import FALTA, cruces, faltantes, numeros_de_nombre, validar
 from . import recortes
 
 # umbral_laplaciano: sin calibrar (T9 lo fija con N3); 100 sobre ≤1000 px es la regla usual de «borrosa».
-CONFIG = {"max_relecturas": 3, "umbral_laplaciano": 100.0}
+# variantes: orden de las pasadas, medido en T9 (20 fotos con más dudosos, 107 recibos; recibos enteros bien: V0 59, y lo que cada
+# una suma a lo ya cubierto: V4 +9, V3 +4, V1 +1, V2 +0). V4 (Real-ESRGAN) nunca va sola; sin ejecutable se salta y entra V2.
+CONFIG = {"max_relecturas": 3, "umbral_laplaciano": 100.0, "variantes": ["V0", "V4", "V3", "V1", "V2"]}
+
+
+def _pasadas(recorte, n):
+    """Las primeras n variantes de CONFIG, calculadas solo cuando hacen falta; una que no está (V4 sin ejecutable) se salta."""
+    for var in CONFIG["variantes"]:
+        if n <= 0: return
+        img = variante(recorte, var)
+        if img is not None: n -= 1; yield var, img
 MOTOR_LOCK = threading.Lock()
 CAMPOS = ("numero", "hora", "detalle", "medio", "items", "subtotal", "descuento", "consumo", "domicilio", "propina",
           "pagado", "cambio", "efectivo", "tarjeta", "transf", "credito", "cortesia")
@@ -50,7 +60,7 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
     t0 = reloj(); nit = nitidez(recorte); borrosa = nit["laplaciano"] < umbral
     cands, pasadas, agotado = [], [], False
     ganador = None
-    for i, (var, img) in enumerate(variantes(recorte)[:1 + max_relecturas]):
+    for i, (var, img) in enumerate(_pasadas(recorte, 1 + max_relecturas)):
         if i and limite_s is not None and reloj() - t0 >= limite_s: agotado = True; break
         t = reloj()
         try:

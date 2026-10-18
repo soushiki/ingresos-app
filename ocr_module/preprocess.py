@@ -81,6 +81,44 @@ def variantes(img: Image.Image) -> list[tuple[str, Image.Image]]:
     return [("V0", img), ("V1", v1), ("V2", v2), ("V3", v3)]
 
 
+REALESRGAN = Path(__file__).resolve().parent.parent / "datos" / "herramientas" / "realesrgan" / "realesrgan-ncnn-vulkan.exe"
+
+
+def _realesrgan_exe() -> str | None:
+    """T9 · V4 es opcional: env REALESRGAN, datos/herramientas/realesrgan/ o el PATH. Sin ejecutable → None."""
+    import os, shutil
+    for c in (os.environ.get("REALESRGAN"), str(REALESRGAN), shutil.which("realesrgan-ncnn-vulkan")):
+        if c and Path(c).is_file(): return c
+    return None
+
+
+def superres(img: Image.Image, exe: str | None = None, timeout: int = 180) -> Image.Image | None:
+    """T9 · V4 = Real-ESRGAN (realesrgan-x4plus) y vuelta a ×2 con LANCZOS. None si no hay ejecutable o falla.
+    Ojo: puede inventar dígitos nítidos → solo es una pasada más del voto, nunca sola."""
+    import subprocess, tempfile
+    exe = exe or _realesrgan_exe()
+    if not exe: return None
+    img = img.convert("RGB")
+    with tempfile.TemporaryDirectory() as d:
+        i, o = Path(d) / "i.png", Path(d) / "o.png"
+        img.save(i)
+        try:
+            subprocess.run([exe, "-i", str(i), "-o", str(o), "-n", "realesrgan-x4plus", "-s", "4"], cwd=Path(exe).parent,
+                           capture_output=True, timeout=timeout, check=True)
+            out = Image.open(o).convert("RGB")
+        except (OSError, subprocess.SubprocessError):
+            return None
+    return out.resize((img.width * 2, img.height * 2), Image.LANCZOS)
+
+
+def variante(img: Image.Image, nombre: str) -> Image.Image | None:
+    """Una sola variante por nombre (V0–V4). V4 = None si no hay Real-ESRGAN; nombre desconocido → ValueError."""
+    if nombre == "V4": return superres(img)
+    for n, v in variantes(img):
+        if n == nombre: return v
+    raise ValueError(f"variante desconocida: {nombre}")
+
+
 def nitidez(img: Image.Image) -> dict:
     """C1: {'laplaciano': varianza del Laplaciano, 'tenengrad': media de |grad|^2 (Sobel)}. Más alto = más nítida.
     Se mide sobre un máximo de 1000 px de lado para que no dependa del tamaño de la foto."""

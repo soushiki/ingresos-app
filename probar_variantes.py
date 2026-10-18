@@ -34,4 +34,26 @@ check(n2["laplaciano"] < n1["laplaciano"], "borrosa: menos Laplaciano")
 check(n2["tenengrad"] < n1["tenengrad"], "borrosa: menos Tenengrad")
 check(nitidez(Image.new("RGB", (50, 50), "white"))["laplaciano"] == 0, "imagen lisa = 0")
 check(nitidez(Image.new("RGB", (2, 2)))["tenengrad"] == 0, "imagen diminuta no falla")
+
+# T9 · variante(img, nombre) y V4 opcional (Real-ESRGAN)
+import os, subprocess
+from pathlib import Path
+from ocr_module import preprocess as P
+check(P.variante(img, "V1").size == (600, 900), "variante('V1') = V1")
+try:
+    P.variante(img, "V9"); check(False, "V9 debe fallar")
+except ValueError:
+    check(True, "variante desconocida → ValueError")
+os.environ.pop("REALESRGAN", None); real = P.REALESRGAN; P.REALESRGAN = Path("no/existe.exe")
+check(P._realesrgan_exe() is not None or P.superres(img) is None, "sin ejecutable V4 = None (nada falla)")
+def falso(args, **kw):              # hace de realesrgan: escribe la salida ×4
+    i, o = args[args.index("-i") + 1], args[args.index("-o") + 1]
+    im = Image.open(i); im.resize((im.width * 4, im.height * 4)).save(o)
+corre = subprocess.run; subprocess.run = falso
+v4 = P.superres(img, exe=__file__)
+check(v4 is not None and v4.size == (800, 1200) and v4.mode == "RGB", "V4 con ejecutable: ×2 en RGB")
+def roto(args, **kw): raise subprocess.CalledProcessError(1, args)
+subprocess.run = roto
+check(P.superres(img, exe=__file__) is None, "V4 que falla → None, no excepción")
+subprocess.run = corre; P.REALESRGAN = real
 print(f"\n{ok} comprobaciones OK")

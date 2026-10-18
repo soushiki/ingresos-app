@@ -6,6 +6,9 @@ from PIL import Image, ImageDraw
 from parser_module.contable import relectura
 from parser_module.contable.relectura import leer_recibo, TIEMPO_AGOTADO, BORROSA_SIN_PAR
 
+ORDEN_T9 = list(relectura.CONFIG["variantes"])
+relectura.CONFIG["variantes"] = ["V0", "V1", "V2", "V3"]   # el voto se prueba con V0–V3 fijas (V4 depende del ejecutable)
+
 fallos = []
 def chk(cond, msg):
     print(("✓ " if cond else "✗ ") + msg)
@@ -28,6 +31,16 @@ class Motor:
 
 img = Image.new("RGB", (300, 500), "white"); dr = ImageDraw.Draw(img)
 for i in range(30): dr.text((10, 15 * i + 5), "TOTAL %d" % (1000 + 37 * i), fill="black")
+
+# T9 · el orden de las pasadas sale de la config; una variante que no está (V4 sin ejecutable) se salta
+chk(ORDEN_T9[:2] == ["V0", "V4"] and "V2" in ORDEN_T9, "config T9: V0, luego V4; V2 de reserva")
+import ocr_module.preprocess as P
+_super = P.superres; P.superres = lambda im, **k: None
+relectura.CONFIG["variantes"] = ["V0", "V4", "V3", "V1"]
+chk([v for v, _ in relectura._pasadas(img, 3)] == ["V0", "V3", "V1"], "sin Real-ESRGAN, V4 se salta y entra la siguiente")
+P.superres = lambda im, **k: im.resize((im.width * 2, im.height * 2))
+chk([(v, i.width) for v, i in relectura._pasadas(img, 2)] == [("V0", 300), ("V4", 600)], "con Real-ESRGAN, V4 es la 2.ª pasada (×2)")
+P.superres = _super; relectura.CONFIG["variantes"] = ["V0", "V1", "V2", "V3"]
 P = dict(parsear=dict, umbral=0)          # nítida a la fuerza; el «texto» del motor ya es el documento
 malo = doc(cambio=8000)                   # pagado − cambio no cuadra
 
