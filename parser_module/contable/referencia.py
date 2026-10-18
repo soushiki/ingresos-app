@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib, json
 from datetime import datetime
 from pathlib import Path
+from .asientos import estado_de
 
 # campos que se comparan contra la referencia (los que mueven asientos)
 CAMPOS = ("fecha", "consumo", "propina", "domicilio", "descuento", "cortesia", "efectivo", "tarjeta", "transf", "credito", "medio")
@@ -28,12 +29,25 @@ def congelar(ruta_libro, mes: str, destino) -> dict:
     docs = []
     for dia in sorted(libro):
         for d in libro[dia].get("documentos", []):
-            if d.get("tipo") != "venta" or not d.get("revisado") or not str(d.get("fecha", "")).startswith(mes): continue
+            if d.get("tipo") != "venta" or estado_de(d) != "revisado" or not str(d.get("fecha", "")).startswith(mes): continue
             foto, pagina = _foto_de(d.get("origen", ""))
             docs.append({"numero": str(d.get("numero", "")), "foto": foto, "pagina": pagina, "documento": d})
     ref = {"mes": mes, "congelado": datetime.now().isoformat(timespec="seconds"), "documentos": docs}
     destino = Path(destino); destino.parent.mkdir(parents=True, exist_ok=True)
     destino.write_text(json.dumps(ref, ensure_ascii=False, indent=1), encoding="utf-8")
+    return ref
+
+
+def agregar(destino, mes: str, doc: dict) -> dict:
+    """T10: suma un recibo recién «revisado» a la referencia del mes (la crea si no existe); mismo número y foto → lo reemplaza."""
+    destino = Path(destino)
+    try: ref = json.loads(destino.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError): ref = {"mes": mes, "congelado": datetime.now().isoformat(timespec="seconds"), "documentos": []}
+    foto, pagina = _foto_de(doc.get("origen", "")); numero = str(doc.get("numero", ""))
+    ref["documentos"] = [r for r in ref["documentos"] if not (numero and r["numero"] == numero and r["foto"] == foto and r["pagina"] == pagina)]
+    ref["documentos"].append({"numero": numero, "foto": foto, "pagina": pagina, "documento": doc})
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    tmp = destino.with_suffix(".tmp"); tmp.write_text(json.dumps(ref, ensure_ascii=False, indent=1), encoding="utf-8"); tmp.replace(destino)
     return ref
 
 

@@ -18,7 +18,8 @@ from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
-from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS
+from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de
+from parser_module.contable import referencia
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
@@ -354,10 +355,82 @@ def cont_confirmar():
         if fecha in lib and not j.get("reemplazar"): return jsonify(conflicto=[fecha]), 409
         b = _bloqueos(fecha, r["documentos"])
         if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
-        lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=j.get("banco", {}), cierre=j.get("cierre") or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
-                          diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
+        previos = [d for d in lib.get(fecha, {}).get("documentos", []) if estado_de(d) == "revisado"]
+        if previos:   # T10/R8: volver a leer un día nunca pisa un recibo «revisado»
+            r = construir_asientos(fecha, _conservar_revisados(previos, j.get("documentos", [])), j.get("banco", {}), _cont_cfg(), j.get("cierre"))
+        lib[fecha] = _dia(fecha, r, j.get("banco", {}), j.get("cierre"))
         _guardar_libro(lib)
     return jsonify(ok=True, dias=len(lib), diferencia=r["diferencia"])
+
+
+def _dia(fecha: str, r: dict, banco: dict, cierre) -> dict:
+    return dict(fecha=fecha, documentos=r["documentos"], banco=banco, cierre=cierre or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
+                diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
+
+
+def _conservar_revisados(previos: list, nuevos: list) -> list:
+    """El papel «revisado» guardado gana sobre su relectura (mismo id, o mismo tipo+número+foto de origen)."""
+    clave = lambda d: (d.get("tipo"), str(d.get("numero", "")), d.get("origen", "")) if d.get("numero") else None
+    por_id, por_clave = {d["id"]: d for d in previos}, {clave(d): d for d in previos if clave(d)}
+    return [por_id.get(d.get("id")) or por_clave.get(clave(d)) or d for d in nuevos]
+
+
+# ── T10 · revisión de recibos dudosos (R8): listar, confirmar/editar → «revisado», recalcular el día, sumar a la referencia ──
+RUTA_REF = DATOS / "referencia"
+REV_ENTEROS = ("consumo", "propina", "domicilio", "descuento", "cortesia", "efectivo", "tarjeta", "transf", "credito", "subtotal", "pagado", "cambio")
+REV_TEXTOS = {"medio": ("Efectivo", "Tarjeta", "Transferencia", "Crédito", "Mixto"), "hora": None, "detalle": None, "numero": None}
+REV_TOPE = 500
+
+
+@app.get("/api/contable/revision")
+def cont_revision_listar():
+    """Recibos de venta del libro por estado (por defecto «dudoso») con su recorte y motivos, entre `desde` y `hasta` (aaaa-mm-dd)."""
+    desde, hasta = request.args.get("desde", ""), request.args.get("hasta", "9999-12-31")
+    est = request.args.get("estado", "dudoso")
+    if not ISO.match(desde) or not ISO.match(hasta): return jsonify(error="desde y hasta deben ser aaaa-mm-dd"), 400
+    if est not in ("dudoso", "validado", "revisado"): return jsonify(error="estado desconocido"), 400
+    out = []
+    for dia in sorted(_leer_libro().values(), key=lambda x: x["fecha"]):
+        if not desde <= dia["fecha"] <= hasta: continue
+        for d in dia.get("documentos", []):
+            if d.get("tipo") == "venta" and estado_de(d) == est:
+                out.append(dict(fecha=dia["fecha"], id=d.get("id"), numero=d.get("numero", ""), estado=est, motivos=d.get("motivos") or d.get("avisos") or [],
+                                recorte=d.get("recorte"), lectura=d.get("lectura"), documento=d))
+    return jsonify(recibos=out[:REV_TOPE], total=len(out))
+
+
+@app.post("/api/contable/revision/<fecha>/<doc_id>")
+def cont_revision_confirmar(fecha, doc_id):
+    """Confirma (cuerpo vacío) o edita (`cambios`: solo campos permitidos) un recibo → «revisado»; recalcula el día y lo agrega a la referencia."""
+    if not ISO.match(fecha) or not re.fullmatch(r"[0-9a-f]{1,32}", doc_id): return jsonify(error="fecha o id inválidos"), 400
+    if (request.content_length or 0) > 64 * 1024: return jsonify(error="Cuerpo demasiado grande"), 413
+    j = request.get_json(silent=True)
+    if j is None: j = {}
+    cambios = j.get("cambios", {}) if isinstance(j, dict) else None
+    if not isinstance(cambios, dict): return jsonify(error="cambios debe ser un objeto"), 400
+    limpio = {}
+    for k, v in cambios.items():
+        if k in REV_ENTEROS:
+            if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 10**9: return jsonify(error=f"{k}: entero entre 0 y 1000000000"), 400
+        elif k in REV_TEXTOS:
+            if not isinstance(v, str) or len(v) > 200 or (REV_TEXTOS[k] and v not in REV_TEXTOS[k]): return jsonify(error=f"{k}: valor inválido"), 400
+        elif k == "fecha":
+            if not isinstance(v, str) or not ISO.match(v): return jsonify(error="fecha: aaaa-mm-dd"), 400
+        else: return jsonify(error=f"campo no editable: {k}"), 400
+        limpio[k] = v
+    with LOCK:
+        lib = _leer_libro(); dia = lib.get(fecha)
+        d = next((x for x in (dia or {}).get("documentos", []) if x.get("id") == doc_id and x.get("tipo") == "venta"), None)
+        if d is None: return jsonify(error="No existe ese recibo en el libro"), 404
+        b = _bloqueos(fecha, dia["documentos"])
+        if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
+        d.update(limpio); d["estado"], d["motivos"], d["revisado"] = "revisado", [], True
+        r = construir_asientos(fecha, dia["documentos"], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
+        lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre")); _guardar_libro(lib)
+        revisado = next(x for x in lib[fecha]["documentos"] if x.get("id") == doc_id)
+        mes = str(revisado.get("fecha") or fecha)[:7]
+        referencia.agregar(RUTA_REF / f"referencia_{mes}.json", mes, {**revisado, "fecha": revisado.get("fecha") or fecha})
+    return jsonify(ok=True, diferencia=r["diferencia"], estado="revisado")
 
 
 @app.get("/api/contable/crudo")
