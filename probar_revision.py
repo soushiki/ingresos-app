@@ -133,6 +133,45 @@ lib = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8")); lib[FECHA]["documen
 r = cl.post("/api/contable/libro", json={"fecha": FECHA, "documentos": [venta("zzzz0001", "101", 20000, "validado")] + nuevo, "reemplazar": True})
 chk(r.status_code == 200 and [d["numero"] for d in dia()["documentos"] if d["tipo"] == "faltante" and d["estado"] == "falta"] == ["85631"], "POST /libro: releer foto resuelta no duplica marcadores")
 
+# M-13 T4: API de faltantes (listar, anotar, no_existe) con validaciones
+mk = faltantes.crear([90001, 90002, 90003, 90004], "sep/90001 al 90004.jpg", FECHA, "r1.png")
+lib = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8")); lib[FECHA]["documentos"] += mk; web.RUTA_LIBRO.write_text(json.dumps(lib), encoding="utf8")
+ids = [m["id"] for m in mk]; F = "/api/contable/revision/"
+j = cl.get("/api/contable/revision?desde=2026-09-01&estado=falta").get_json()
+chk({x["id"] for x in j["recibos"]} >= set(ids) and all(x["recorte"] == "r1.png" and x["origen"] for x in j["recibos"] if x["id"] in ids), "listar estado=falta: marcadores abiertos con su foto")
+antes = len(dia()["documentos"])
+r = cl.post(f"{F}{FECHA}/{ids[0]}/anotar", json={"campos": {"consumo": 12000, "efectivo": 12000, "medio": "Efectivo"}})
+d0 = doc(ids[0])
+chk(r.status_code == 200 and d0["tipo"] == "venta" and d0["estado"] == "revisado" and d0["consumo"] == 12000 and d0["origen"] == "manual" and d0["de_foto"] and d0["numero"] == "90001",
+    f"anotar: el marcador pasa a venta manual revisada con su número: {r.get_json()}")
+chk(len(dia()["documentos"]) == antes and cl.get("/api/contable/revision?desde=2026-09-01&estado=falta").get_json()["total"] == j["total"] - 1, "anotar: mismo documento, ya no sale como faltante")
+chk(cl.get("/api/contable/revision?desde=2026-09-01&estado=revisado").get_json()["total"] >= 3, "anotar: sale entre los revisados")
+r = cl.post(f"{F}{FECHA}/{ids[1]}/no_existe", json={"motivo": "no existe, saltó el consecutivo"})
+chk(r.status_code == 200 and doc(ids[1])["estado"] == "no_existe" and doc(ids[1])["motivo"].startswith("no existe") and doc(ids[1])["contar"] is False, "no_existe: queda cerrado con su motivo")
+chk(cl.post(f"{F}{FECHA}/{ids[1]}/anotar", json={}).status_code == 400, "anotar sobre un faltante ya cerrado → 400")
+chk(cl.post(f"{F}{FECHA}/{ids[0]}/no_existe", json={}).status_code == 400, "no_existe sobre uno ya anotado → 400")
+chk(cl.post(f"{F}{FECHA}/zzzz0001/anotar", json={}).status_code == 400, "anotar sobre una venta normal → 400")
+chk(cl.post(f"{F}{FECHA}/zzzz0001/no_existe", json={}).status_code == 400, "no_existe sobre una venta normal → 400")
+for ruta in ("anotar", "no_existe"):
+    chk(cl.post(f"{F}hoy/{ids[2]}/{ruta}", json={}).status_code == 400, f"{ruta}: fecha mala → 400")
+    chk(cl.post(f"{F}{FECHA}/ZZ;drop/{ruta}", json={}).status_code in (400, 404), f"{ruta}: id raro → 400/404")
+    chk(cl.post(f"{F}{FECHA}/xyz!/{ruta}", json={}).status_code == 400, f"{ruta}: id con caracteres no hex → 400")
+    chk(cl.post(f"{F}{FECHA}/{ids[2]}/{ruta}", data="x" * 70000, content_type="application/json").status_code == 413, f"{ruta}: cuerpo > 64 KB → 413")
+    chk(cl.post(f"{F}2026-01-01/{ids[2]}/{ruta}", json={}).status_code == 404, f"{ruta}: día inexistente → 404")
+    chk(cl.post(f"{F}{FECHA}/ffffffff/{ruta}", json={}).status_code == 404, f"{ruta}: id inexistente → 404")
+for malo in ({"fecha": "2030-01-01"}, {"id": "abcd"}, {"tipo": "faltante"}, {"estado": "validado"}, {"consumo": -1}, {"consumo": "9"}, {"medio": "Cheque"}):
+    chk(cl.post(f"{F}{FECHA}/{ids[2]}/anotar", json={"campos": malo}).status_code == 400, f"anotar: campo fuera de lista blanca o inválido {list(malo)} → 400")
+chk(cl.post(f"{F}{FECHA}/{ids[2]}/anotar", json={"campos": []}).status_code == 400, "anotar: campos que no es objeto → 400")
+chk(cl.post(f"{F}{FECHA}/{ids[2]}/no_existe", json={"motivo": "x" * 201}).status_code == 400, "no_existe: motivo > 200 → 400")
+chk(cl.post(f"{F}{FECHA}/{ids[2]}/no_existe", json={"motivo": 5}).status_code == 400, "no_existe: motivo que no es texto → 400")
+chk(doc(ids[2])["estado"] == "falta" and doc(ids[2])["tipo"] == "faltante", "los rechazos no tocaron el marcador")
+orig_b = web._bloqueos; web._bloqueos = lambda f, d: ["transmitido"]
+chk(cl.post(f"{F}{FECHA}/{ids[2]}/anotar", json={}).status_code == 409 and cl.post(f"{F}{FECHA}/{ids[2]}/no_existe", json={}).status_code == 409, "día con documento soporte transmitido → 409")
+web._bloqueos = orig_b
+chk(doc(ids[2])["estado"] == "falta", "409: el marcador sigue abierto")
+r = cl.post(f"{F}{FECHA}/{ids[2]}/anotar", json={})
+chk(r.status_code == 200 and doc(ids[2])["tipo"] == "venta", "anotar con campos vacíos funciona con los valores base (sin KeyError)")
+
 # FIX-9: el catálogo se arma una vez por arranque (no se reescribe en cada escaneo); confirmar lo invalida
 from parser_module.contable import catalogo as cat
 llamadas = []

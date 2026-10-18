@@ -22,10 +22,10 @@
   y `probar_revision.py` cubre releer una foto ya resuelta sin marcador duplicado; foto sin guardar → `recorte:null`
   — files: `parser_module/contable/relectura.py`, `app.py` (`_leer_hoja` ≈ l.280, `_conservar_revisados` ≈ l.388), `probar_relectura.py`,
   `probar_revision.py` — model: Sonnet — hecho: leer_hoja devuelve `falta` (ints); app._marcadores_de_foto guarda la foto ≤1600 px y crea marcadores; _conservar_revisados reconcilia; 3 checks en probar_relectura + 7 en probar_revision
-- [ ] T4 (M) API: `GET /api/contable/revision?estado=falta`, `POST …/<fecha>/<id>/anotar` y `…/no_existe` bajo `LOCK` + `_bloqueos`
+- [x] T4 (M) API: `GET /api/contable/revision?estado=falta`, `POST …/<fecha>/<id>/anotar` y `…/no_existe` bajo `LOCK` + `_bloqueos`
   — R1 — done when: `probar_revision.py` prueba anotar, no_existe, 409 en día transmitido, 400 con fecha/id malos, cuerpo > 64 KB,
   campo fuera de lista blanca, motivo > 200, y «anotar» sobre una venta normal → 400 — files: `app.py` (≈ l.408–460), `probar_revision.py`
-  — model: Sonnet
+  — model: Sonnet — hecho: GET estado=falta, POST anotar y no_existe (helpers `_campos_revision`, `_cambiar_faltante`; lista blanca compartida con confirmar, sin id ni fecha; anotar rellena con `_base("venta","")`); +34 checks en probar_revision
 - [ ] T5 (M) ④ selector «Faltan»: tarjeta con la foto entera (o «sin foto guardada» + nombre), formulario manual con el número puesto,
   botones «Anotar» y «No existe» (motivo); insignia de ④ con los abiertos; ① muestra el marcador como fila de solo lectura «falta».
   Todo con `textContent`/DOM (T11); reglas `@media` de teléfono y tableta (ancho y alto) — R1 — done when: en el navegador, una foto

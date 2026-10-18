@@ -419,16 +419,81 @@ REV_TEXTOS = {"medio": ("Efectivo", "Tarjeta", "Transferencia", "Crédito", "Mix
 REV_TOPE = 500
 
 
+def _campos_revision(campos, nombre: str):
+    """Lista blanca de campos editables (sin id ni fecha: el recibo vive en el día del libro, FIX-6). → (limpio, error)."""
+    if not isinstance(campos, dict): return None, f"{nombre} debe ser un objeto"
+    limpio = {}
+    for k, v in campos.items():
+        if k in REV_ENTEROS:
+            if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 10**9: return None, f"{k}: entero entre 0 y 1000000000"
+        elif k in REV_TEXTOS:
+            if not isinstance(v, str) or len(v) > 200 or (REV_TEXTOS[k] and v not in REV_TEXTOS[k]): return None, f"{k}: valor inválido"
+        else: return None, f"campo no editable: {k}"
+        limpio[k] = v
+    return limpio, None
+
+
+def _cuerpo_faltante(fecha: str, doc_id: str):
+    """Valida fecha, id y tamaño del cuerpo; → (json, respuesta_de_error)."""
+    if not ISO.match(fecha) or not re.fullmatch(r"[0-9a-f]{1,32}", doc_id): return None, (jsonify(error="fecha o id inválidos"), 400)
+    if (request.content_length or 0) > 64 * 1024: return None, (jsonify(error="Cuerpo demasiado grande"), 413)
+    j = request.get_json(silent=True)
+    return ({} if j is None else j), None
+
+
+def _cambiar_faltante(fecha: str, doc_id: str, accion):
+    """Bajo LOCK: busca el marcador, aplica `accion(doc)`, recalcula el día y lo guarda (M-13, R1)."""
+    with LOCK:
+        lib = _leer_libro(); dia = lib.get(fecha)
+        docs = (dia or {}).get("documentos", [])
+        i = next((n for n, x in enumerate(docs) if x.get("id") == doc_id), None)
+        if i is None: return jsonify(error="No existe ese documento en el libro"), 404
+        if docs[i].get("tipo") != "faltante" or docs[i].get("estado") != "falta": return jsonify(error="Solo se resuelve un faltante abierto"), 400
+        b = _bloqueos(fecha, docs)
+        if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
+        try: docs[i] = accion(docs[i])
+        except ValueError as e: return jsonify(error=str(e)), 400
+        r = construir_asientos(fecha, docs, dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
+        lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre")); _guardar_libro(lib)
+    return jsonify(ok=True, diferencia=r["diferencia"], estado=docs[i]["estado"])
+
+
+@app.post("/api/contable/revision/<fecha>/<doc_id>/anotar")
+def cont_faltante_anotar(fecha, doc_id):
+    """Anota a mano un recibo faltante (`campos`: lista blanca) → venta manual «revisada» que cuenta."""
+    j, e = _cuerpo_faltante(fecha, doc_id)
+    if e: return e
+    limpio, err = _campos_revision(j.get("campos", {}) if isinstance(j, dict) else None, "campos")
+    if err: return jsonify(error=err), 400
+    base = {k: v for k, v in _base_doc("venta", "").items() if k not in ("id", "tipo", "avisos", "fecha", "origen", "recorte")}
+    return _cambiar_faltante(fecha, doc_id, lambda d: faltantes.anotar(d, {**base, **limpio}))
+
+
+@app.post("/api/contable/revision/<fecha>/<doc_id>/no_existe")
+def cont_faltante_no_existe(fecha, doc_id):
+    """Cierra un faltante como «no existe» con un `motivo` (≤ 200); sigue sin contar."""
+    j, e = _cuerpo_faltante(fecha, doc_id)
+    if e: return e
+    motivo = j.get("motivo", "") if isinstance(j, dict) else None
+    if not isinstance(motivo, str) or len(motivo) > faltantes.MOTIVO_MAX: return jsonify(error=f"motivo: texto de hasta {faltantes.MOTIVO_MAX} caracteres"), 400
+    return _cambiar_faltante(fecha, doc_id, lambda d: faltantes.cerrar(d, motivo))
+
+
 @app.get("/api/contable/revision")
 def cont_revision_listar():
     """Recibos de venta del libro por estado (por defecto «dudoso») con su recorte y motivos, entre `desde` y `hasta` (aaaa-mm-dd)."""
     desde, hasta = request.args.get("desde", ""), request.args.get("hasta", "9999-12-31")
     est = request.args.get("estado", "dudoso")
     if not ISO.match(desde) or not ISO.match(hasta): return jsonify(error="desde y hasta deben ser aaaa-mm-dd"), 400
-    if est not in ("dudoso", "validado", "revisado"): return jsonify(error="estado desconocido"), 400
+    if est not in ("dudoso", "validado", "revisado", "falta"): return jsonify(error="estado desconocido"), 400
     out = []
     for dia in sorted(_leer_libro().values(), key=lambda x: x["fecha"]):
         if not desde <= dia["fecha"] <= hasta: continue
+        if est == "falta":   # M-13: marcadores abiertos, con la foto entera de origen
+            for d in faltantes.abiertos(dia.get("documentos", [])):
+                out.append(dict(fecha=dia["fecha"], id=d.get("id"), numero=d.get("numero", ""), estado=est, motivos=d.get("avisos") or [],
+                                recorte=d.get("recorte"), origen=d.get("origen", ""), documento=d))
+            continue
         for d in dia.get("documentos", []):
             if d.get("tipo") == "venta" and estado_de(d) == est:
                 out.append(dict(fecha=dia["fecha"], id=d.get("id"), numero=d.get("numero", ""), estado=est, motivos=d.get("motivos") or d.get("avisos") or [],
@@ -444,15 +509,8 @@ def cont_revision_confirmar(fecha, doc_id):
     j = request.get_json(silent=True)
     if j is None: j = {}
     cambios = j.get("cambios", {}) if isinstance(j, dict) else None
-    if not isinstance(cambios, dict): return jsonify(error="cambios debe ser un objeto"), 400
-    limpio = {}
-    for k, v in cambios.items():
-        if k in REV_ENTEROS:
-            if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 10**9: return jsonify(error=f"{k}: entero entre 0 y 1000000000"), 400
-        elif k in REV_TEXTOS:
-            if not isinstance(v, str) or len(v) > 200 or (REV_TEXTOS[k] and v not in REV_TEXTOS[k]): return jsonify(error=f"{k}: valor inválido"), 400
-        else: return jsonify(error=f"campo no editable: {k}"), 400   # FIX-6: fecha tampoco; el recibo vive en el día del libro
-        limpio[k] = v
+    limpio, err = _campos_revision(cambios, "cambios")
+    if err: return jsonify(error=err), 400
     with LOCK:
         lib = _leer_libro(); dia = lib.get(fecha)
         d = next((x for x in (dia or {}).get("documentos", []) if x.get("id") == doc_id and x.get("tipo") == "venta"), None)

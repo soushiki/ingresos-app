@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: T4 (siguiente)
+- [ ] 5-implement      current task: T5 (siguiente)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -48,3 +48,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 5-implement | T1 faltantes.py puro + probar_faltantes.py (15 comprobaciones); todas las probar_*.py en verde. Ojo T4: lista blanca debe excluir id/fecha de campos
 2026-10-18 | 5-implement | T2 fitness ADR-008: marcador fuera de contar y de DATOS OCR, "faltante" en TIPOS_CRUDO; 6 checks en probar_contable; todas las probar_*.py en verde
 2026-10-18 | 5-implement | T3 leer_hoja devuelve falta; _leer_hoja añade marcadores con foto entera ≤1600 px (recorte null si falla); _conservar_revisados reconcilia; confirmar conserva no_existe. Ojo T4: anotar debe rellenar campos con _base("venta") (si no, KeyError en asientos); lista blanca sin id/fecha
+2026-10-18 | 5-implement | T4 API revision?estado=falta, …/anotar y …/no_existe bajo LOCK+_bloqueos; lista blanca compartida _campos_revision (sin id/fecha); ~34 checks en probar_revision; todas las probar_*.py en verde
