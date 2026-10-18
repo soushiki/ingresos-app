@@ -192,13 +192,21 @@ R = "SEPTIEMBRE/SEPTIEMBRE DEL 15 AL 30/20 SEPT 26/CIERRE/cierre20261002_1813173
 chk(fecha_de_carpeta(R) == "2026-09-20", f"M-10: «20 SEPT 26» → 2026-09-20, no la del nombre (escaneo 02-10): {fecha_de_carpeta(R)}")
 chk(fecha_de_carpeta("x/17 sept 26/COMANDAS/a.pdf") == "2026-09-17" and fecha_de_carpeta(r"x\3 de octubre de 2026\a.jpg") == "2026-10-03",
     "M-10: minúsculas, «de», año de 4 cifras y rutas de Windows")
-chk(fecha_de_carpeta("SEPTIEMBRE/6/comandas/85447 al 452.jpg") is None and fecha_de_carpeta("comandas20260920_85735.pdf") is None
-    and fecha_de_carpeta("x/31 SEPT 26/a.jpg") is None, "M-10: carpeta de solo el día, fecha solo en el nombre o fecha imposible → None (sigue la impresa)")
+chk(fecha_de_carpeta("comandas20260920_85735.pdf") is None and fecha_de_carpeta("x/31 SEPT 26/a.jpg") is None
+    and fecha_de_carpeta("6/comandas/a.jpg", 2026) is None and fecha_de_carpeta("SEPTIEMBRE/31/comandas/a.jpg", 2026) is None,
+    "M-10: fecha solo en el nombre, fecha imposible o día sin mes en una carpeta de arriba → None (sigue la impresa)")
+chk(fecha_de_carpeta("SEPTIEMBRE/6/comandas/85447 al 452.jpg", 2026) == "2026-09-06" and fecha_de_carpeta(r"D:\data\SEPTIEMBRE\11\comandas\10-09.jpg", 2026) == "2026-09-11"
+    and fecha_de_carpeta("SEPTIEMBRE/6/comandas/a.jpg") == f"{__import__('datetime').date.today().year}-09-06",
+    "M-10: carpeta de solo el día → día de la carpeta + mes de la carpeta de arriba + año dado (sin año: el de hoy); el nombre «10-09» no cuenta")
 dm = [dict(tipo="venta", numero="85767", fecha="2026-09-27", avisos=[]), dict(tipo="venta", numero="85768", fecha="2026-09-20", avisos=[]),
       dict(tipo="venta", numero="85769", fecha="", avisos=[])]
 aplicar_fecha_carpeta(dm, "S/20 SEPT 26/COMANDAS/comandas20260920_85766 al 768.pdf")
 chk([d["fecha"] for d in dm] == ["2026-09-20"] * 3 and dm[0].get("fecha_impresa") == "2026-09-27" and any("27/09/2026" in a for a in dm[0]["avisos"])
     and not dm[1]["avisos"] and not dm[2]["avisos"] and "fecha_impresa" not in dm[1], "M-10: 85767 se queda el 20-09 con aviso de la fecha impresa; sin aviso si coincide o no se leyó")
-d0 = [dict(tipo="venta", fecha="2025-09-06", avisos=[])]; aplicar_fecha_carpeta(d0, "SEPTIEMBRE/6/comandas/85447 al 452.jpg")
-chk(d0[0]["fecha"] == "2025-09-06" and not d0[0]["avisos"], "M-10: sin fecha completa en la carpeta no toca nada")
+d0 = [dict(tipo="venta", fecha=f, avisos=[]) for f in ("2026-09-06", "2025-09-06", "2026-09-05", "")]
+aplicar_fecha_carpeta(d0, "SEPTIEMBRE/6/comandas/85447 al 452.jpg")
+chk([d["fecha"] for d in d0] == ["2026-09-06"] * 4 and [bool(d["avisos"]) for d in d0] == [False, True, True, False] and d0[1]["fecha_impresa"] == "2025-09-06",
+    "M-10: «SEPTIEMBRE/6/» con el año más común de las fechas impresas (2026): el «2025» de M-12 queda 2026-09-06 con aviso")
+d1 = [dict(tipo="venta", fecha="2025-09-06", avisos=[])]; aplicar_fecha_carpeta(d1, "6/comandas/a.jpg")
+chk(d1[0]["fecha"] == "2025-09-06" and not d1[0]["avisos"], "M-10: sin mes en la ruta no toca nada")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

@@ -5,7 +5,7 @@ goal: Bajar el margen de error del OCR de recibos (hoy ≈40 % necesita correcci
 size: M      # varios días; toca ocr_module y el parser; sin datos externos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 8-maintain   # M-10 en parte (falta decidir carpetas de solo el día); luego M-14/M-15 o ciclo M-13
+next: 8-maintain   # M-10 cerrado; abiertos: ciclo M-13 (omitidos), deuda M-14/M-15, cruce de efectivo
 current task: —
 
 ## Stages
@@ -80,3 +80,4 @@ current task: —
 2026-10-18 | 8-maintain | Triage post-v1.1.0: Summary al día; M-12 (re-corrida T16), M-13 (omitidos → ciclo nuevo), M-14 (umbral Laplaciano), M-15 (tope de tiempo); M-11 commit 563faf9
 2026-10-18 | 8-maintain | M-12: mismas 107 (set de T16 fijado): omitidos 18→13, dudosos 58→17, validados con error 3→9 (6 por año 2025 → M-10); sin el año 3/94
 2026-10-18 | 8-maintain | M-10 en parte: fecha de la carpeta «DD MES AA» manda (nombre de archivo = fecha de escaneo, no cuenta); 6 checks; suites verdes; carpetas «6/» pendientes del usuario
+2026-10-18 | 8-maintain | M-10 cerrado: carpeta «SEPTIEMBRE/6/» = día + mes de arriba + año más común impreso (decisión del usuario); 373/373 escaneos con fecha; suites verdes

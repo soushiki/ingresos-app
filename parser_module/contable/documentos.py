@@ -269,25 +269,37 @@ def parse_cierre(texto):
 
 PARSERS = {"cierre": parse_cierre, "venta": parse_venta, "gasto_caja": parse_gasto, "caja_menor_manuscrito": parse_manuscrito, "factura": parse_factura}
 
-# M-10: cada escaneo trae papeles de una sola fecha y la carpeta «20 SEPT 26» la dice (manda sobre la impresa). El nombre del archivo
-# («cierre20261002_…») trae la fecha del escaneo, no la del papel, y una carpeta de solo el día («6/») es ambigua: ninguno cuenta.
+# M-10: cada escaneo trae papeles de una sola fecha y su carpeta la dice (manda sobre la impresa). «20 SEPT 26» trae la fecha completa;
+# una carpeta de solo el día («SEPTIEMBRE/6/») toma el mes de la carpeta de arriba y el año más común de las fechas impresas (usuario,
+# 2026-10-18). El nombre del archivo («cierre20261002_…», «10-09.jpg») trae la fecha del escaneo, no la del papel: no cuenta.
 _CARPETA = re.compile(rf"(\d{{1,2}})\s*(?:de\s+)?({_MN})\.?\s*(?:de\s+)?(\d{{4}}|\d{{2}})")
+_MES_CARPETA = re.compile(rf"({_MN})(?![a-z])")
 
 
-def fecha_de_carpeta(ruta: str) -> str | None:
-    """ISO de la carpeta más honda con día, mes y año completos; None si ninguna lo tiene (o la fecha no existe)."""
-    for p in reversed(re.split(r"[\\/]", ruta or "")[:-1]):
-        m = _CARPETA.fullmatch(norm(p).strip())
-        if not m: continue
-        a = int(m.group(3)); a += 2000 if a < 100 else 0
-        try: return datetime.date(a, _MES[m.group(2)], int(m.group(1))).isoformat()
-        except ValueError: return None
+def _iso(a, m, d):
+    try: return datetime.date(a, m, d).isoformat()
+    except ValueError: return None
+
+
+def fecha_de_carpeta(ruta: str, anio: int | None = None) -> str | None:
+    """ISO de la carpeta más honda con fecha completa; si no hay, carpeta de solo el día + mes de una carpeta de arriba + `anio`
+    (sin `anio`, el de hoy). None si la ruta no dice día y mes (o la fecha no existe)."""
+    partes = [norm(p).strip() for p in re.split(r"[\\/]", ruta or "")[:-1]]
+    for p in reversed(partes):
+        m = _CARPETA.fullmatch(p)
+        if m: return _iso(int(m.group(3)) + (2000 if len(m.group(3)) == 2 else 0), _MES[m.group(2)], int(m.group(1)))
+    for i in range(len(partes) - 1, -1, -1):
+        if not re.fullmatch(r"\d{1,2}", partes[i]): continue
+        mes = next((_MES_CARPETA.match(p) for p in reversed(partes[:i]) if _MES_CARPETA.match(p)), None)
+        return _iso(anio or datetime.date.today().year, _MES[mes.group(1)], int(partes[i])) if mes else None
     return None
 
 
 def aplicar_fecha_carpeta(docs: list, ruta: str) -> list:
     """Pone la fecha de la carpeta en cada papel; si la impresa (leída) era otra, la guarda en `fecha_impresa` y avisa."""
-    f = fecha_de_carpeta(ruta)
+    from collections import Counter
+    anios = Counter(d["fecha"][:4] for d in docs if re.match(r"\d{4}-", d.get("fecha") or ""))
+    f = fecha_de_carpeta(ruta, int(anios.most_common(1)[0][0]) if anios else None)
     if not f: return docs
     dmy = lambda iso: "/".join(reversed(iso.split("-")))
     for d in docs:
