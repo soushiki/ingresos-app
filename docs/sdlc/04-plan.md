@@ -58,6 +58,14 @@
 - [x] T9 (S) LEEME: sección «Cómo tomar la foto» (fondo oscuro liso, una columna, cerca, sin cortar el pie) ≤ 8 líneas — R6 — done when:
   la sección existe y tiene ≤ 8 líneas — files: `LEEME-contador.md` — model: Haiku. Hecho: «### Cómo tomar la foto» (6 líneas) en §7; quitado el viejo consejo «superficie clara»
 
+- [ ] FIX-3 (S) R3: `entendido=False` solo si el nombre empieza por un número de recibo (4–6 cifras) y aun así falla; nombres de escáner,
+  cámara o fecha (`comandas20261002_15584574.pdf`, `…pdf#2`, `IMG_…`, `WhatsApp Image 2026-…`, `COMANDAS 2026-09-15.pdf`) → `Nombre(None, [], True)`
+  — done when: probar_validar prueba esos 5 nombres (sin números, sin marcador) y `85490-492-501502-504-505.jpg` → entendido False; los 62 nombres
+  de la referencia no cambian fuera de esos — files: `parser_module/contable/validar.py`, `probar_validar.py` — model: Sonnet
+- [ ] FIX-4 (S) Marcador «No entiendo» abierto se duplica al releer: la clave de `_conservar_revisados` para un faltante sin número es
+  `("faltante", "", origen)` — done when: una prueba en probar_revision relee dos veces y queda 1 marcador abierto — files: `app.py`,
+  `probar_revision.py` — model: Sonnet
+
 ## Iteración 3 — demo: `medir --completo` con omitidos (solo OCR) ≤ 2/107 sin empeorar aciertos ni dudosos
 - [ ] T10 (S) Compuerta R5: correr `medir --completo` (tras T7–T8), anotar `por_causa` en STATE y decidir con el usuario si R5 sigue
   tal cual — R5, riesgo 3 — done when: STATE tiene la línea con la cifra y la decisión — files: `docs/sdlc/STATE.md` — model: Sonnet

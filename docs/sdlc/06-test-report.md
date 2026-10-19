@@ -1,31 +1,39 @@
-# 06 · Test report — M-13 iteración 1, segunda pasada (T1–T6 + FIX-1/FIX-2, 4db7e0f..fd90152)
+# 06 · Test report — M-13 iteración 2 (T7–T9, e739d39..cae2ef0)
 
 ## Summary
-- **PASS**: 18/18 `probar_*.py` en verde (`probar_imagen.py` es una herramienta de línea de comandos, no una prueba).
-- Cobertura: R1 servidor cubierto (probar_faltantes 15, probar_revision +35 con FIX-2, probar_relectura +3, probar_contable +6);
-  R1/R2 en la interfaz probados a mano en el navegador (T5, T6, FIX-1). Los dos Musts de I1 (R1, R2) cumplen.
-- No se ejecutaron: ataques (exposed: no), prueba de carga (I1 no fija ninguna NFR de latencia), lint (no hay ruff ni flake8).
+- **FAIL (2 FIX)**: 18/18 `probar_*.py` en verde, pero la revisión encontró que R3 crea marcadores falsos con los nombres reales del escáner.
+- Cobertura: R3 en probar_validar (+6: foto 3 = 85334, 85338–341, 85343 con aviso; basura → marcador) y probar_faltantes (marcador sin número);
+  R4 en probar_precision (+7: `causa_de` tipo/corte/número; informe de septiembre: omitidos 42 = corte 25 + número 17 + tipo 0, la suma cuadra);
+  R6 hecho a mano (LEEME §7, 6 líneas). R4 y R6 cumplen. R3 cumple el caso de la foto 3 y falla en los nombres sin números de recibo (FIX-3).
+- No se ejecutaron: ataques (exposed: no), prueba de carga (I2 no fija ninguna NFR de latencia), lint (no hay ruff ni flake8).
 
 ## Failures
-- Ninguna.
+- Ninguna prueba falla.
 
-## Review findings (diff f5566b2..fd90152, revisado a mano)
-1. FIX-1 cerrado: `avisoFaltan(true)` suma los marcadores `falta` de `docs` a los del libro. «⬇ Excel» sigue contando solo el libro.
-2. FIX-2 cerrado: la clave de `_conservar_revisados` usa `de_foto` cuando `origen=="manual"`. La venta anotada gana sobre la relectura
-   y queda una sola. Una venta manual sin `de_foto` queda con la clave `(venta, num, "")` y no choca con nada. Bien.
-3. Menor (no es FIX): si se vuelve a pasar un día **que ya está en el libro** con marcadores sin anotar, ese marcador se cuenta
-   dos veces (libro + pantalla), así que el aviso dice N+1. Solo exagera un aviso que no bloquea; se acepta.
-4. Siguen aceptados de la primera pasada: si se cambia el número al anotar, el marcador vuelve a salir al releer (es visible). El aviso
-   del Excel cuenta todo el libro, no solo `f1..f2`.
-- Seguridad: los arreglos no tocan validación, entrada ni bloqueo. Sin hallazgos.
+## Review findings (diff e739d39..cae2ef0, revisado a mano)
+1. **FIX-3 (R3, alto)**: el escáner nombra los PDF `comandas20261002_15584574.pdf`. Al quitar `comandas20261002_` quedan 8 cifras, así que
+   `entendido=False` y cada PDF (y cada página, `…pdf#2`) crea un marcador «No entiendo el nombre». Son 11 de los 62 archivos de la referencia.
+   Lo mismo pasa con `IMG_…`, `WhatsApp Image 2026-…` y `Scan 2026-…`. El usuario tendría que cerrar con «No existe» cada hoja escaneada.
+   Además, ya antes de este cambio, `COMANDAS 2026-09-15.pdf` se leía como [2009, 2015, 2026], o sea faltantes falsos.
+   Arreglo: `entendido=False` solo si el nombre **empieza** por un número de recibo (4–6 cifras) y aun así falla, como en
+   `85490-492-501502-504-505.jpg`, que debe seguir dando marcador. Los nombres de fecha u hora (≥ 7 cifras seguidas, `AAAA-MM-DD`, o que empiezan
+   por una palabra) dan `Nombre(None, [], True)`: no hay R5 y no hay marcador. probar_validar.py:58 hoy afirma lo contrario para `IMG_…` y hay que cambiarlo.
+2. **FIX-4 (medio)**: un marcador «No entiendo» todavía abierto tiene `numero=""`, así que su clave es `None` en `_conservar_revisados`.
+   Por eso, cada vez que se relee la foto se suma **otro** marcador abierto. Los que ya están en «No existe» sí los filtra `reconciliar`.
+   Arreglo: la clave del faltante sin número es `("faltante", "", origen)`.
+3. Menor, va para T10: `medir` compara `parent.name in ("comandas", "comanda")` distinguiendo mayúsculas, así que la carpeta `COMANDAS` se queda sin esperados.
+   Para esos PDF no cambia nada (su nombre no trae números), pero los 25 «corte» son sobre todo PDF sin nombre útil y no son errores del corte.
+   T10 debe leer `por_causa` con eso en mente.
+4. Bien: `_por_sufijo` solo actúa fuera de rango y con ≥ 2 cifras. Los nombres de la referencia que ya se entendían dan lo mismo que antes (lo comprobé con los 62).
+- Seguridad: no hay entradas nuevas por la red. El nombre se trata solo con regex sin retroceso catastrófico. Sin hallazgos.
 
 ## Debt
-- Sin cambios: +1 línea en app.py y +2 en contable.html. Sin tarea DEBT.
+- +120/−32 líneas en 10 archivos, sin funciones nuevas de más de 20 líneas. Sin tarea DEBT.
 
-## Smoke result (≈ 5 min, lo hace el usuario; `python app.py` → http://127.0.0.1:5000/contable)
-1. ① Escanea una foto con un recibo omitido (p. ej. la de 85387–85390) → sale la fila «falta 85388» y ④ tiene insignia.
-2. Pulsa «Pasar al libro» sin anotarlo → aparece «Quedan 1 recibo(s) sin anotar»; elige Cancelar.
-3. ④ Revisión → Faltan → Anotar con un monto → la insignia baja y el día suma el monto.
-4. Vuelve a leer la misma foto → la venta 85388 sale **una sola vez**.
-5. Otro faltante → «No existe» con motivo → desaparece y «⬇ Excel» ya no avisa.
-- Resultado: pendiente de que lo marque el usuario.
+## Smoke result (≈ 5 min, lo hace el usuario después de FIX-3/4; `python app.py` → http://127.0.0.1:5000/contable)
+1. ① Escanea «3/comanda/85334-338 al 3341-343.jpg» → salen 6 recibos y el aviso «Nombre de la foto corregido: 3341 → 85341».
+2. ① Escanea un PDF `comandas20261002_….pdf` → **ningún** marcador «No entiendo el nombre» en ④.
+3. ① Escanea «10/comandas/85490-492-501502-504-505.jpg» → un marcador «No entiendo el nombre…» en ④ Faltan.
+4. Vuelve a leer esa misma foto → sigue habiendo **un** solo marcador.
+5. Abre LEEME §7 «Cómo tomar la foto» → se entiende en 30 s.
+- Resultado: pendiente (se hace después de FIX-3/4).
