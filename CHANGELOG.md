@@ -2,6 +2,21 @@
 
 ## [Sin publicar]
 
+## [1.3.0] — 2026-10-19
+Cierre de caja: el día del libro cuadra con el cierre y el pasivo 2815 (domicilios y propinas por pagar) deja de crecer.
+
+### Asientos
+- Si el cierre de caja (con total y fecha del día) supera a la venta de los papeles leídos, la diferencia va a la puente 13809501 contra 41401501, con el aviso «Ajuste al cierre (cierre > papeles)». Si los papeles superan al cierre, solo aviso, sin ajuste.
+- Cada día con cierre debita 28150502 por las propinas del cierre y 28150501 por los domicilios pagados, contra Efectivo 11050501 («según cierre»). Lo que ya debitaron los vales «pago domicilios» del día se resta: el pago nunca cuenta dos veces.
+- Las filas nuevas llevan su fórmula en DATOS OCR (ADR-002); el Excel calcula lo mismo que la app.
+- Días sin cierre: sin cambios.
+
+### Datos
+- La primera vez que se guarda el libro con esta versión se copia a `datos/libro.antes-v1.3.0.json` (una sola vez, no se pisa). Los días que cambian salen en la hoja «cambió desde que se confirmó» del Excel.
+
+### Conocido
+- M-17: el ajuste al cierre es un valor fijo en DATOS OCR; si se corrige una comanda en el Excel, no se recalcula.
+
 ## [1.2.0] — 2026-10-19
 Recibos omitidos: ningún recibo de una foto se pierde en silencio. Los que el lector no ve quedan como «Falta N» para anotarlos a mano.
 

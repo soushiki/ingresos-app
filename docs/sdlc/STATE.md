@@ -5,7 +5,7 @@ goal: Que el día del libro cuadre con el cierre de caja: el total del cierre ma
 size: S      # dos reglas en asientos.py sobre datos que ya se leen (cruces, domicilios_pagados, puente 13809501, vales «pago domicilios»); sin pantallas ni datos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # cuentas del PUC que ya usa la app; el criterio contable lo confirma el contador, no hay valores tributarios
-next: 6-test
+next: 7-release
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-19)
@@ -14,7 +14,7 @@ next: 6-test
 - [~] 3-design         (S)
 - [x] 4-plan
 - [x] 5-implement
-- [ ] 6-test
+- [x] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
 
@@ -44,3 +44,5 @@ Sirve un mes, pero son 30 ajustes por mes y el pasivo 2815 sigue mal en cada exp
 2026-10-19 | 5-implement | T2 hecho (Sonnet): débito 28150502 por propinas_total y 28150501 por domicilios_pagados − vales del día (fx dato − MIN), crédito 11050501; probar_contable +3, probar_dia15 +1, 18/18 verdes
 2026-10-19 | 5-implement | T3 hecho (Sonnet): `_guardar_libro` copia libro.json → datos/libro.antes-v1.3.0.json una sola vez; probar_contable +3 (respaldo idéntico, no se pisa, aviso «cambió desde que se confirmó» ya salía); 18/18 verdes
 2026-10-19 | 5-implement | T4 hecho (Sonnet): sept. 2815 baja ≈ 21 % (≈ lo de los 23 días sin cierre + ≈ 3 % de residuo en días con cierre, sobre todo 20 y 30-sep); R1 en 5 días; 0 avisos papeles > cierre; 30/30 cuadran → 6-test
+2026-10-19 | 6-test | PASA: R1–R3 y aceptación a–e cubiertas, 18/18 suites verdes; revisión sin bloqueantes (2 notas bajas → M-17); smoke de 4 pasos pendiente del usuario → 7-release
+2026-10-19 | 7-release | v1.3.0 preparada: VERSION, CHANGELOG, 07-release.md (runbook + rollback con libro.antes-v1.3.0.json); suite 18/18, pre-flight OK; commit local. Falta: decidir cifras reales en docs/commit T4 (repo público), luego tag + push y smoke del usuario

@@ -26,11 +26,13 @@ Datos fuera de git: `datos/` (libro.json, soporte.db, catalogo.json, recortes/, 
 3. `iniciar.bat`. soporte.db migra solo (`user_version`).
 
 **Health check**: la página abre en :5050; `GET /api/estado` responde (en el contador, `sin_ocr: true`);
-la pestaña ③ muestra las mismas semanas que antes de actualizar; desde 1.1.0, ④ Revisión lista los dudosos y abre un recorte; desde 1.2.0, ④ → «Faltan» lista los marcadores.
+la pestaña ③ muestra las mismas semanas que antes de actualizar; desde 1.1.0, ④ Revisión lista los dudosos y abre un recorte; desde 1.2.0, ④ → «Faltan» lista los marcadores; desde 1.3.0, un día con cierre en ③ muestra las filas «según cierre» y débito = crédito.
 
 **Rollback**: cerrar la app → `git checkout vX.Y.Z-anterior` → restaurar la copia de `datos/` hecha en el paso 1
 (obligatorio si la versión nueva migró soporte.db: la versión vieja no conoce las migraciones nuevas).
 1.2.0 no migra soporte.db, pero escribe marcadores `tipo: "faltante"` en libro.json; la 1.1.0 no los conoce → restaurar la copia de `datos/`.
+1.3.0 no migra soporte.db; reescribe los asientos de los días con cierre al recalcular. Volver a 1.2.0: `git checkout v1.2.0` y copiar
+`datos/libro.antes-v1.3.0.json` sobre `datos/libro.json` (o la copia de `datos/` del paso 1).
 
 **CI**: no hay. Sugerido (GitHub Actions, Windows): la suite de arriba + gitleaks (historial completo) + `pip-audit`
 + `bandit -r . -x ./datos`. Hoy no están instalados localmente; pre-flight hecho con grep (ver Releases).
@@ -39,6 +41,7 @@ la pestaña ③ muestra las mismas semanas que antes de actualizar; desde 1.1.0,
 **Repo público**: nada con cifras reales ni datos del negocio (01b/01c, nombre/dirección del local) entra a `main` ni a `origin`.
 
 ## Releases
+2026-10-19 | v1.3.0 | Preparada (commit local, sin tag ni push). Pre-flight: suite 18/18, sin claves en 86e816d..HEAD, debug off, solo 127.0.0.1, sin migración de soporte.db. Bloqueo: los docs del ciclo (04-plan, 06-test-report, STATE, 02) y el commit T4 traen cifras reales de septiembre → decidir antes del push. Smoke (06) pendiente del usuario.
 2026-10-19 | v1.2.0 | **Publicada**: tag v1.2.0, push main + tags (88e61a5..94b7173). Pre-flight OK: suite 18/18, sin claves ni nombre/dirección del local en v1.1.0..HEAD, debug off, solo 127.0.0.1, sin migración de soporte.db. Falta (usuario): actualizar los PC (runbook) y abrir ④ → «Faltan».
 2026-10-18 | v1.1.0 | Publicada (ver archive/precision-ocr/07-release.md).
 2026-10-17 | v1.0.1 | Publicada (M-1..M-3).
