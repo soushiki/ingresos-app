@@ -5,7 +5,7 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 7-release   # v1.2.0 lista y commiteada; falta tag v1.2.0 + push (aprobación del usuario)
+next: 8-maintain  # v1.2.0 publicada; N3 sigue abierta (5/103)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
@@ -15,7 +15,7 @@ next: 7-release   # v1.2.0 lista y commiteada; falta tag v1.2.0 + push (aprobaci
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
 - [x] 5-implement      (I1–I3 completas, FIX-1…4 cerrados)
 - [x] 6-test           (2026-10-19: I3 PASS con corrida real)
-- [ ] 7-release
+- [x] 7-release        (2026-10-19: v1.2.0 publicada)
 - [ ] 8-maintain
 
 (Mark skipped stages `- [~]`.)
@@ -69,3 +69,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-19 | 6-test | I3 sin cerrar: el último informe (20261019-093006, omitidos 15) es el intento Tesseract, anterior a bfd3704 (09:48); falta la corrida medir --completo --peores 20 --de-cero con ADR-011 → next sigue 6-test
 2026-10-19 | 6-test | I3 PASS: medir --completo --peores 20 (20261019-135040) omitidos 13→5/103 (todos número; 85334 nuevo, variación del lector), validados con error 7→7, dudosos 18→27 (rescates), huella igual; N3 no llega (aceptado ADR-011), N4 cumple → 7-release
 2026-10-19 | 7-release | v1.2.0: VERSION, CHANGELOG, 07-release.md (runbook de 1.1.0 + rollback por marcadores en libro.json); pre-flight OK (18/18, sin secretos ni datos del local, debug off, 127.0.0.1); tag + push esperan aprobación
+2026-10-19 | 7-release | v1.2.0 publicada: tag v1.2.0 + push main/tags a origin (aprobado por el usuario) → 8-maintain

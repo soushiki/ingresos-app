@@ -39,7 +39,7 @@ la pestaña ③ muestra las mismas semanas que antes de actualizar; desde 1.1.0,
 **Repo público**: nada con cifras reales ni datos del negocio (01b/01c, nombre/dirección del local) entra a `main` ni a `origin`.
 
 ## Releases
-2026-10-19 | v1.2.0 | Pre-flight OK: suite 18/18, sin claves ni nombre/dirección del local en v1.1.0..HEAD, debug off, solo 127.0.0.1, sin migración de soporte.db. Falta (usuario): smoke de 06, push main + tag.
+2026-10-19 | v1.2.0 | **Publicada**: tag v1.2.0, push main + tags (88e61a5..94b7173). Pre-flight OK: suite 18/18, sin claves ni nombre/dirección del local en v1.1.0..HEAD, debug off, solo 127.0.0.1, sin migración de soporte.db. Falta (usuario): actualizar los PC (runbook) y abrir ④ → «Faltan».
 2026-10-18 | v1.1.0 | Publicada (ver archive/precision-ocr/07-release.md).
 2026-10-17 | v1.0.1 | Publicada (M-1..M-3).
 2026-10-17 | v1.0.0 | Publicada.
