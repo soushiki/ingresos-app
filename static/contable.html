@@ -284,11 +284,11 @@ $("carp").onclick=()=>$("carpeta").click();
 $("carpeta").onchange=e=>{tomar([...e.target.files].filter(f=>/\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name)),"");e.target.value=""};
 $("file").onchange=e=>{tomar(e.target.files,catSel);e.target.value=""};
 /* R2: aviso (no bloquea) si quedan recibos faltantes sin anotar */
-async function avisoFaltan(){await insigniaRev();const n=RV_N.falta;return !n||confirm(`Quedan ${n} recibo(s) sin anotar (④ Revisión → Faltan).
+async function avisoFaltan(enPantalla){await insigniaRev();const n=RV_N.falta+(enPantalla?docs.filter(d=>d.tipo==="faltante"&&d.estado==="falta").length:0);return !n||confirm(`Quedan ${n} recibo(s) sin anotar (④ Revisión → Faltan).
 
 ¿Continuar de todas formas?`)}
 $("conf").onclick=async()=>{const dd=dudosos();
- if(!await avisoFaltan())return;
+ if(!await avisoFaltan(true))return;
  if(res.diferencia!==0&&!confirm(`El día NO cuadra: débito ${fmt(res.debito)} · crédito ${fmt(res.credito)} (diferencia ${fmt(res.diferencia)}).\n\n¿Pasarlo al libro de todas formas?`))return;
  const cr=(res.cruces||[]).filter(x=>!x.ok);if(cr.length&&!confirm(`El cierre del POS no coincide con tus papeles en: ${cr.map(x=>x.concepto).join(", ")}.\n\n¿Pasarlo al libro de todas formas?`))return;
  if(dd.length&&!confirm(`${dd.length} gasto(s) tienen la cuenta sin confirmar (amarillo).\n\n¿Pasarlos así?`))return;

@@ -35,6 +35,14 @@
   con 1 faltante abierto sale el aviso y se puede seguir; con 0 no sale — files: `static/contable.html` — model: Sonnet
   — hecho: `avisoFaltan()` (refresca abiertos con `insigniaRev`; `confirm()` solo si N>0, cancelar no sigue, aceptar sí) al inicio de «Pasar al libro» y «⬇ Excel (MOVIMIENTOS)»
 
+- [x] FIX-1 (S) R2 en «Pasar al libro» también cuenta los marcadores abiertos del día en pantalla (`docs`), no solo los del libro
+  — R2 — done when: escanear (o simular) un día con 1 marcador en `docs` y 0 en el libro → sale el aviso; 0 y 0 → nada
+  — files: `static/contable.html` (`avisoFaltan`, `$("conf")`) — model: Sonnet
+  — hecho: `avisoFaltan(enPantalla)` suma `docs` con tipo faltante y estado falta solo desde «Pasar al libro»; Excel sigue contando solo el libro
+- [ ] FIX-2 (S) `_conservar_revisados`: la venta anotada a mano (`origen:"manual"`, `de_foto`) empareja con la relectura OCR del mismo
+  número y foto (clave con `de_foto`) → no se cuenta dos veces — R1 — done when: probar_revision prueba previo manual 85388/F +
+  nuevo OCR 85388/F → una sola venta (la manual); todas las probar_*.py en verde — files: `app.py`, `probar_revision.py` — model: Sonnet
+
 ## Iteración 2 — demo: la foto «85334-338 al 3341-343» corta en 6 y `medir --completo` dice la causa de cada omitido
 - [ ] T7 (M) `validar.leer_nombre` → `Nombre(numeros, correcciones, entendido)`; corrección por sufijo con aviso «3341 → 85341»;
   `numeros_de_nombre` queda como envoltorio; nombre no entendido → marcador «No entiendo el nombre de la foto …» (vía `faltantes.crear`)

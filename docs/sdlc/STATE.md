@@ -5,7 +5,7 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 6-test
+next: 5-implement
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
@@ -13,7 +13,7 @@ next: 6-test
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: T6 hecha · iteración 1 completa (T7 sigue tras 6-test)
+- [ ] 5-implement      current task: FIX-2 (de 6-test I1), luego 6-test de nuevo y T7
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -51,3 +51,5 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 5-implement | T4 API revision?estado=falta, …/anotar y …/no_existe bajo LOCK+_bloqueos; lista blanca compartida _campos_revision (sin id/fecha); ~34 checks en probar_revision; todas las probar_*.py en verde
 2026-10-18 | 5-implement | T5 ④ «Faltan»: tarjeta con foto/«sin foto», Anotar (día +25.000 cuadra) y No existe (motivo obligatorio) probados en el navegador con datos temporales; insignia ④ = dudosos+faltan; fila «falta» en ①; arreglado botón de 140 px en teléfono (flex:none)
 2026-10-18 | 5-implement | T6 aviso R2 (confirm, no bloquea) en «Pasar al libro» y «⬇ Excel»; verificado en navegador con fetch simulado (1 → aviso, 0 → nada); iteración 1 completa → 6-test
+2026-10-18 | 6-test | I1: 18/18 probar_*.py en verde; revisión → FIX-1 (R2 no avisa del día en pantalla) y FIX-2 (venta manual + relectura OCR = doble); smoke pendiente → 06-test-report.md
+2026-10-18 | 5-implement | FIX-1 avisoFaltan(enPantalla) suma los marcadores abiertos de `docs` en «Pasar al libro» (Excel sigue solo libro); verificado en navegador (1 en pantalla → aviso, 0 → nada); 18/18 probar_*.py en verde
