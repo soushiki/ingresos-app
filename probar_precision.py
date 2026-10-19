@@ -55,6 +55,25 @@ leidas = []
 inf2 = medir_precision.ejecutar("2026-09", d, None, lambda r, p, m: leidas.append(Path(r).name) or leer_hoja(r, p, m), datos=d, muestra=1, semilla=3)
 inf3 = medir_precision.ejecutar("2026-09", d, None, lambda r, p, m: leidas.append(Path(r).name) or leer_hoja(r, p, m), datos=d, muestra=1, semilla=3)
 chk(len(leidas) == 2 and leidas[0] == leidas[1] and inf2["muestra"] == 1, "--muestra 1: una sola foto, la misma con la misma semilla")
+# Avance: una corrida cortada (PC apagado) se reanuda sin releer las fotos hechas, y al terminar el avance se borra
+def cortada(r, p, m):
+    if Path(r).name == "h2.jpg": raise KeyboardInterrupt
+    return leer_hoja(r, p, m).replace("\n====\n", f"\n{D.MARCA}\n")
+av = d / "referencia" / "informes" / "avance_2026-09_V5.json"
+try: medir_precision.ejecutar("2026-09", d, None, cortada, datos=d, variante="V5"); chk(False, "la corrida cortada debía cortarse")
+except KeyboardInterrupt: pass
+chk(av.exists() and list(json.loads(av.read_text(encoding="utf-8"))) == ["h1.jpg"], "avance: la foto leída antes del corte queda guardada")
+leidas = []
+inf5 = medir_precision.ejecutar("2026-09", d, None, lambda r, p, m: leidas.append(Path(r).name) or leer_hoja(r, p, m).replace("\n====\n", f"\n{D.MARCA}\n"), datos=d, variante="V5")
+chk(leidas == ["h2.jpg"], f"avance: al reanudar solo se lee lo que faltaba (leídas {leidas})")
+chk((inf5["omitidos"], inf5["validados_con_error_numeros"], inf5["por_campo"]) == (inf["omitidos"], inf["validados_con_error_numeros"], inf["por_campo"]),
+    "avance: el informe reanudado es igual al de una corrida entera")
+chk(not av.exists(), "avance: al terminar se borra")
+leidas = []
+try: medir_precision.ejecutar("2026-09", d, None, cortada, datos=d, variante="V5")
+except KeyboardInterrupt: pass
+medir_precision.ejecutar("2026-09", d, None, lambda r, p, m: leidas.append(Path(r).name) or leer_hoja(r, p, m), datos=d, variante="V5", reanudar=False)
+chk(leidas == ["h1.jpg", "h2.jpg"], "--de-cero: ignora el avance y lee todo")
 lib2 = json.loads((d / "libro.json").read_text(encoding="utf-8"))
 dud = leer_texto(recibo(103, 1000), "comandas")[0]; dud["avisos"] = ["Falta la hora"]; dud["origen"] = "h2.jpg#1"
 lib2["2026-09-16"]["documentos"].append(dud)

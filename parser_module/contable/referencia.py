@@ -82,24 +82,29 @@ def causa_de(numero, docs, piezas, esperados) -> str:
     return "número"
 
 
-def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto) -> dict:
+def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto, hechas=None, al_leer=None) -> dict:
     """Relee cada foto de la referencia (V0, sin relectura) y compara por número de recibo.
     leer_hoja(ruta, pagina) → texto; leer_texto(texto, categoria) → documentos. Sin libro: no recibe ni escribe nada de él.
-    omitido = el número no aparece (o la foto no se pudo leer). validado = estado distinto de «dudoso»; «validado con error» = validado y algún campo distinto."""
+    omitido = el número no aparece (o la foto no se pudo leer). validado = estado distinto de «dudoso»; «validado con error» = validado y algún campo distinto.
+    hechas: {clave: documentos} ya leídos (reanudar: no se releen). al_leer(clave, documentos, i, n): tras cada foto leída sin error."""
     carpeta = Path(carpeta_fotos)
     por_foto = {}
     for r in ref["documentos"]: por_foto.setdefault((r["foto"], r["pagina"]), []).append(r)
     campos = {c: {"ok": 0, "mal": 0} for c in CAMPOS}
     omitidos, dudosos, con_error, errores_lectura, detalle = [], [], [], [], []
     todas, omitidos_detalle, por_causa = {}, [], {"tipo": 0, "corte": 0, "número": 0}
-    for (foto, pagina), recs in por_foto.items():
+    for i, ((foto, pagina), recs) in enumerate(por_foto.items(), 1):
+        clave = foto if pagina == 1 else f"{foto}#{pagina}"
         try:
-            docs = leer_texto(leer_hoja(carpeta / foto, pagina), "comandas")
+            if hechas and clave in hechas: docs = hechas[clave]
+            else:
+                docs = leer_texto(leer_hoja(carpeta / foto, pagina), "comandas")
+                if al_leer: al_leer(clave, docs, i, len(por_foto))
             leidos = {str(d.get("numero", "")): d for d in docs if d.get("tipo") == "venta"}
         except Exception as e:  # noqa: BLE001  una foto mala no tumba la medición
             docs, leidos = [], {}; errores_lectura.append({"foto": foto, "error": str(e)})
         piezas = [{"i": i, "tipo": d.get("tipo"), "numero": str(d.get("numero", "")), "texto": str(d.get("texto") or "")[:120]} for i, d in enumerate(docs)]
-        todas[foto if pagina == 1 else f"{foto}#{pagina}"] = piezas
+        todas[clave] = piezas
         esperados = None
         if Path(foto).parent.name in ("comandas", "comanda"):
             from .validar import numeros_de_nombre

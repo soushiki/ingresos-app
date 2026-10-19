@@ -2,7 +2,7 @@
     python medir_precision.py --mes 2026-09 --fotos "D:/ruta/a/las/fotos" [--motor local] [--refrescar] [--variantes V0,V1,V2,V3,V4]
 T9: con --variantes mide cada variante por separado (la imagen de cada papel pasa por esa variante antes del OCR) y deja un
 informe por variante + una comparación. V4 (Real-ESRGAN) se salta si no está el ejecutable."""
-import argparse, io, json, sys
+import argparse, io, json, sys, time
 from datetime import datetime
 from pathlib import Path
 
@@ -99,7 +99,20 @@ def mas_dudosas(libro: dict, ref: dict, n: int) -> set:
     return set(sorted(en_ref, key=lambda f: (-dud[f], -en_ref[f], f))[:n])
 
 
-def ejecutar(mes, fotos, motor, leer_hoja, datos=DATOS, refrescar=False, variante="V0", muestra=None, semilla=7, peores=None, leer_texto=None) -> dict:
+def _avance(ruta: Path, hechas: dict, reloj=time.monotonic):
+    """Cada foto leída se guarda en `ruta` (escritura atómica) y se imprime una línea con lo que queda; así una corrida
+    cortada (PC apagado) se reanuda con el mismo comando sin releer lo hecho."""
+    t0, nuevas = reloj(), [0]
+    def al_leer(clave, docs, i, n):
+        hechas[clave] = docs; nuevas[0] += 1
+        tmp = ruta.with_suffix(".tmp"); tmp.write_text(json.dumps(hechas, ensure_ascii=False, default=str), encoding="utf-8"); tmp.replace(ruta)
+        media = (reloj() - t0) / nuevas[0]; quedan = n - len(hechas)
+        print(f"[{len(hechas)}/{n}] {clave}: {len(docs)} documentos · {media / 60:.1f} min/foto · quedan {quedan} ≈ {quedan * media / 60:.0f} min", flush=True)
+    return al_leer
+
+
+def ejecutar(mes, fotos, motor, leer_hoja, datos=DATOS, refrescar=False, variante="V0", muestra=None, semilla=7, peores=None, leer_texto=None,
+             reanudar=True) -> dict:
     if leer_texto is None:
         from parser_module.contable import leer_texto
     from parser_module.contable.referencia import congelar, huella, medir
@@ -115,7 +128,11 @@ def ejecutar(mes, fotos, motor, leer_hoja, datos=DATOS, refrescar=False, variant
         fotos_ref = sorted({(r["foto"], r["pagina"]) for r in ref["documentos"]})
         elegidas = set(random.Random(semilla).sample(fotos_ref, min(muestra, len(fotos_ref))))
         ref = {**ref, "documentos": [r for r in ref["documentos"] if (r["foto"], r["pagina"]) in elegidas]}
-    inf = medir(ref, fotos, lambda r, p: leer_hoja(r, p, motor), leer_texto)
+    sufijo = f"_peores{peores}" if peores else (f"_muestra{muestra}_s{semilla}" if muestra else "")
+    ruta_av = datos / "referencia" / "informes" / f"avance_{mes}_{variante}{sufijo}.json"; ruta_av.parent.mkdir(parents=True, exist_ok=True)
+    hechas = json.loads(ruta_av.read_text(encoding="utf-8")) if reanudar and ruta_av.exists() else {}
+    if hechas: print(f"reanudo {ruta_av.name}: {len(hechas)} fotos ya leídas", flush=True)
+    inf = medir(ref, fotos, lambda r, p: leer_hoja(r, p, motor), leer_texto, hechas=hechas, al_leer=_avance(ruta_av, hechas))
     inf["variante"] = variante
     if peores: inf["peores"] = peores
     elif muestra: inf["muestra"], inf["semilla"] = muestra, semilla
@@ -123,7 +140,7 @@ def ejecutar(mes, fotos, motor, leer_hoja, datos=DATOS, refrescar=False, variant
     salida = datos / "referencia" / "informes" / f"{datetime.now():%Y%m%d-%H%M%S}{'' if variante == 'V0' else '_' + variante}.json"
     salida.parent.mkdir(parents=True, exist_ok=True)
     salida.write_text(json.dumps(inf, ensure_ascii=False, indent=1), encoding="utf-8")
-    inf["archivo"] = str(salida)
+    inf["archivo"] = str(salida); ruta_av.unlink(missing_ok=True)   # terminada: el avance ya no hace falta
     return inf
 
 
@@ -159,6 +176,7 @@ def main():
     ap.add_argument("--variantes", default="V0", help="lista separada por comas, p. ej. V0,V1,V2,V3,V4")
     ap.add_argument("--muestra", type=int, help="solo N fotos al azar (las mismas para todas las variantes)")
     ap.add_argument("--semilla", type=int, default=7)
+    ap.add_argument("--de-cero", action="store_true", help="no reanudar: ignora el avance guardado de una corrida cortada")
     ap.add_argument("--peores", type=int, help="solo las N fotos con más recibos «dudoso» en el libro")
     ap.add_argument("--completo", action="store_true", help="T16: lee como la app (orientar, separar, relectura con R3/R6); informe «completo»")
     ap.add_argument("--exportar", metavar="CARPETA", help="T15: exporta imagen + JSON por recibo de la referencia del mes (no mide)")
@@ -172,7 +190,7 @@ def main():
         from ocr_module.digitos import numeros_tesseract
         motor = motor_relectura(get_engine(a.motor)); leer, parsear = lector_completo(catalogo_del_libro(DATOS / "libro.json"), numeros_tesseract)
         inf = ejecutar(a.mes, Path(a.fotos), motor, leer, refrescar=a.refrescar, variante="completo", muestra=a.muestra, semilla=a.semilla,
-                       peores=a.peores, leer_texto=parsear)
+                       peores=a.peores, leer_texto=parsear, reanudar=not a.de_cero)
         print(f"completo {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")
         for c, x in inf["por_campo"].items(): print(f"  {c:10s} {x['ok']:4d} ok {x['mal']:4d} mal  {'' if x['acierto'] is None else format(x['acierto'], '.1%')}")
         print("omitidos por causa:", inf["por_causa"], "· suma", sum(inf["por_causa"].values()), "de", inf["omitidos"])
@@ -183,7 +201,7 @@ def main():
     motor, informes = get_engine(a.motor), []
     for i, v in enumerate(vs):
         inf = ejecutar(a.mes, Path(a.fotos), motor, partial(leer_hoja_v0, variante=v), refrescar=a.refrescar and not i, variante=v,
-                      muestra=a.muestra, semilla=a.semilla, peores=a.peores)
+                      muestra=a.muestra, semilla=a.semilla, peores=a.peores, reanudar=not a.de_cero)
         informes.append(inf)
         print(f"{v} {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")
         for c, x in inf["por_campo"].items(): print(f"  {c:10s} {x['ok']:4d} ok {x['mal']:4d} mal  {'' if x['acierto'] is None else format(x['acierto'], '.1%')}")
