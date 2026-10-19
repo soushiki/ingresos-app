@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: I1 cerrada (6-test PASS); sigue T7 (I2)
+- [ ] 5-implement      current task: T7 hecho; sigue T8 (causa por pieza en medir)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -55,3 +55,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 5-implement | FIX-1 avisoFaltan(enPantalla) suma los marcadores abiertos de `docs` en «Pasar al libro» (Excel sigue solo libro); verificado en navegador (1 en pantalla → aviso, 0 → nada); 18/18 probar_*.py en verde
 2026-10-18 | 5-implement | FIX-2 clave de _conservar_revisados usa de_foto si origen==manual (venta anotada + relectura OCR = una sola); prueba en probar_revision; 18/18 probar_*.py en verde
 2026-10-18 | 6-test | I1 segunda pasada PASS: 18/18 probar_*.py en verde, FIX-1/FIX-2 cerrados; menor aceptado (re-pasar un día del libro cuenta su marcador 2 veces en el aviso); smoke de 5 pasos para el usuario en 06-test-report.md → 5-implement T7
+2026-10-18 | 5-implement | T7 leer_nombre → Nombre(numeros, correcciones, entendido); foto 3 = 85334, 85338–341, 85343 con aviso «3341 → 85341»; nombre basura (≥4 cifras) → marcador; 18/18 probar_*.py en verde

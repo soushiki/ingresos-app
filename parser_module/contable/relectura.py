@@ -9,7 +9,7 @@ import json, threading, time
 from collections import Counter
 from ocr_module.preprocess import nitidez, variante
 from .documentos import MARCA, leer_texto, parse_venta
-from .validar import FALTA, cruces, faltantes, notas_digitos, numeros_de_nombre, validar
+from .validar import FALTA, cruces, faltantes, leer_nombre, notas_digitos, validar
 from . import recortes
 
 # umbral_laplaciano: sin calibrar (T9 lo fija con N3); 100 sobre ≤1000 px es la regla usual de «borrosa».
@@ -128,7 +128,8 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
     3) Si falta un número del nombre (`completa`: la foto es todo el lote), se re-segmenta cada recorte una vez y se relee
        lo que se parta, si trae un faltante. 4) Montos idénticos entre vecinos → «dudoso».
     Tope: factor_tope × T para toda la hoja (o `tope_s` segundos); al pasarlo no se relee más (leer_recibo marca «tiempo agotado»)."""
-    esperados = numeros_de_nombre(nombre) if categoria in ("", "comandas") else None
+    nom = leer_nombre(nombre) if categoria in ("", "comandas") else None   # ADR-009: con avisos de corrección y «no entendido»
+    esperados = nom.numeros if nom else None
     ctx = {k: v for k, v in (("esperados", esperados), ("catalogo", catalogo)) if v} or None
     t0 = reloj(); v0 = [_v0(motor, t, reloj) for t in trozos]
     tope = t0 + (factor_tope * (reloj() - t0) if tope_s is None else tope_s)
@@ -165,7 +166,8 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
     for d in ventas:
         c = cruces(d, ventas)
         if c: d["motivos"] = list(d.get("motivos") or []) + c; d["estado"] = "dudoso"
-    avisos = [FALTA.format(n) for n in falta]
+    avisos = [f"Nombre de la foto corregido: {c}" for c in (nom.correcciones if nom else [])] + [FALTA.format(n) for n in falta]
     if avisos and ventas: ventas[0]["avisos"] = list(ventas[0]["avisos"]) + avisos
     return dict(documentos=todos(), texto=f"\n{MARCA}\n".join(t for _, t in grupos), segundos=round(reloj() - t0, 2), avisos=avisos,
-                falta=[int(n) for n in falta])   # M-13: los números que el nombre promete y no se leyeron (app los vuelve marcadores)
+                falta=[int(n) for n in falta],
+                nombre_entendido=nom.entendido if nom else True)   # M-13: los números que el nombre promete y no se leyeron (app los vuelve marcadores)

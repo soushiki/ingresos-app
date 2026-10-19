@@ -11,6 +11,7 @@ ctx (todo opcional):
 """
 import re
 import unicodedata
+from typing import NamedTuple
 
 CONFIG = {"tolerancia": 0, "regla_items": False}
 
@@ -32,26 +33,54 @@ def _completar(t: str, prev: int, en_rango: bool) -> int:
     return n + 10 ** len(t) if en_rango and n < prev else n
 
 
-def numeros_de_nombre(nombre: str) -> list | None:
+class Nombre(NamedTuple):
+    """ADR-009 · numeros: lista o None · correcciones: ["3341 → 85341"] · entendido: False si trae un número de recibo que no se pudo leer."""
+    numeros: list | None
+    correcciones: list
+    entendido: bool
+
+
+def _por_sufijo(t: str, prev: int) -> int | None:
+    """ADR-009: «3341» tras 85338 cae fuera de rango; sus últimas k−1, k−2 … (≥ 2) cifras completadas con el anterior, la primera en rango gana."""
+    if len(t) >= len(str(prev)): return None
+    for k in range(len(t) - 1, 1, -1):
+        n = _completar(t[-k:], prev, True)
+        if 0 <= n - prev <= 30: return n
+    return None
+
+
+def leer_nombre(nombre: str) -> Nombre:
     """«85560 al 565.jpg» → [85560…85565] · «85400 y 402 al 406» · «85627-628-629» · «comandas20260916_85627-628».
-    Cualquier cosa rara (otras palabras, rango al revés o de más de 30, números muy lejanos) → None: sin R5 antes que avisos falsos."""
+    Un fin de rango acortado fuera de rango se corrige por sufijo y queda en `correcciones` (ADR-009).
+    Cualquier cosa rara (otras palabras, rango al revés o de más de 30, números muy lejanos) → numeros None: sin R5 antes que avisos falsos.
+    `entendido` es False solo si el nombre trae una cifra de 4+ dígitos y aun así no se pudo leer."""
     base = re.split(r"[\\/]", nombre or "")[-1]
     base = re.sub(r"#\d+$", "", base); base = re.sub(r"\.[A-Za-z0-9]{2,4}$", "", base)
     base = re.sub(r"^[A-Za-z]*\d{8}_", "", base)
-    out, prev, rango = [], None, False
+    con_numero = bool(re.search(r"\d{4}", base))
+    malo = Nombre(None, [], not con_numero)
+    out, prev, rango, corr = [], None, False, []
     for t in re.findall(r"\d+|[^\W\d_]+", base.lower()):
         if t.isdigit():
-            if prev is None and not 4 <= len(t) <= 6: return None
+            if prev is None and not 4 <= len(t) <= 6: return malo
             n = int(t) if prev is None else _completar(t, prev, rango)
             if rango:
-                if not 0 <= n - prev <= 30: return None
+                if not 0 <= n - prev <= 30:
+                    n2 = _por_sufijo(t, prev)
+                    if n2 is None: return malo
+                    corr.append(f"{t} → {n2}"); n = n2
                 out += range(prev + 1, n + 1); rango = False
             else: out.append(n)
             prev = n
         elif t == "al" and prev is not None and not rango: rango = True
-        elif t not in _PALABRAS: return None
-    if rango or not out or max(out) - min(out) > 100: return None
-    return sorted(set(out))
+        elif t not in _PALABRAS: return malo
+    if rango or not out or max(out) - min(out) > 100: return malo
+    return Nombre(sorted(set(out)), corr, True)
+
+
+def numeros_de_nombre(nombre: str) -> list | None:
+    """Envoltorio de leer_nombre: solo los números (None si no se entiende)."""
+    return leer_nombre(nombre).numeros
 
 
 def rango_de_nombre(nombre: str) -> tuple | None:

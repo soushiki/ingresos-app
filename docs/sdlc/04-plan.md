@@ -45,11 +45,12 @@
   — hecho: la clave de `_conservar_revisados` usa `de_foto` como origen cuando `origen=="manual"`; 1 check nuevo en probar_revision
 
 ## Iteración 2 — demo: la foto «85334-338 al 3341-343» corta en 6 y `medir --completo` dice la causa de cada omitido
-- [ ] T7 (M) `validar.leer_nombre` → `Nombre(numeros, correcciones, entendido)`; corrección por sufijo con aviso «3341 → 85341»;
+- [x] T7 (M) `validar.leer_nombre` → `Nombre(numeros, correcciones, entendido)`; corrección por sufijo con aviso «3341 → 85341»;
   `numeros_de_nombre` queda como envoltorio; nombre no entendido → marcador «No entiendo el nombre de la foto …» (vía `faltantes.crear`)
   — R3, ADR-009 — done when: `probar_validar.py` da para la foto 3 exactamente 85334, 85338–85341, 85343 con aviso; nombres de la
   referencia sin cambio; nombre basura → marcador, no 1 pieza callada — files: `parser_module/contable/validar.py`,
   `parser_module/contable/relectura.py`, `app.py`, `probar_validar.py` — model: Sonnet
+  — hecho: `leer_nombre`→`Nombre`, `_por_sufijo`, `numeros_de_nombre` envoltorio; `leer_hoja` avisa la corrección y devuelve `nombre_entendido`; app crea el marcador; 6 checks nuevos en probar_validar
 - [ ] T8 (M) `referencia.medir` guarda `piezas` (tipo, número, 120 caracteres) y `causa_de` pura; informe con `omitidos_detalle` y
   `por_causa`; `medir_precision.py` lo imprime — R4 — done when: `probar_precision.py` prueba `causa_de` para tipo/corte/número;
   `medir_precision.py --completo` sobre septiembre imprime `por_causa` y la suma = omitidos — files: `parser_module/contable/referencia.py`,

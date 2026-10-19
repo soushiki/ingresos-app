@@ -46,8 +46,20 @@ chk(numeros_de_nombre("85316-317-321.jpg") == [85316, 85317, 85321], "lista con 
 chk(numeros_de_nombre("85319-318-rappi.jpg") == [85318, 85319], "«rappi» y orden suelto")
 chk(numeros_de_nombre("x\\comandas20260916_85627-628-629.pdf#1") == [85627, 85628, 85629], "prefijo comandasAAAAMMDD_ y ruta de Windows")
 chk(numeros_de_nombre("85998 al 002") == list(range(85998, 86003)), "rango que cruza el millar")
-for raro in ("85334-338 al 3341-343.jpg", "comandas20261002_15304850.pdf", "IMG_20260916_123456.jpg", "rappi.jpg", "85560 al", "85560 al 85500"):
+for raro in ("comandas20261002_15304850.pdf", "IMG_20260916_123456.jpg", "rappi.jpg", "85560 al", "85560 al 85500"):
     chk(numeros_de_nombre(raro) is None, f"nombre raro sin R5: {raro}")
+# T7 · ADR-009: número acortado fuera de rango → corrección por sufijo con aviso; basura con cifras → no entendido
+from parser_module.contable.validar import leer_nombre
+foto3 = leer_nombre("85334-338 al 3341-343.jpg")
+chk(numeros_de_nombre("85334-338 al 3341-343.jpg") == [85334, 85338, 85339, 85340, 85341, 85343] and foto3.numeros == numeros_de_nombre("85334-338 al 3341-343.jpg")
+    and foto3.correcciones == ["3341 → 85341"] and foto3.entendido, "ADR-009: corrección de nombre sin aviso o lista mal")
+chk(leer_nombre("85560 al 565.jpg") == ([85560, 85561, 85562, 85563, 85564, 85565], [], True) and leer_nombre("85316-317-321.jpg").correcciones == [],
+    "ADR-009: leer_nombre cambió un nombre que ya se entendía")
+chk(leer_nombre("85560 al 85500.jpg") == (None, [], False) and leer_nombre("IMG_20260916_123456.jpg").entendido is False, "nombre con cifras que no se entiende → entendido False")
+chk(leer_nombre("rappi.jpg") == (None, [], True) and leer_nombre("").entendido, "nombre sin cifras: no entendido pero tampoco marcador")
+from parser_module.contable import faltantes as _fal
+mk = _fal.crear([], "IMG_20260916_123456.jpg", "", None, leer_nombre("IMG_20260916_123456.jpg").entendido)
+chk(len(mk) == 1 and mk[0]["numero"] == "" and mk[0]["avisos"] == ["No entiendo el nombre de la foto IMG_20260916_123456.jpg"], "nombre basura → marcador, no 1 pieza callada")
 chk(validar(doc(), {"esperados": [85560, 85561]}) == [], "número dentro del nombre")
 chk(validar(doc(numero="85568"), {"rango": (85560, 85565)}) == ["El recibo 85568 no está en el nombre de la foto (85560 al 85565)"], "número fuera del rango")
 chk(validar(doc(numero="85568"), {"esperados": [85560, 85562, 85563, 85564]}) == ["El recibo 85568 no está en el nombre de la foto (85560, 85562 al 85564)"], "fuera de la lista, texto compacto")

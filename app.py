@@ -281,16 +281,17 @@ def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", comp
     """Una hoja (foto o página escaneada) → documentos (T8: cada venta por C5 leer_recibo, R5 con el nombre de la foto),
     texto con los papeles separados por MARCA, segundos, grados girados y avisos de la hoja («Falta el recibo …»)."""
     png, grados = orientacion.preparar_pagina(img_bytes, giro)
-    esperados = relectura.numeros_de_nombre(nombre) if categoria in ("", "comandas") else None   # T8b: cuántos papeles trae la foto
+    esperados = relectura.leer_nombre(nombre).numeros if categoria in ("", "comandas") else None   # T8b: cuántos papeles trae la foto
     trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
     h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar,
                          catalogo=_catalogo(), leer_digitos=numeros_tesseract)
     h = {**h, "grados": grados}
-    if h.get("falta"): h["documentos"] = h["documentos"] + _marcadores_de_foto(png, h["falta"], nombre, h["documentos"])
+    if h.get("falta") or not h.get("nombre_entendido", True):   # ADR-009: nombre con número que no se entiende → un marcador sin número
+        h["documentos"] = h["documentos"] + _marcadores_de_foto(png, h.get("falta") or [], nombre, h["documentos"], h.get("nombre_entendido", True))
     return h
 
 
-def _marcadores_de_foto(png: bytes, falta: list, nombre: str, docs: list) -> list:
+def _marcadores_de_foto(png: bytes, falta: list, nombre: str, docs: list, nombre_entendido: bool = True) -> list:
     """M-13/ADR-008: un marcador por número que falta; la foto entera (≤ 1600 px) se guarda solo si hay faltante. Sin foto → recorte None."""
     recorte = None
     try:
@@ -298,7 +299,7 @@ def _marcadores_de_foto(png: bytes, falta: list, nombre: str, docs: list) -> lis
         recorte = recortes.guardar(img, RUTA_RECORTES)
     except Exception: recorte = None   # noqa: BLE001  sin foto guardada el marcador sigue valiendo
     fecha = next((d.get("fecha") for d in docs if d.get("tipo") == "venta" and d.get("fecha")), "")
-    return faltantes.crear(falta, nombre, fecha or "", recorte)
+    return faltantes.crear(falta, nombre, fecha or "", recorte, nombre_entendido)
 
 
 @app.post("/api/contable/escanear")
