@@ -228,4 +228,22 @@ chk(_validar_falt(_ven + _marca, [5, 6]) == [6] and _validar_falt(_marca, [5]) =
 _lib = {"2026-09-12": dict(fecha="2026-09-12", documentos=_con["documentos"], banco={}, cierre={}, guardado="2026-09-12T08:00:00")}
 _d, _m = leer_crudo(crudo(_lib))
 chk(not _m and _d[0]["documentos"] == _con["documentos"], "T2: el marcador hace la ida y vuelta por el .json crudo")
+# R1 (v1.3.0): ajuste al cierre cuando el cierre supera la venta de los papeles
+def _r1(cierre=None, extra=()):
+    return construir("2026-09-16", [dict(d) for d in vv[:2]] + list(extra), None, None, cierre)   # 2 comandas de 40.000 = 80.000
+_a = _r1({"total_vendido": 200000})
+_aj = [(x["codigo"], x["debito"], x["credito"]) for x in _a["filas"] if x["descripcion"] == "Ajuste al cierre (cierre > papeles)"]
+_rest = sum(x["credito"] for x in _a["filas"] if x["codigo"] == "41401501")
+chk(_aj == [("13809501", 120000, 0), ("41401501", 0, 120000)] and _rest == 200000 and any("Ajuste al cierre" in t for t in _a["avisos"]),
+    f"R1: cierre 200.000 vs papeles 80.000 → 4140 suma 200.000, puente 120.000 y aviso: {_aj}")
+_cd = dict(tipo="cierre", id="c1", fecha="2026-09-16", contar=False, datos={"total_vendido": 200000}, numero="", tercero="POS", detalle="Cierre de caja resumido", avisos=[], texto="", origen="")
+_b = _r1(extra=[_cd])
+chk([(x["codigo"], x["debito"], x["credito"]) for x in _b["filas"] if x["descripcion"].startswith("Ajuste")] == [(x["codigo"], x["debito"], x["credito"]) for x in _a["filas"] if x["descripcion"].startswith("Ajuste")]
+    and _b["diferencia"] == 0 and _a["diferencia"] == 0 and all(x["fx"] for x in _a["filas"] if x["descripcion"].startswith("Ajuste")),
+    "R1: igual si el total sale del papel del cierre (con su fecha); débito = crédito; cada fila nueva lleva fx")
+_m = _r1({"total_vendido": 50000}); _s = _r1()
+chk(_m["filas"] == _s["filas"] and any("más que el cierre" in t for t in _m["avisos"]) and not any("Ajuste" in t for t in _s["avisos"]) and _m["diferencia"] == 0,
+    "R1: papeles > cierre → filas iguales que sin cierre + aviso; sin cierre → sin ajuste ni aviso")
+_o = _r1(extra=[dict(_cd, fecha="2026-09-17")])
+chk(_o["filas"] == _s["filas"], "R1: cierre de otra fecha → sin ajuste")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

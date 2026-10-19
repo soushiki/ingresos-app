@@ -243,6 +243,17 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
     docs = [d for d in todos if d.get("contar") and d["tipo"] != "cierre"]
     datos = datos_ocr(fecha, todos, banco, cfg)
+    cie = {**datos_cierre(todos), **{k: int(v) for k, v in (cierre or {}).items() if v is not None}}
+    # R1 (ajuste al cierre): el cierre del POS manda sobre los papeles. Solo con total vendido leído y fecha del cierre (o cifras escritas a mano).
+    # Si el cierre supera la venta de los papeles (consumo, sin propina ni domicilio) la diferencia entra al puente 13809501; si no, solo avisa.
+    ajuste = 0; fecha_cierre = bool(cierre) or any(d.get("tipo") == "cierre" and d.get("fecha") == fecha for d in todos)
+    if cie.get("total_vendido") and fecha_cierre:
+        en_papeles = sum(d["consumo"] for d in todos if d["tipo"] == "venta" and d.get("contar"))
+        dif = cie["total_vendido"] - en_papeles
+        if dif > 1:
+            ajuste = dif; j_aj = len(datos)
+            datos.append(dict(fecha=fecha, archivo="cierre de caja", tipo="cierre", numero="", tercero="Consumidor Final", detalle="Ajuste al cierre (cierre > papeles)", valor=ajuste, medio="",
+                              cuenta=cfg["puente_ingreso"], estado="ok", aviso="total vendido del cierre − consumo de las comandas", propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo=""))
     # DEBT-1: las filas salen de DATOS OCR (una sola clasificación). Solo cuentan las filas «ok», como en los SUMIFS del Excel.
     ok = [(i, x) for i, x in enumerate(datos) if x["estado"] == "ok"]
     de = lambda bloque, **k: [(i, x) for i, x in ok if x["bloque"] == bloque and all(x[a] == b for a, b in k.items())]
@@ -331,6 +342,13 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         j = fila(cfg["puente_ingreso"], "Consumidor Final", "Venta sin medio de pago · " + ords, deb=suma(sin_medio), reporta=cfg["reporta_banco"], grupo="venta", docs=ids(sin_medio),
                  fx=S(bloque="venta", cuenta=cfg["puente_ingreso"]))
         fila(RESTAURANTE, "Consumidor Final", "Venta sin medio de pago · " + ords, cre=suma(sin_medio), reporta=cfg["reporta_banco"], grupo="venta", docs=ids(sin_medio), fx=["fila", j])
+    if ajuste:
+        j = fila(cfg["puente_ingreso"], "Consumidor Final", "Ajuste al cierre (cierre > papeles)", deb=ajuste, reporta=cfg["reporta_banco"], grupo="venta", fx=["dato", j_aj])
+        fila(RESTAURANTE, "Consumidor Final", "Ajuste al cierre (cierre > papeles)", cre=ajuste, reporta=cfg["reporta_banco"], grupo="venta", fx=["fila", j])
+        avisos.append(f"Ajuste al cierre: el cierre del POS vendió {ajuste:,} más que tus comandas; quedó en la cuenta puente {cfg['puente_ingreso']} (falta una comanda o se leyó mal)".replace(",", "."))
+    elif cie.get("total_vendido") and fecha_cierre and sum(d["consumo"] for d in todos if d["tipo"] == "venta" and d.get("contar")) - cie["total_vendido"] > 1:
+        sobra = sum(d["consumo"] for d in todos if d["tipo"] == "venta" and d.get("contar")) - cie["total_vendido"]
+        avisos.append(f"Tus comandas suman {sobra:,} más que el cierre del POS: no se ajustó nada, revisa si hay una comanda repetida o mal leída".replace(",", "."))
 
     # 3) caja menor: un renglón por cuenta + un crédito a Efectivo (sin cuenta = puente: una sola fila con los que ya estaban ahí, FIX-3)
     cm = de("caja"); por_cuenta = defaultdict(list)
@@ -362,7 +380,6 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             avisos += [f"{d['tipo'].replace('_', ' ').capitalize()} {d['numero'] or ''}: {a}".replace("  ", " ") for a in d["avisos"]]
         if d["tipo"] == "venta" and estado_de(d) == "dudoso":   # T12 (R7): el motivo de la validación, si no es ya un aviso
             avisos += [f"Venta {d['numero'] or ''} dudosa: {m}".replace("  ", " ") for m in d.get("motivos") or [] if m not in (d.get("avisos") or [])]
-    cie = {**datos_cierre(todos), **{k: int(v) for k, v in (cierre or {}).items() if v is not None}}
     cruces, faltan = cruzar([d for d in todos if d["tipo"] != "cierre"], cie)
     if faltan: avisos.insert(0, "Faltan comandas del cierre: " + ", ".join(map(str, faltan)))
     if faltan: avisos.append("Falta la comanda " + ", ".join(map(str, faltan)) + " (está en el rango del cierre)")
