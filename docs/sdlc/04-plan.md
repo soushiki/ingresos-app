@@ -20,7 +20,7 @@ el Excel la calcule igual. Días sin cierre o con cierre sin total/fecha: sin ca
   probar_contable +3 checks: propinas 48.100 → débito 28150502 48.100; vale 20.000 + cierre 50.000 → 30.000 desde el cierre;
   débito = crédito; suites verdes.
   — files: `parser_module/contable/asientos.py`, `probar_contable.py`, `probar_dia15.py` (solo si cambia lo esperado)
-- [ ] T3 (S) Respaldo antes de recalcular — R3 — model: Sonnet
+- [x] T3 (S) Respaldo antes de recalcular — R3 — model: Sonnet — hecho: `_guardar_libro` copia `libro.json` a `datos/libro.antes-v1.3.0.json` si no existe (una vez, no se pisa); probar_contable +3 checks (respaldo idéntico, 2.ª escritura no lo toca, Excel lista el día en «cambió desde que se confirmó»), suites verdes
   — antes de la primera escritura de `libro.json` con las reglas nuevas, copiar a `datos/libro.antes-v1.3.0.json` si no existe
   (una sola vez, no se pisa). La exportación ya recalcula y avisa por FIX-6 los días que cambian: verificar que el aviso sale.
   — done when: prueba con libro temporal: primera escritura crea el respaldo idéntico al original; la segunda no lo toca;

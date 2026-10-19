@@ -261,4 +261,21 @@ _q2 = _r1({"total_vendido": 80000, "domicilios_pagados": 10000}, extra=[_vale])
 chk(not any(x["codigo"] == "28150501" and "según cierre" in x["descripcion"] for x in _q2["filas"]) and _q2["diferencia"] == 0
     and all(x["fx"] for x in _p["filas"] + _q["filas"] if "según cierre" in x["descripcion"]) and not any("según cierre" in x["descripcion"] for x in _s["filas"]),
     "R2: vales > cierre → no hay fila desde el cierre; débito = crédito; cada fila nueva lleva fx; sin cierre → sin filas nuevas")
+# R3 (v1.3.0): respaldo único del libro antes de la primera escritura con las reglas nuevas
+import json
+_ant = appmod.RUTA_LIBRO; _t3 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO = _t3 / "libro.json"
+_orig = {"2026-09-16": dict(fecha="2026-09-16", documentos=[dict(d) for d in vv[:2]], banco={}, cierre={"total_vendido": 200000}, guardado="2026-09-16T08:00:00")}
+_sin = construir("2026-09-16", [dict(d) for d in vv[:2]], None, None, None)
+_orig["2026-09-16"].update(debito=_sin["debito"], credito=_sin["credito"])   # confirmado antes de R1: sin ajuste
+appmod.RUTA_LIBRO.write_text(json.dumps(_orig), encoding="utf8"); _txt0 = appmod.RUTA_LIBRO.read_text(encoding="utf8")
+_bk = _t3 / "libro.antes-v1.3.0.json"
+_nuevo = dict(_orig); _nuevo["2026-09-17"] = dict(_orig["2026-09-16"], fecha="2026-09-17")
+appmod._guardar_libro(_nuevo)
+chk(_bk.exists() and _bk.read_text(encoding="utf8") == _txt0, "R3: la primera escritura crea el respaldo idéntico al libro original")
+_bk.write_text("marca", encoding="utf8"); appmod._guardar_libro(_orig)
+chk(_bk.read_text(encoding="utf8") == "marca", "R3: la segunda escritura no toca el respaldo")
+appmod._guardar_libro(_orig)
+_cam = [a for a in avisos_export() if "cambió" in a]
+chk(len(_cam) == 1 and "2026-09-16" in _cam[0], f"R3: día con cierre > papeles confirmado antes → el Excel lo lista en «cambió desde que se confirmó»: {_cam}")
+appmod.RUTA_LIBRO = _ant
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

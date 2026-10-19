@@ -1,7 +1,7 @@
 """Ingresos Diarios · Fotos de cierres de caja manuscritos → tabla → Excel.
 Ejecuta:  python app.py   (abre http://127.0.0.1:5050)"""
 from __future__ import annotations
-import copy, io, json, os, re, threading, webbrowser
+import copy, io, json, os, re, shutil, threading, webbrowser
 from datetime import datetime
 from pathlib import Path
 import requests
@@ -205,6 +205,8 @@ def _leer_libro() -> dict:
 
 
 def _guardar_libro(d: dict):
+    resp = RUTA_LIBRO.with_name("libro.antes-v1.3.0.json")   # R3: copia única del libro tal como estaba antes de las reglas nuevas; no se pisa
+    if RUTA_LIBRO.exists() and not resp.exists(): shutil.copy2(RUTA_LIBRO, resp)
     tmp = RUTA_LIBRO.with_suffix(".tmp"); tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_LIBRO)
 
 
