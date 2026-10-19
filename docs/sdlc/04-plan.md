@@ -69,8 +69,10 @@
 ## Iteración 3 — demo: `medir --completo` con omitidos (solo OCR) ≤ 2/107 sin empeorar aciertos ni dudosos
 - [x] T10 (S) Compuerta R5: correr `medir --completo` (tras T7–T8), anotar `por_causa` en STATE y decidir con el usuario si R5 sigue
   tal cual — R5, riesgo 3 — done when: STATE tiene la línea con la cifra y la decisión — files: `docs/sdlc/STATE.md` — model: Sonnet — hecho: 103 recibos, omitidos 13 = número 13 (corte 0, tipo 0); el usuario decide R5 tal cual
-- [ ] T11 (M) R5 en `leer_hoja`: solo si hay faltantes, recortar la cabecera de cada pieza sin número válido, ampliar ×2,
+- [x] T11 (M) R5 en `leer_hoja`: solo si hay faltantes, recortar la cabecera de cada pieza sin número válido, ampliar ×2,
   `numeros_tesseract`; exactamente un faltante → se asigna con nota y `estado:"dudoso"`; Tesseract ausente → se salta (ADR-010)
   — R5, N2, N3 — done when: `probar_relectura.py` cubre asignar/no asignar (0 o 2 coincidencias)/sin Tesseract; `medir --completo`
   omitidos ≤ 2/107, aciertos y dudosos ≥ M-12, tiempo por foto ≤ 1,2 × M-12; todas las `probar_*.py` pasan
   — files: `parser_module/contable/relectura.py`, `ocr_module/digitos.py`, `probar_relectura.py` — model: Opus
+  — intento 1 (2026-10-19, sin commit): R5 con Tesseract en la cabecera ×2 implementado y probado (8 checks), pero `medir --completo` (informe 20261019-093006, 3 h 57 min) → omitidos 15/103, 0 rescatados: las fotos miden ≈ 1100 px con 6 recibos y Tesseract no lee el número ni a ×3/×4 (y lee 85446 en la pieza 85444). Alternativa medida sin OCR sobre los informes T10/T11: número de qwen a 1 cifra de exactamente un faltante (65340→85340, B5442, 85188→85388) → rescata 8/13 y 9/15, 0 falsos. El usuario elige la cercanía y acepta ≈ 5/103.
+  — hecho (ADR-011, reemplaza ADR-010): `_cercano`/`_por_cercania` en relectura (exacto gana; si no, único faltante a 1 cifra; crudo «REC…#» con B→8, O→0, S→5); sin OCR nuevo, tiempo +0. `ocr_module/digitos.py` sin cambios. probar_relectura +10 checks (fitness ADR-011). Con el código real sobre las piezas de T10/T11: omitidos 13→4 y 15→5, 0 asignaciones falsas. N3 (≤ 2 %) sigue abierta; falta confirmarlo con `medir --completo` en 6-test

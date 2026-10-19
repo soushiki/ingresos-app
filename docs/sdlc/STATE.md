@@ -5,7 +5,7 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 5-implement
+next: 6-test
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: T11 (R5 en leer_hoja, I3)
+- [ ] 5-implement      current task: — (I3 completa)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -63,3 +63,5 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-19 | 6-test | I2 segunda pasada PASS: 18/18 probar_*.py en verde, FIX-3/FIX-4 cerrados; menor aceptado (nombre con recibos + fecha → sin R5); smoke de 5 pasos para el usuario → 5-implement T10
 2026-10-19 | 5-implement | T10 compuerta: medir --completo --peores 20 (informe 20261019-052322, 4 h 09 min) → 103 recibos (antes 107: T7 cambió los esperados de la foto 3), omitidos 13 = número 13 + corte 0 + tipo 0; dudosos 18, validados con error 7. Todos son de número → R5 aplica tal cual; espera decisión del usuario. Ojo: 4 omitidos en 5/85387 al 392; N3 pide ≤ 2/103
 2026-10-19 | 5-implement | T10 decisión del usuario: R5 sigue tal cual (ADR-010) → T11
+2026-10-19 | 5-implement | T11 intento 1: R5 Tesseract en cabecera → 0 rescatados (omitidos 15/103; fotos ≈ 1100 px). Regla «a 1 cifra de un solo faltante» medida en los informes: 8/13 y 9/15, 0 falsos → ≈ 5/103, no llega a ≤ 2. Espera decisión (ADR-010)
+2026-10-19 | 5-implement | T11 por ADR-011 (cercanía, reemplaza ADR-010): sobre las piezas de T10/T11 omitidos 13→4 y 15→5, 0 falsos, tiempo +0; 18/18 probar_*.py en verde; además medir con línea por foto y avance reanudable; iteración 3 completa → 6-test (confirmar con medir --completo)

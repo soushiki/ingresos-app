@@ -1,6 +1,6 @@
 # ADR-010 · La cabecera ampliada se lee solo cuando falta un número
 
-Estado: aceptado (2026-10-18, aprobado por el usuario)
+Estado: reemplazado por ADR-011 (2026-10-19: Tesseract no lee el número en fotos de ≈ 1100 px; 0 rescatados)
 
 ## Contexto
 10 de los 13 omitidos salen bien cortados y se pierden en el número o el tipo; en 5/85387 las piezas miden ≈ 250 px de ancho y el

@@ -7,7 +7,8 @@
 - **El nombre de la foto** se lee con `leer_nombre()`: un número acortado que cae fuera del rango se corrige por sufijo y **se avisa**
   («3341 → 85341»); un nombre que no se entiende crea un marcador «no entiendo el nombre» en vez de cortar en 1 pieza callado (ADR-009).
 - **`medir` guarda por pieza** (tipo, número, 120 caracteres del texto) y da a cada omitido `causa ∈ {tipo, corte, número}`.
-- **R5 (Should):** solo cuando falta un número, se recorta la cabecera de cada pieza sin número válido, se amplía ×2 y Tesseract busca
+- **R5 → ADR-011 (2026-10-19):** reemplaza lo de abajo: número leído a ≤ 1 cifra de un solo faltante, sin OCR nuevo.
+- ~~R5 (Should)~~ (ADR-010, reemplazado): solo cuando falta un número, se recorta la cabecera de cada pieza sin número válido, se amplía ×2 y Tesseract busca
   dígitos; si sale exactamente un faltante, se asigna con nota (ADR-010). Sin faltantes, costo cero.
 - Sin servicios, tablas ni dependencias nuevas. Todo en `app.py` + `parser_module/contable/` + `static/contable.html`.
 

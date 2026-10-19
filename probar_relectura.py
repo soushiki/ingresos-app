@@ -161,9 +161,9 @@ m = MotorHoja(t0=rec(85627), t1=[rec(85638, "M3", 50000), rec(85628, "M3", 50000
 h = leer_hoja([trozo(0), trozo(1)], m, nombre="85627 al 628.jpg", **H); d = h["documentos"][1]
 chk(m.n == 3 and d["numero"] == "85628" and d["estado"] == "validado", "número fuera del nombre → se relee y la V1 lo corrige")
 
-m = MotorHoja(t0=rec(85627), t1=rec(85638, "M3", 50000))
+m = MotorHoja(t0=rec(85627), t1=rec(85138, "M3", 50000))   # a 2 cifras del faltante: R5 (ADR-011) no lo toca
 h = leer_hoja([trozo(0), trozo(1)], m, nombre="85627 al 628.jpg", **H)
-chk(h["documentos"][1]["motivos"][0] == "El recibo 85638 no está en el nombre de la foto (85627, 85628)" and m.n == 5,
+chk(h["documentos"][1]["motivos"][0] == "El recibo 85138 no está en el nombre de la foto (85627, 85628)" and m.n == 5,
     "sigue fuera tras 3 relecturas → dudoso con el motivo")
 chk(h["avisos"] == ["Falta el recibo 85628 en esta foto"] and h["avisos"][0] in h["documentos"][0]["avisos"], "y avisa el que falta (R5)")
 
@@ -182,6 +182,28 @@ chk(h["falta"] == [], "M-13: página de PDF largo → falta vacía")
 chk(h["avisos"] == [], "página de un PDF con más páginas: no se reclaman faltantes")
 h = leer_hoja([trozo(0)], MotorHoja(t0=rec(85627)), nombre="IMG_20260916_123456.jpg", **H)
 chk(h["avisos"] == [] and h["documentos"][0]["estado"] == "validado", "nombre sin números de recibo: sin R5")
+
+# T11 · R5 (ADR-011): número a ≤ 1 cifra de un solo faltante → se asigna, «dudoso» con nota; sin faltantes no cambia nada
+from parser_module.contable.relectura import CERCANO
+h = leer_hoja([trozo(0), trozo(1)], MotorHoja(t0=rec(85627), t1=rec(65628, "M3", 50000)), nombre="85627 al 628.jpg", **H)
+d = h["documentos"][1]
+chk(d["numero"] == "85628" and d["estado"] == "dudoso" and d["motivos"][-1] == CERCANO.format("65628"), "R5: 65628 a 1 cifra del único faltante → 85628, dudoso con nota")
+chk(not any("no está en el nombre" in x for x in d["motivos"]), "R5: se quita el motivo del número viejo (65628)")
+chk(h["falta"] == [] and h["avisos"] == [], "R5: ya no falta nada ni hay aviso")
+chk(h["documentos"][0]["numero"] == "85627" and h["documentos"][0]["estado"] == "validado", "R5: la pieza con número del nombre no se toca")
+h = leer_hoja([trozo(0), trozo(1)], MotorHoja(t0=rec(85627), t1=rec("B5628", "M3", 50000)), nombre="85627 al 628.jpg", **H)
+d = h["documentos"][1]
+chk(d["numero"] == "85628" and "Falta el número de recibo" not in d["motivos"], "R5: «B5628» crudo (sin número) → 85628 y se quita «Falta el número»")
+h = leer_hoja([trozo(0), trozo(1)], MotorHoja(t0=rec(85627), t1=rec(85620, "M3", 50000)), nombre="85627 al 629.jpg", **H)
+chk(h["documentos"][1]["numero"] == "85620" and h["falta"] == [85628, 85629], "ADR-011: número asignado con ambigüedad")
+h = leer_hoja([trozo(0), trozo(1)], MotorHoja(t0=rec(85627), t1=rec(85628, "M3", 50000)), nombre="85627 al 629.jpg", **H)
+chk(h["falta"] == [85629] and h["documentos"][1]["numero"] == "85628", "R5: un número exacto del nombre no se reasigna")
+h = leer_hoja([trozo(0), trozo(1)], MotorHoja(t0=rec(85627), t1=rec(85138, "M3", 50000)), nombre="85627 al 628.jpg", **H)
+chk(h["documentos"][1]["numero"] == "85138" and h["falta"] == [85628], "R5: a 2 cifras → no se asigna, sigue el faltante")
+h = leer_hoja([trozo(0), trozo(1)], MotorHoja(t0=rec(85627), t1=rec(85638, "M3", 50000)), nombre="85627 al 638.jpg", **H)
+chk(h["documentos"][1]["numero"] == "85638" and h["falta"] == [85628, 85629, 85630, 85631, 85632, 85633, 85634, 85635, 85636, 85637], "R5: número del nombre (85638) no se toca aunque haya faltantes")
+h = leer_hoja([trozo(0), trozo(1)], MotorHoja(t0=rec(85627), t1=rec(65638, "M3", 50000)), nombre="85627.jpg", **H)
+chk(h["documentos"][1]["numero"] == "65638", "ADR-011: número cambiado sin faltantes")
 
 m = MotorHoja(t0=rec(85627), t1=rec(85628, "M3"))
 h = leer_hoja([trozo(0), trozo(1)], m, nombre="85627 al 628.jpg", **H)

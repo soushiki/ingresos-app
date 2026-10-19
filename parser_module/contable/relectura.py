@@ -5,7 +5,7 @@ Voto: el primer candidato que valida entero gana; si ninguno, cada campo toma el
 Foto borrosa (laplaciano < umbral): aunque valide, se relee hasta que una segunda variante coincida en todos los campos.
 """
 from __future__ import annotations
-import json, threading, time
+import json, re, threading, time
 from collections import Counter
 from ocr_module.preprocess import nitidez, variante
 from .documentos import MARCA, leer_texto, parse_venta
@@ -15,6 +15,7 @@ from . import recortes
 # umbral_laplaciano: sin calibrar (T9 lo fija con N3); 100 sobre ≤1000 px es la regla usual de «borrosa».
 # variantes: orden de las pasadas, medido en T9 (20 fotos con más dudosos, 107 recibos; recibos enteros bien: V0 59, y lo que cada
 # una suma a lo ya cubierto: V4 +9, V3 +4, V1 +1, V2 +0). V4 (Real-ESRGAN) nunca va sola; sin ejecutable se salta y entra V2.
+CERCANO = "Número corregido por cercanía al nombre de la foto (se leyó {}): revísalo con la foto"   # R5 · ADR-011
 CONFIG = {"max_relecturas": 3, "umbral_laplaciano": 100.0, "variantes": ["V0", "V4", "V3", "V1", "V2"]}
 
 
@@ -120,13 +121,47 @@ def _nums(docs) -> set:
     return {int(d["numero"]) for d in docs if d.get("tipo") == "venta" and str(d.get("numero") or "").isdigit()}
 
 
+def _con_numero(d, esperados) -> bool:
+    n = str(d.get("numero") or "")
+    return n.isdigit() and int(n) in set(esperados)
+
+
+_PARECIDOS = str.maketrans("BOSIl", "80511")
+
+
+def _leidos(d) -> set:
+    """Lo que el OCR leyó como número: el del documento y el crudo tras «RECIBO #» (B→8, O→0, S→5, I/l→1)."""
+    out = {str(d.get("numero") or "")}
+    m = re.search(r"REC\w*\s*#\s*:?\s*([0-9A-Za-z]{4,6})", str(d.get("texto") or ""))
+    if m: out.add(m.group(1).translate(_PARECIDOS))
+    return {x for x in out if x.isdigit()}
+
+
+def _cercano(d, falta) -> int | None:
+    """R5 · ADR-011: el único faltante igual a lo leído, o si no el único a 1 cifra (mismo largo); 0 o ≥ 2 → None."""
+    dist = lambda x, f: sum(a != b for a, b in zip(x, str(f))) if len(x) == len(str(f)) else 9
+    for tope in (0, 1):
+        c = {f for f in falta for x in _leidos(d) if dist(x, f) <= tope}
+        if c: return c.pop() if len(c) == 1 else None
+    return None
+
+
+def _por_cercania(d, n: int):
+    """R5: se pone el número, se quitan los motivos del número viejo y queda «dudoso» con la nota para ④."""
+    viejo = str(d.get("numero") or "")
+    d["motivos"] = [m for m in (d.get("motivos") or []) if m != "Falta el número de recibo"
+                    and not (viejo.isdigit() and m.startswith(f"El recibo {int(viejo)} no está"))] + [CERCANO.format(viejo or "sin número")]
+    d["numero"] = str(n); d["estado"] = "dudoso"
+
+
 def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=None, separar=None, factor_tope=3.0,
               tope_s=None, umbral=None, reloj=time.monotonic, catalogo=None, leer_digitos=None) -> dict:
     """C7 · Los recortes de una hoja → documentos. R5, R2, N2.
     1) V0 de cada recorte (lo de siempre) mide T. 2) Un recorte con UNA venta pasa por leer_recibo con los números del nombre
     de la foto; los demás (cierres, gastos, varios papeles pegados en un texto) siguen como hoy y la venta solo se valida.
     3) Si falta un número del nombre (`completa`: la foto es todo el lote), se re-segmenta cada recorte una vez y se relee
-       lo que se parta, si trae un faltante. 4) Montos idénticos entre vecinos → «dudoso».
+       lo que se parta, si trae un faltante. 4) R5 · ADR-011: si aún falta alguno, a cada venta sin número del nombre se le
+       asigna el único faltante a ≤ 1 cifra de lo leído («dudoso» con CERCANO). Sin faltantes no cambia nada. 5) Montos idénticos entre vecinos → «dudoso».
     Tope: factor_tope × T para toda la hoja (o `tope_s` segundos); al pasarlo no se relee más (leer_recibo marca «tiempo agotado»)."""
     nom = leer_nombre(nombre) if categoria in ("", "comandas") else None   # ADR-009: con avisos de corrección y «no entendido»
     esperados = nom.numeros if nom else None
@@ -162,6 +197,9 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
             docs = [d for g, _ in nuevos for d in g]
             if (_nums(docs) - _nums(grupos[i][0])) & set(falta):
                 grupos[i] = (docs, f"\n{MARCA}\n".join(t for _, t in nuevos)); falta = faltantes(todos(), esperados)
+    for d in [d for d in todos() if d["tipo"] == "venta" and not _con_numero(d, esperados)] if falta else []:
+        n = _cercano(d, falta)
+        if n is not None: _por_cercania(d, n); falta = faltantes(todos(), esperados)
     ventas = [d for d in todos() if d["tipo"] == "venta"]
     for d in ventas:
         c = cruces(d, ventas)
