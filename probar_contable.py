@@ -246,4 +246,19 @@ chk(_m["filas"] == _s["filas"] and any("más que el cierre" in t for t in _m["av
     "R1: papeles > cierre → filas iguales que sin cierre + aviso; sin cierre → sin ajuste ni aviso")
 _o = _r1(extra=[dict(_cd, fecha="2026-09-17")])
 chk(_o["filas"] == _s["filas"], "R1: cierre de otra fecha → sin ajuste")
+# R2 (v1.3.0): débito a 2815 desde el cierre, sin repetir los vales «pago domicilios»
+_p = _r1({"total_vendido": 80000, "propinas_total": 48100})
+_pd = [(x["codigo"], x["debito"], x["credito"]) for x in _p["filas"] if "según cierre" in x["descripcion"]]
+chk(_pd == [("28150502", 48100, 0), ("11050501", 0, 48100)] and _p["diferencia"] == 0,
+    f"R2: propinas 48.100 en el cierre → débito 28150502 48.100 contra Efectivo: {_pd}")
+_vale = dict(g["217"], id="vale20", valor=20000, cuenta="28150501", contar=True, fecha="2026-09-16", avisos=[])
+_q = _r1({"total_vendido": 80000, "domicilios_pagados": 50000}, extra=[_vale])
+_qd = [x["debito"] for x in _q["filas"] if x["codigo"] == "28150501" and x["debito"]]
+_qc = [x["debito"] for x in _q["filas"] if x["codigo"] == "28150501" and "según cierre" in x["descripcion"]]
+chk(sorted(_qd) == [20000, 30000] and _qc == [30000] and _q["diferencia"] == 0,
+    f"R2: vale 20.000 + cierre 50.000 → 30.000 desde el cierre, 28150501 suma 50.000 una sola vez: {_qd}")
+_q2 = _r1({"total_vendido": 80000, "domicilios_pagados": 10000}, extra=[_vale])
+chk(not any(x["codigo"] == "28150501" and "según cierre" in x["descripcion"] for x in _q2["filas"]) and _q2["diferencia"] == 0
+    and all(x["fx"] for x in _p["filas"] + _q["filas"] if "según cierre" in x["descripcion"]) and not any("según cierre" in x["descripcion"] for x in _s["filas"]),
+    "R2: vales > cierre → no hay fila desde el cierre; débito = crédito; cada fila nueva lleva fx; sin cierre → sin filas nuevas")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

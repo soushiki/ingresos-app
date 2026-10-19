@@ -254,6 +254,20 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             ajuste = dif; j_aj = len(datos)
             datos.append(dict(fecha=fecha, archivo="cierre de caja", tipo="cierre", numero="", tercero="Consumidor Final", detalle="Ajuste al cierre (cierre > papeles)", valor=ajuste, medio="",
                               cuenta=cfg["puente_ingreso"], estado="ok", aviso="total vendido del cierre − consumo de las comandas", propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo=""))
+    # R2 (débito 2815 desde el cierre): lo que el cierre dice que se pagó en propinas y domicilios baja el pasivo. Los vales «pago domicilios»
+    # ya debitan 28150501 desde la caja menor: del cierre solo sale la parte que ellos no cubrieron (nunca negativa, nunca dos veces).
+    j_pro = j_dom = None; pago_pro = pago_dom = 0
+    if fecha_cierre:
+        pago_pro = max(cie.get("propinas_total", 0), 0)
+        en_vales = sum(d["valor"] for d in todos if d.get("contar") and d["tipo"] in ("gasto_caja", "caja_menor_manuscrito") and d["medio"] in ("", "Efectivo") and d.get("cuenta") == DOMICILIOS)
+        pago_dom = max(cie.get("domicilios_pagados", 0) - en_vales, 0)
+        for pago, cta, tot in ((pago_pro, PROPINAS, cie.get("propinas_total", 0)), (pago_dom, DOMICILIOS, cie.get("domicilios_pagados", 0))):
+            if pago:
+                if cta == PROPINAS: j_pro = len(datos)
+                else: j_dom = len(datos)
+                datos.append(dict(fecha=fecha, archivo="cierre de caja", tipo="cierre", numero="", tercero="Consumidor Final", detalle="Pago según cierre", valor=tot, medio="Efectivo",
+                                  cuenta=cta, estado="ok", aviso="propinas pagadas según el cierre" if cta == PROPINAS else "domicilios pagados según el cierre (menos los vales)",
+                                  propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo=""))
     # DEBT-1: las filas salen de DATOS OCR (una sola clasificación). Solo cuentan las filas «ok», como en los SUMIFS del Excel.
     ok = [(i, x) for i, x in enumerate(datos) if x["estado"] == "ok"]
     de = lambda bloque, **k: [(i, x) for i, x in ok if x["bloque"] == bloque and all(x[a] == b for a, b in k.items())]
@@ -361,6 +375,17 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
                        docs=ids(ps), fx=S(bloque="caja", cuenta=cod)))
     if cm:
         fila(EFECTIVO, "Cuantías menores", "Recibos: " + rangos(nums(cm)), cre=suma(cm), reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto", fx=["+", *F(*jc)])
+
+    # 3b) R2: pago de propinas y domicilios según el cierre → débito a 2815 contra Efectivo
+    if pago_pro or pago_dom:
+        jr = []
+        if pago_pro:
+            jr.append(fila(PROPINAS, "Consumidor Final", "Pago de propinas según cierre", deb=pago_pro, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto", fx=["dato", j_pro]))
+        if pago_dom:
+            en_v = S(bloque="caja", cuenta=DOMICILIOS)   # domicilios = dato − MIN(dato, vales): nunca negativo, sin repetir lo que ya pagaron los vales
+            jr.append(fila(DOMICILIOS, "Consumidor Final", "Pago de domicilios según cierre", deb=pago_dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto",
+                           fx=["-", ["dato", j_dom], ["min", ["dato", j_dom], en_v]]))
+        fila(EFECTIVO, "Consumidor Final", "Pago de propinas y domicilios según cierre", cre=pago_pro + pago_dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto", fx=["+", *F(*jr)])
 
     # 4) facturas y gastos pagados por banco o en efectivo, uno por uno (si no se leyó el valor, no se inventa un asiento: queda en pendientes)
     for i, x in enumerate(datos):

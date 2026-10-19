@@ -73,7 +73,7 @@ for k in ("Tarjetas (sin propina)", "Transferencias / app (con propina)", "Propi
 chk(r["faltan"] == [85610], f"detecta la comanda que falta: {r['faltan']}")
 chk(cr["Venta en efectivo (sin propina)"]["diferencia"] == 24900 and cr["Venta total (sin domicilios ni propinas)"]["diferencia"] == 24900, "y la diferencia es 24.900 en la venta total y en efectivo (una comanda en efectivo)")
 chk(not cr["Número de comandas"]["ok"] and "85610" in cr["Número de comandas"]["nota"], "el cierre dice 22 comandas y hay 21")
-ef = [x for x in r["filas"] if x["codigo"] in ("11050501", "28150502", "28150501", "41401501") and x["tercero"] == "Consumidor Final" and x["medio"] == "Efectivo"]
+ef = [x for x in r["filas"] if x["codigo"] in ("11050501", "28150502", "28150501", "41401501") and x["tercero"] == "Consumidor Final" and x["medio"] == "Efectivo" and x["grupo"] == "venta"]
 chk([(x["codigo"], x["debito"], x["credito"]) for x in ef] == [("11050501", 149500, 0), ("28150502", 0, 4000), ("41401501", 0, 145500)],
     "bloque de efectivo: Efectivo 149.500 = Propinas 4.000 (solo en efectivo) + Restaurante 145.500; las propinas por transferencia/tarjeta no entran")
 bco = sum(x["debito"] for x in r["filas"] if x["codigo"] == "11200501" and x["grupo"] == "venta")
@@ -87,4 +87,10 @@ completar_desde_cierre(docs); cl = Clasificador()
 for x in vales: x["cuenta"] = cl.clasificar("", x["detalle"], x["texto"])["cuenta"]
 chk({x["numero"]: x["cuenta"] for x in vales if x["cuenta"]}.get("241") == "28150501" and sum(x["valor"] for x in vales) == 50000,
     "los 4 vales suman 50.000 como el cierre; «pago domicilios» → 28150501; la descripción que no se lee se toma del cierre")
+# R2: el vale «pago domicilios» ya debita 28150501 (cubre los domicilios pagados del cierre) → desde el cierre no sale nada de 28150501
+r_v = construir("2026-09-15", docs)
+d_dom = [x for x in r_v["filas"] if x["codigo"] == "28150501" and x["debito"]]
+en_vales = sum(x["valor"] for x in vales if x["cuenta"] == "28150501")
+chk(sum(x["debito"] for x in d_dom) == en_vales > 0 and not any("según cierre" in x["descripcion"] for x in d_dom) and r_v["diferencia"] == 0,
+    f"R2: 28150501 debitado una sola vez (solo los vales, 0 desde el cierre): {[(x['descripcion'], x['debito']) for x in d_dom]}")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado 2026-10-19)
 - [~] 3-design         (S)
 - [x] 4-plan
-- [ ] 5-implement      current task: T2
+- [ ] 5-implement      current task: T3
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -41,3 +41,4 @@ Sirve un mes, pero son 30 ajustes por mes y el pasivo 2815 sigue mal en cada exp
 2026-10-19 | 2-requirements | Aprobado por el usuario con los 3 valores por defecto (domicilios pagados = pago a domiciliarios; propinas_total pagadas el mismo día desde 11050501; diferencia cierre > papeles toda a 41401501) → 4-plan
 2026-10-19 | 4-plan | 04-plan.md: 1 iteración ≈ 4 h — T1 ajuste cierre > papeles (R1), T2 débito 2815 desde el cierre (R2), T3 respaldo libro (R3), T4 medir sept. → 5-implement
 2026-10-19 | 5-implement | T1 hecho (Sonnet): ajuste cierre > papeles → 13809501/41401501 con aviso; papeles > cierre solo aviso; probar_contable +4, 18/18 verdes. Nota: fx del ajuste es dato fijo en DATOS OCR (no recalcula si se edita una comanda en el Excel)
+2026-10-19 | 5-implement | T2 hecho (Sonnet): débito 28150502 por propinas_total y 28150501 por domicilios_pagados − vales del día (fx dato − MIN), crédito 11050501; probar_contable +3, probar_dia15 +1, 18/18 verdes
