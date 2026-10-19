@@ -26,7 +26,7 @@ el Excel la calcule igual. Días sin cierre o con cierre sin total/fecha: sin ca
   — done when: prueba con libro temporal: primera escritura crea el respaldo idéntico al original; la segunda no lo toca;
   el Excel de un día con cierre > papeles lista el día en «cambió desde que se confirmó».
   — files: `app.py` (`_guardar_libro`), `probar_contable.py` o `probar_revision.py`
-- [ ] T4 (S) Medir septiembre — aceptación e — model: Sonnet
+- [x] T4 (S) Medir septiembre — aceptación e — model: Sonnet — hecho: copia del libro, 30 días: 2815 de sept. baja ≈ 21 % y queda ≈ el de los 23 días sin cierre (+ ≈ 3 % de residuo en 7 días con cierre); R1 en 5 días (al puente); 0 avisos papeles > cierre; 30/30 días débito = crédito
   — script de una vez (scratch, no en el repo) sobre una copia de `datos/libro.json`: saldo 2815 antes/después por día y total del mes;
   días con ajuste R1 y su monto; días con aviso papeles > cierre. Anotar el resultado en 06-test-report.
   — done when: saldo 2815 de sept. recalculado ≈ suma de los días sin cierre (o la diferencia explicada) y cada día débito = crédito.
