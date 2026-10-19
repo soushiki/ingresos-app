@@ -2,6 +2,28 @@
 
 ## [Sin publicar]
 
+## [1.2.0] — 2026-10-19
+Recibos omitidos: ningún recibo de una foto se pierde en silencio. Los que el lector no ve quedan como «Falta N» para anotarlos a mano.
+
+### Recibos que faltan
+- Si el nombre de la foto dice un número de recibo que no se leyó, queda un marcador «Falta N» con la foto entera (≤ 1600 px). El marcador no cuenta en asientos, Excel ni DATOS OCR (ADR-008).
+- Pestaña ④ **Revisión** → selector «Faltan»: **Anotar** (formulario manual con el número puesto; recalcula el día) o **No existe** (motivo obligatorio). La insignia de ④ suma dudosos y faltantes; la fila «falta» aparece en ①.
+- Aviso (no bloquea) «quedan N recibos sin anotar» al «Pasar al libro» (cuenta también el día en pantalla) y al «⬇ Excel».
+
+### Lectura
+- Nombre de la foto acortado: «85334-3341-…» se entiende como 85341, con el aviso «3341 → 85341» (ADR-009). Si el nombre no se entiende, queda un marcador «No entiendo». Los nombres del escáner (`comandas2026…`) y las fotos `IMG_` no generan marcador.
+- R5 por cercanía (ADR-011): si el número leído está a 1 cifra del único que falta, se le asigna y el recibo queda «dudoso» para que pase por ④.
+
+### Medición
+- `medir_precision.py` registra la causa de cada omitido (corte / número / tipo), imprime una línea por foto y guarda el avance: si la corrida se corta, sigue donde iba (`--de-cero` empieza de nuevo).
+- Sobre 103 recibos de septiembre, los omitidos bajan de 13 a 5 (4,9 %). Los validados con error se quedan en 7. La meta N3 (≤ 2) no se alcanza; se aceptó en ADR-011.
+
+### Arreglado
+- Una venta anotada a mano no se duplica cuando se relee la foto. El marcador «No entiendo» no se duplica al releer.
+
+### Documentación
+- LEEME §7 «Cómo tomar la foto»: fondo oscuro y liso, una columna, cerca y sin cortar el pie del recibo.
+
 ## [1.1.0] — 2026-10-18
 Precisión del OCR: cada recibo se valida, se relee con variantes si falla y lo dudoso pasa a revisión con su foto.
 
