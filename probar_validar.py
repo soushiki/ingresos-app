@@ -55,11 +55,16 @@ chk(numeros_de_nombre("85334-338 al 3341-343.jpg") == [85334, 85338, 85339, 8534
     and foto3.correcciones == ["3341 → 85341"] and foto3.entendido, "ADR-009: corrección de nombre sin aviso o lista mal")
 chk(leer_nombre("85560 al 565.jpg") == ([85560, 85561, 85562, 85563, 85564, 85565], [], True) and leer_nombre("85316-317-321.jpg").correcciones == [],
     "ADR-009: leer_nombre cambió un nombre que ya se entendía")
-chk(leer_nombre("85560 al 85500.jpg") == (None, [], False) and leer_nombre("IMG_20260916_123456.jpg").entendido is False, "nombre con cifras que no se entiende → entendido False")
+chk(leer_nombre("85560 al 85500.jpg") == (None, [], False) and leer_nombre("85490-492-501502-504-505.jpg") == (None, [], False),
+    "nombre que empieza por un recibo y no se entiende → entendido False")
+# FIX-3: nombres de escáner, cámara o fecha no traen recibos → ni R5 ni marcador
+for raro in ("comandas20261002_15584574.pdf", "comandas20261002_15584574.pdf#2", "IMG_20260916_123456.jpg",
+             "WhatsApp Image 2026-09-16 at 12.34.56.jpeg", "COMANDAS 2026-09-15.pdf"):
+    chk(leer_nombre(raro) == (None, [], True), f"FIX-3: nombre de escáner/cámara/fecha da marcador o números: {raro}")
 chk(leer_nombre("rappi.jpg") == (None, [], True) and leer_nombre("").entendido, "nombre sin cifras: no entendido pero tampoco marcador")
 from parser_module.contable import faltantes as _fal
-mk = _fal.crear([], "IMG_20260916_123456.jpg", "", None, leer_nombre("IMG_20260916_123456.jpg").entendido)
-chk(len(mk) == 1 and mk[0]["numero"] == "" and mk[0]["avisos"] == ["No entiendo el nombre de la foto IMG_20260916_123456.jpg"], "nombre basura → marcador, no 1 pieza callada")
+mk = _fal.crear([], "85490-492-501502-504-505.jpg", "", None, leer_nombre("85490-492-501502-504-505.jpg").entendido)
+chk(len(mk) == 1 and mk[0]["numero"] == "" and mk[0]["avisos"] == ["No entiendo el nombre de la foto 85490-492-501502-504-505.jpg"], "nombre basura → marcador, no 1 pieza callada")
 chk(validar(doc(), {"esperados": [85560, 85561]}) == [], "número dentro del nombre")
 chk(validar(doc(numero="85568"), {"rango": (85560, 85565)}) == ["El recibo 85568 no está en el nombre de la foto (85560 al 85565)"], "número fuera del rango")
 chk(validar(doc(numero="85568"), {"esperados": [85560, 85562, 85563, 85564]}) == ["El recibo 85568 no está en el nombre de la foto (85560, 85562 al 85564)"], "fuera de la lista, texto compacto")

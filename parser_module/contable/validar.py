@@ -53,12 +53,13 @@ def leer_nombre(nombre: str) -> Nombre:
     """«85560 al 565.jpg» → [85560…85565] · «85400 y 402 al 406» · «85627-628-629» · «comandas20260916_85627-628».
     Un fin de rango acortado fuera de rango se corrige por sufijo y queda en `correcciones` (ADR-009).
     Cualquier cosa rara (otras palabras, rango al revés o de más de 30, números muy lejanos) → numeros None: sin R5 antes que avisos falsos.
-    `entendido` es False solo si el nombre trae una cifra de 4+ dígitos y aun así no se pudo leer."""
+    `entendido` es False solo si el nombre empieza por un número de recibo (4–6 cifras) y aun así no se pudo leer; nombres de
+    escáner, cámara o fecha («comandas20261002_15584574», «IMG_…», «COMANDAS 2026-09-15») → Nombre(None, [], True), sin marcador."""
     base = re.split(r"[\\/]", nombre or "")[-1]
     base = re.sub(r"#\d+$", "", base); base = re.sub(r"\.[A-Za-z0-9]{2,4}$", "", base)
     base = re.sub(r"^[A-Za-z]*\d{8}_", "", base)
-    con_numero = bool(re.search(r"\d{4}", base))
-    malo = Nombre(None, [], not con_numero)
+    if re.search(r"\d{7}|\d{4}-\d{2}-\d{2}", base): return Nombre(None, [], True)
+    malo = Nombre(None, [], not re.match(r"\d{4,6}(?!\d)", base))
     out, prev, rango, corr = [], None, False, []
     for t in re.findall(r"\d+|[^\W\d_]+", base.lower()):
         if t.isdigit():
