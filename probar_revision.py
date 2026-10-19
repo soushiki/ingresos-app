@@ -132,6 +132,10 @@ chk(sum(d["numero"] == "85628" for d in res) == 1 and any(d["estado"] == "no_exi
 manual = venta("mmmm0001", "85388", 7000, "revisado") | {"origen": "manual", "de_foto": "sep/F.jpg"}
 res = web._conservar_revisados([manual], [venta("ocr00001", "85388", 7000, "validado") | {"origen": "sep/F.jpg"}])
 chk([d["id"] for d in res if d["numero"] == "85388"] == ["mmmm0001"], "FIX-2: previo manual 85388/F + OCR 85388/F → una sola venta, la manual")
+raro, otra = "10/85490-492-501502-504-505.jpg", "11/85600 al 85500.jpg"
+res = web._conservar_revisados([], faltantes.crear([], raro, FECHA, None, False) + faltantes.crear([], otra, FECHA, None, False))
+for _ in range(2): res = web._conservar_revisados(res, faltantes.crear([], raro, FECHA, None, False))
+chk(sorted(d["origen"] for d in res if d["tipo"] == "faltante" and d["estado"] == "falta") == [raro, otra], "FIX-4: releer 2 veces → un solo «No entiendo» por foto")
 lib = json.loads(web.RUTA_LIBRO.read_text(encoding="utf8")); lib[FECHA]["documentos"] += [hecho, cerrado]; web.RUTA_LIBRO.write_text(json.dumps(lib), encoding="utf8")
 r = cl.post("/api/contable/libro", json={"fecha": FECHA, "documentos": [venta("zzzz0001", "101", 20000, "validado")] + nuevo, "reemplazar": True})
 chk(r.status_code == 200 and [d["numero"] for d in dia()["documentos"] if d["tipo"] == "faltante" and d["estado"] == "falta"] == ["85631"], "POST /libro: releer foto resuelta no duplica marcadores")

@@ -402,7 +402,7 @@ def _dia(fecha: str, r: dict, banco: dict, cierre) -> dict:
 def _conservar_revisados(previos: list, nuevos: list) -> list:
     """El papel «revisado» guardado gana sobre su relectura (mismo id, o mismo tipo+número+foto de origen)."""
     nuevos = faltantes.reconciliar(previos, nuevos)   # M-13: un faltante ya anotado o «no existe» no reaparece al releer la foto
-    clave = lambda d: (d.get("tipo"), str(d.get("numero", "")), d.get("de_foto", "") if d.get("origen") == "manual" else d.get("origen", "")) if d.get("numero") else None
+    clave = lambda d: (d.get("tipo"), str(d.get("numero", "")), d.get("de_foto", "") if d.get("origen") == "manual" else d.get("origen", "")) if d.get("numero") or d.get("tipo") == "faltante" else None   # FIX-4: «No entiendo» sin número, uno por foto
     por_id, por_clave = {d["id"]: d for d in previos}, {clave(d): d for d in previos if clave(d)}
     usados, out = set(), []
     for d in nuevos:

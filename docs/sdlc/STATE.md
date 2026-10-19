@@ -5,7 +5,7 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 5-implement
+next: 6-test
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: FIX-3, FIX-4 (de 6-test I2); luego 6-test I2 de nuevo y después T10 (compuerta R5)
+- [ ] 5-implement      current task: FIX-3/4 hechos; 6-test I2 segunda pasada, después T10 (compuerta R5)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -59,3 +59,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 5-implement | T8 causa_de pura + piezas/omitidos_detalle/por_causa en medir; 7 checks en probar_precision; 18/18 en verde. Septiembre (224 recibos): omitidos 42 = corte 25 + número 17 + tipo 0; los «corte» son sobre todo PDF sin esperados (nombre = fecha de escaneo) → revisar en T10
 2026-10-19 | 5-implement | T9 LEEME §7 «Cómo tomar la foto» (6 líneas: fondo oscuro liso, una columna, cerca, sin cortar el pie); reemplaza el consejo viejo de fondo claro; nombre con números completos; «Falta N» en ④; 18/18 probar_*.py en verde; iteración 2 completa → 6-test
 2026-10-19 | 6-test | I2: 18/18 probar_*.py en verde; R4 y R6 cumplen; R3 → FIX-3 (los PDF del escáner `comandas2026…_hhmmss.pdf` y las fotos IMG_ dan un marcador «No entiendo» falso) y FIX-4 (el marcador sin número se duplica al releer) → 06-test-report.md
+2026-10-19 | 5-implement | FIX-3 entendido=False solo si el nombre empieza por un recibo (4–6 cifras); ≥7 cifras o AAAA-MM-DD → sin R5 ni marcador; de los 62 nombres solo cambian los 11 PDF del escáner. FIX-4 clave ("faltante","",origen) → un «No entiendo» por foto al releer; 18/18 probar_*.py en verde → 6-test I2
