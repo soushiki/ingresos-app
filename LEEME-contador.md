@@ -57,10 +57,16 @@ La app lee mejor cuanto más grande y nítida llega la foto. Esto vale para las 
 ≈ 1600 px y no hay originales.
 1. **Enviar sin comprimir.** Por WhatsApp, mándala como **documento** (📎 → Documento), no como foto; o activa la calidad **HD**.
 2. **CamScanner:** exporta en calidad **alta u original**, nunca «pequeña» ni «media».
-3. **Encuadre:** papeles sobre una superficie clara y lisa (no madera ni mesa oscura), sin encimarse, foto de frente y derecha,
-   con luz pareja y sin flash ni sombra de la mano. Que el nombre del archivo traiga los números de los recibos (p. ej. `85297 al 85302`).
-4. Lo que la app no pueda leer con seguridad queda **dudoso** y aparece en la pestaña **④ Revisión** con su recorte: ahí se
-   confirma o se corrige en segundos.
+3. **Nombre del archivo:** con los números completos de los recibos (p. ej. `85297 al 85302`), no acortados como `3341`.
+4. Lo que la app no pueda leer con seguridad queda **dudoso** en la pestaña **④ Revisión** con su recorte; un recibo del nombre
+   que no encontró aparece como **«Falta 85388»** con la foto entera para anotarlo a mano.
+
+### Cómo tomar la foto (consejos, no obligatorios)
+- **Fondo oscuro y liso** (tela o cartulina negra, sin vetas ni dibujos): el papel blanco se separa mejor del fondo.
+- **Una sola columna** de recibos, uno debajo del otro, sin encimarse ni tocarse.
+- **Cerca:** que los recibos llenen casi toda la foto; mejor dos fotos que una lejana.
+- **Sin cortar el pie:** que se vea el canto de abajo del último recibo, con un poco de fondo alrededor.
+- De frente y derecha, con luz pareja, sin flash ni sombra de la mano.
 
 ## Si algo falla
 | Lo que ves | Qué hacer |

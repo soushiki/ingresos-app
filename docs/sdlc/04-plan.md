@@ -55,8 +55,8 @@
   `por_causa`; `medir_precision.py` lo imprime — R4 — done when: `probar_precision.py` prueba `causa_de` para tipo/corte/número;
   `medir_precision.py --completo` sobre septiembre imprime `por_causa` y la suma = omitidos — files: `parser_module/contable/referencia.py`,
   `medir_precision.py`, `probar_precision.py` — model: Sonnet — hecho: informe 20261018-235537_completo.json, 224 recibos, omitidos 42 = corte 25 + número 17 + tipo 0. Ojo T10: los PDF (nombre = fecha de escaneo, carpeta COMANDAS en mayúsculas) y la foto con error Ollama 500 caen en «corte» por falta de esperados
-- [ ] T9 (S) LEEME: sección «Cómo tomar la foto» (fondo oscuro liso, una columna, cerca, sin cortar el pie) ≤ 8 líneas — R6 — done when:
-  la sección existe y tiene ≤ 8 líneas — files: `LEEME-contador.md` — model: Haiku
+- [x] T9 (S) LEEME: sección «Cómo tomar la foto» (fondo oscuro liso, una columna, cerca, sin cortar el pie) ≤ 8 líneas — R6 — done when:
+  la sección existe y tiene ≤ 8 líneas — files: `LEEME-contador.md` — model: Haiku. Hecho: «### Cómo tomar la foto» (6 líneas) en §7; quitado el viejo consejo «superficie clara»
 
 ## Iteración 3 — demo: `medir --completo` con omitidos (solo OCR) ≤ 2/107 sin empeorar aciertos ni dudosos
 - [ ] T10 (S) Compuerta R5: correr `medir --completo` (tras T7–T8), anotar `por_causa` en STATE y decidir con el usuario si R5 sigue

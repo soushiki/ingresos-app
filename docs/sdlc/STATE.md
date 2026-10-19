@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: T8 hecho; sigue T9 (LEEME «Cómo tomar la foto»)
+- [ ] 5-implement      current task: T9 hecho; sigue T10 (compuerta R5: medir --completo + decidir con el usuario)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -57,3 +57,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-18 | 6-test | I1 segunda pasada PASS: 18/18 probar_*.py en verde, FIX-1/FIX-2 cerrados; menor aceptado (re-pasar un día del libro cuenta su marcador 2 veces en el aviso); smoke de 5 pasos para el usuario en 06-test-report.md → 5-implement T7
 2026-10-18 | 5-implement | T7 leer_nombre → Nombre(numeros, correcciones, entendido); foto 3 = 85334, 85338–341, 85343 con aviso «3341 → 85341»; nombre basura (≥4 cifras) → marcador; 18/18 probar_*.py en verde
 2026-10-18 | 5-implement | T8 causa_de pura + piezas/omitidos_detalle/por_causa en medir; 7 checks en probar_precision; 18/18 en verde. Septiembre (224 recibos): omitidos 42 = corte 25 + número 17 + tipo 0; los «corte» son sobre todo PDF sin esperados (nombre = fecha de escaneo) → revisar en T10
+2026-10-19 | 5-implement | T9 LEEME §7 «Cómo tomar la foto» (6 líneas: fondo oscuro liso, una columna, cerca, sin cortar el pie); reemplaza el consejo viejo de fondo claro; nombre con números completos; «Falta N» en ④; 18/18 probar_*.py en verde; iteración 2 completa
