@@ -5,7 +5,7 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 6-test
+next: 6-test   # solo leer el informe de medir --completo (I3) y cerrar N3/N4 → 7-release
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
@@ -65,3 +65,4 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-19 | 5-implement | T10 decisión del usuario: R5 sigue tal cual (ADR-010) → T11
 2026-10-19 | 5-implement | T11 intento 1: R5 Tesseract en cabecera → 0 rescatados (omitidos 15/103; fotos ≈ 1100 px). Regla «a 1 cifra de un solo faltante» medida en los informes: 8/13 y 9/15, 0 falsos → ≈ 5/103, no llega a ≤ 2. Espera decisión (ADR-010)
 2026-10-19 | 5-implement | T11 por ADR-011 (cercanía, reemplaza ADR-010): sobre las piezas de T10/T11 omitidos 13→4 y 15→5, 0 falsos, tiempo +0; 18/18 probar_*.py en verde; además medir con línea por foto y avance reanudable; iteración 3 completa → 6-test (confirmar con medir --completo)
+2026-10-19 | 6-test | I3: 18/18 probar_*.py en verde; R5 por ADR-011 cumple; revisión sin defectos (3 menores aceptados: empate de cercanía, avance sin versión de código, default=str); falta la corrida medir --completo --peores 20 --de-cero del usuario para N3/N4 → 06-test-report.md
