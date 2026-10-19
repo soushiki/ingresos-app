@@ -67,8 +67,8 @@
   `probar_revision.py` — model: Sonnet
 
 ## Iteración 3 — demo: `medir --completo` con omitidos (solo OCR) ≤ 2/107 sin empeorar aciertos ni dudosos
-- [ ] T10 (S) Compuerta R5: correr `medir --completo` (tras T7–T8), anotar `por_causa` en STATE y decidir con el usuario si R5 sigue
-  tal cual — R5, riesgo 3 — done when: STATE tiene la línea con la cifra y la decisión — files: `docs/sdlc/STATE.md` — model: Sonnet
+- [x] T10 (S) Compuerta R5: correr `medir --completo` (tras T7–T8), anotar `por_causa` en STATE y decidir con el usuario si R5 sigue
+  tal cual — R5, riesgo 3 — done when: STATE tiene la línea con la cifra y la decisión — files: `docs/sdlc/STATE.md` — model: Sonnet — hecho: 103 recibos, omitidos 13 = número 13 (corte 0, tipo 0); el usuario decide R5 tal cual
 - [ ] T11 (M) R5 en `leer_hoja`: solo si hay faltantes, recortar la cabecera de cada pieza sin número válido, ampliar ×2,
   `numeros_tesseract`; exactamente un faltante → se asigna con nota y `estado:"dudoso"`; Tesseract ausente → se salta (ADR-010)
   — R5, N2, N3 — done when: `probar_relectura.py` cubre asignar/no asignar (0 o 2 coincidencias)/sin Tesseract; `medir --completo`

@@ -13,7 +13,7 @@ next: 5-implement
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: T10 (compuerta R5, I3)
+- [ ] 5-implement      current task: T11 (R5 en leer_hoja, I3)
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain
@@ -61,3 +61,5 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-19 | 6-test | I2: 18/18 probar_*.py en verde; R4 y R6 cumplen; R3 → FIX-3 (los PDF del escáner `comandas2026…_hhmmss.pdf` y las fotos IMG_ dan un marcador «No entiendo» falso) y FIX-4 (el marcador sin número se duplica al releer) → 06-test-report.md
 2026-10-19 | 5-implement | FIX-3 entendido=False solo si el nombre empieza por un recibo (4–6 cifras); ≥7 cifras o AAAA-MM-DD → sin R5 ni marcador; de los 62 nombres solo cambian los 11 PDF del escáner. FIX-4 clave ("faltante","",origen) → un «No entiendo» por foto al releer; 18/18 probar_*.py en verde → 6-test I2
 2026-10-19 | 6-test | I2 segunda pasada PASS: 18/18 probar_*.py en verde, FIX-3/FIX-4 cerrados; menor aceptado (nombre con recibos + fecha → sin R5); smoke de 5 pasos para el usuario → 5-implement T10
+2026-10-19 | 5-implement | T10 compuerta: medir --completo --peores 20 (informe 20261019-052322, 4 h 09 min) → 103 recibos (antes 107: T7 cambió los esperados de la foto 3), omitidos 13 = número 13 + corte 0 + tipo 0; dudosos 18, validados con error 7. Todos son de número → R5 aplica tal cual; espera decisión del usuario. Ojo: 4 omitidos en 5/85387 al 392; N3 pide ≤ 2/103
+2026-10-19 | 5-implement | T10 decisión del usuario: R5 sigue tal cual (ADR-010) → T11
