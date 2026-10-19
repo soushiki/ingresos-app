@@ -1,12 +1,12 @@
 # 06 · Test report — M-13 iteración 3 (T10 + T11, 03d83d8..bfd3704)
 
 ## Summary
-- **PASS (automático), falta confirmar N3/N4 con datos reales**: 18/18 `probar_*.py` en verde (`probar_imagen.py` es manual).
-- R5 (Should) cumple con ADR-011 (cercanía, reemplaza ADR-010). Su fitness está en probar_relectura: sin faltantes no cambia ningún
-  número; con 2 faltantes a 1 cifra no asigna ninguno. El avance reanudable de `medir` está en probar_precision (5 checks).
-- N3 (≤ 2/103) sigue abierta por decisión del usuario (ADR-011 acepta ≈ 5/103). N2: tiempo +0 (no hay OCR nuevo).
-- **Pendiente**: el resultado de `medir --completo --peores 20` con el código de bfd3704. La medición se hizo sobre las piezas de
-  T10/T11 (13→4 y 15→5) y no con una corrida completa. Sin ella no se puede cerrar N4 (aciertos y dudosos no empeoran).
+- **PASS**: 18/18 `probar_*.py` en verde y corrida real `medir --completo --peores 20 --de-cero` (informe 20261019-135040).
+- R5 (Should) cumple con ADR-011 (cercanía). Fitness en probar_relectura; avance reanudable en probar_precision (5 checks).
+- Corrida real vs T10 (20261019-052322): omitidos 13 → **5/103** (4,9 %; todos de número), leídos 90 → 98,
+  validados con error 7 → 7 (mismos números), dudosos 18 → 27 (los rescates quedan dudosos a propósito). Huella del libro igual.
+- **N3** (≤ 2/103) **no se alcanza**; queda en ≈ 5/103 como aceptó el usuario en ADR-011. **N4 cumple** (aciertos suben, errores igual).
+- Omitidos: 85334, 85375, 85389, 85390, 85411. 85334 es nuevo (en T10 se leía): variación del lector en la foto 3, no del código.
 - No se ejecutaron: ataques (exposed: no), prueba de carga (N2 = +0 s), lint (no hay linter).
 
 ## Failures
@@ -34,4 +34,4 @@
 2. Se compara con T10 (20261019-052322: omitidos 13, dudosos 18, validados con error 7). Se espera: omitidos ≈ 4–5,
    validados con error ≤ 7 y dudosos ≈ 18 + los rescatados (cada rescate queda dudoso a propósito).
 3. ① Escanea la foto «5/…/85387 al 392» → en ④ los recibos rescatados muestran «Número corregido por cercanía…».
-- Resultado: pendiente del usuario.
+- Resultado: corrida hecha (2026-10-19, ≈ 3 h 40 min con una reanudación tras reiniciarse la terminal; el avance funcionó). Paso 3 (④) pendiente del usuario.

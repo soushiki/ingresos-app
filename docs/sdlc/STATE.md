@@ -5,7 +5,7 @@ goal: Que ningún recibo de una foto se pierda en silencio: bajar los omitidos d
 size: M      # varios días: separar (M-11) + lectura del número por línea + medición; sin datos ni servicios nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no
-next: 6-test   # solo leer el informe de medir --completo (I3) y cerrar N3/N4 → 7-release
+next: 7-release   # M-13: omitidos 5/103 (N3 ≤ 2 no alcanzada, aceptado en ADR-011), N4 cumple
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-18)
@@ -13,8 +13,8 @@ next: 6-test   # solo leer el informe de medir --completo (I3) y cerrar N3/N4 �
 - [x] 2-requirements   (aprobado por el usuario 2026-10-18)
 - [x] 3-design         (aprobado por el usuario 2026-10-18)
 - [x] 4-plan          (2026-10-18: 3 iteraciones, 11 tareas, ≈ 11 h)
-- [ ] 5-implement      current task: — (I3 completa)
-- [ ] 6-test
+- [x] 5-implement      (I1–I3 completas, FIX-1…4 cerrados)
+- [x] 6-test           (2026-10-19: I3 PASS con corrida real)
 - [ ] 7-release
 - [ ] 8-maintain
 
@@ -66,3 +66,5 @@ el OCR siga omitiendo; leer mejor solo baja cuántos hay que anotar.
 2026-10-19 | 5-implement | T11 intento 1: R5 Tesseract en cabecera → 0 rescatados (omitidos 15/103; fotos ≈ 1100 px). Regla «a 1 cifra de un solo faltante» medida en los informes: 8/13 y 9/15, 0 falsos → ≈ 5/103, no llega a ≤ 2. Espera decisión (ADR-010)
 2026-10-19 | 5-implement | T11 por ADR-011 (cercanía, reemplaza ADR-010): sobre las piezas de T10/T11 omitidos 13→4 y 15→5, 0 falsos, tiempo +0; 18/18 probar_*.py en verde; además medir con línea por foto y avance reanudable; iteración 3 completa → 6-test (confirmar con medir --completo)
 2026-10-19 | 6-test | I3: 18/18 probar_*.py en verde; R5 por ADR-011 cumple; revisión sin defectos (3 menores aceptados: empate de cercanía, avance sin versión de código, default=str); falta la corrida medir --completo --peores 20 --de-cero del usuario para N3/N4 → 06-test-report.md
+2026-10-19 | 6-test | I3 sin cerrar: el último informe (20261019-093006, omitidos 15) es el intento Tesseract, anterior a bfd3704 (09:48); falta la corrida medir --completo --peores 20 --de-cero con ADR-011 → next sigue 6-test
+2026-10-19 | 6-test | I3 PASS: medir --completo --peores 20 (20261019-135040) omitidos 13→5/103 (todos número; 85334 nuevo, variación del lector), validados con error 7→7, dudosos 18→27 (rescates), huella igual; N3 no llega (aceptado ADR-011), N4 cumple → 7-release
