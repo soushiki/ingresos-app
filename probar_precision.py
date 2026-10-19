@@ -102,4 +102,15 @@ inf4 = medir(ref2, d, lambda r, p: "t", lambda t, c: leidos2)
 chk(inf4["dudosos_numeros"] == ["102"], "FIX-2: solo el de estado dudoso cuenta como dudoso (avisos «Foto borrosa» validado no)")
 chk(inf4["validados_con_error_numeros"] == ["101"], "FIX-2: validado con avisos suaves y campo distinto cuenta como validado con error")
 chk(medir_precision.catalogo_del_libro(d / "nada.json") == medir_precision.catalogo_del_libro(d / "nada.json"), "catalogo_del_libro sin libro no falla")
+# T8 · R4: causa de cada omitido (tipo / corte / número) y el informe la trae
+from parser_module.contable.referencia import causa_de
+pz = lambda *xs: [{"i": i, "tipo": t, "numero": n, "texto": ""} for i, (t, n) in enumerate(xs)]
+chk(causa_de("85388", [], pz(("venta", "85387"), ("gasto", "85388")), ["85387", "85388"]) == "tipo", "causa_de: pieza con el número pero no venta → tipo")
+chk(causa_de("85340", [], pz(("venta", "85334")), ["85334", "85340"]) == "corte", "causa_de: menos piezas que esperados → corte")
+chk(causa_de("85340", [], pz(("venta", "85334")), None) == "corte", "causa_de: nombre no entendido → corte")
+chk(causa_de("85411", [], pz(("venta", "85410"), ("venta", "85441")), ["85410", "85411"]) == "número", "causa_de: piezas completas y ninguna trae el número → número")
+inf5 = medir(ref2, d, lambda r, p: "t", lambda t, c: [_doc(100, 50000)])
+chk(inf5["omitidos"] == 2 and sum(inf5["por_causa"].values()) == inf5["omitidos"], "medir: suma de por_causa = omitidos")
+chk([x["numero"] for x in inf5["omitidos_detalle"]] == ["101", "102"] and all(x["causa"] in ("tipo", "corte", "número") for x in inf5["omitidos_detalle"]), "medir: omitidos_detalle con causa por número")
+chk(list(inf5["piezas"]) == ["h1.jpg"] and inf5["piezas"]["h1.jpg"][0]["numero"] == "100", "medir: guarda piezas por foto (tipo, número, texto)")
 print("\n" + ("TODO OK" if not fallos else f"{len(fallos)} FALLOS")); sys.exit(1 if fallos else 0)

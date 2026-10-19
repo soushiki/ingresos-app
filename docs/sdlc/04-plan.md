@@ -51,10 +51,10 @@
   referencia sin cambio; nombre basura → marcador, no 1 pieza callada — files: `parser_module/contable/validar.py`,
   `parser_module/contable/relectura.py`, `app.py`, `probar_validar.py` — model: Sonnet
   — hecho: `leer_nombre`→`Nombre`, `_por_sufijo`, `numeros_de_nombre` envoltorio; `leer_hoja` avisa la corrección y devuelve `nombre_entendido`; app crea el marcador; 6 checks nuevos en probar_validar
-- [ ] T8 (M) `referencia.medir` guarda `piezas` (tipo, número, 120 caracteres) y `causa_de` pura; informe con `omitidos_detalle` y
+- [x] T8 (M) `referencia.medir` guarda `piezas` (tipo, número, 120 caracteres) y `causa_de` pura; informe con `omitidos_detalle` y
   `por_causa`; `medir_precision.py` lo imprime — R4 — done when: `probar_precision.py` prueba `causa_de` para tipo/corte/número;
   `medir_precision.py --completo` sobre septiembre imprime `por_causa` y la suma = omitidos — files: `parser_module/contable/referencia.py`,
-  `medir_precision.py`, `probar_precision.py` — model: Sonnet
+  `medir_precision.py`, `probar_precision.py` — model: Sonnet — hecho: informe 20261018-235537_completo.json, 224 recibos, omitidos 42 = corte 25 + número 17 + tipo 0. Ojo T10: los PDF (nombre = fecha de escaneo, carpeta COMANDAS en mayúsculas) y la foto con error Ollama 500 caen en «corte» por falta de esperados
 - [ ] T9 (S) LEEME: sección «Cómo tomar la foto» (fondo oscuro liso, una columna, cerca, sin cortar el pie) ≤ 8 líneas — R6 — done when:
   la sección existe y tiene ≤ 8 líneas — files: `LEEME-contador.md` — model: Haiku
 

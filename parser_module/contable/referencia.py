@@ -71,6 +71,17 @@ def exportar_entrenamiento(ref: dict, carpeta_recortes, destino) -> dict:
 def _valor(d, c): return d.get(c, "" if c in ("fecha", "medio") else 0)
 
 
+def causa_de(numero, docs, piezas, esperados) -> str:
+    """R4 (pura): por qué se omitió `numero` en una foto. docs = documentos leídos de la foto; piezas = [{i, tipo, numero, texto}];
+    esperados = lista de números del nombre de la foto (o None si no se entendió).
+    «tipo»: alguna pieza leyó ese número pero no como venta. «corte»: el nombre no se entiende o la foto dio menos piezas
+    que esperados (el separador juntó o perdió papeles). «número»: había piezas de sobra y ninguna trae ese número (se leyó mal)."""
+    n = str(numero)
+    if any(str(x.get("numero", "")) == n and x.get("tipo") != "venta" for x in list(piezas) + list(docs)): return "tipo"
+    if not esperados or len(piezas) < len(esperados): return "corte"
+    return "número"
+
+
 def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto) -> dict:
     """Relee cada foto de la referencia (V0, sin relectura) y compara por número de recibo.
     leer_hoja(ruta, pagina) → texto; leer_texto(texto, categoria) → documentos. Sin libro: no recibe ni escribe nada de él.
@@ -80,14 +91,24 @@ def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto) -> dict:
     for r in ref["documentos"]: por_foto.setdefault((r["foto"], r["pagina"]), []).append(r)
     campos = {c: {"ok": 0, "mal": 0} for c in CAMPOS}
     omitidos, dudosos, con_error, errores_lectura, detalle = [], [], [], [], []
+    todas, omitidos_detalle, por_causa = {}, [], {"tipo": 0, "corte": 0, "número": 0}
     for (foto, pagina), recs in por_foto.items():
         try:
-            leidos = {str(d.get("numero", "")): d for d in leer_texto(leer_hoja(carpeta / foto, pagina), "comandas") if d.get("tipo") == "venta"}
+            docs = leer_texto(leer_hoja(carpeta / foto, pagina), "comandas")
+            leidos = {str(d.get("numero", "")): d for d in docs if d.get("tipo") == "venta"}
         except Exception as e:  # noqa: BLE001  una foto mala no tumba la medición
-            leidos = {}; errores_lectura.append({"foto": foto, "error": str(e)})
+            docs, leidos = [], {}; errores_lectura.append({"foto": foto, "error": str(e)})
+        piezas = [{"i": i, "tipo": d.get("tipo"), "numero": str(d.get("numero", "")), "texto": str(d.get("texto") or "")[:120]} for i, d in enumerate(docs)]
+        todas[foto if pagina == 1 else f"{foto}#{pagina}"] = piezas
+        esperados = None
+        if Path(foto).parent.name in ("comandas", "comanda"):
+            from .validar import numeros_de_nombre
+            esperados = numeros_de_nombre(Path(foto).name)
         for r in recs:
             n, esp = r["numero"], r["documento"]; got = leidos.get(n)
-            if got is None: omitidos.append(n); continue
+            if got is None:
+                omitidos.append(n); c = causa_de(n, docs, piezas, esperados); por_causa[c] += 1
+                omitidos_detalle.append({"numero": n, "foto": foto, "causa": c}); continue
             malos = [c for c in CAMPOS if _valor(got, c) != _valor(esp, c)]
             for c in CAMPOS: campos[c]["mal" if c in malos else "ok"] += 1
             dudoso = estado_de(got) == "dudoso"   # por estado, no por avisos: «Foto borrosa» en un validado no es dudoso
@@ -96,7 +117,7 @@ def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto) -> dict:
             if malos: detalle.append({"numero": n, "dudoso": dudoso, "campos": {c: {"esperado": _valor(esp, c), "leido": _valor(got, c)} for c in malos}})
     total = len(ref["documentos"]); leidos_n = total - len(omitidos)
     return {"mes": ref.get("mes"), "fecha_informe": datetime.now().isoformat(timespec="seconds"), "variante": "V0", "total": total,
-            "leidos": leidos_n, "omitidos": len(omitidos), "omitidos_numeros": omitidos, "dudosos": len(dudosos), "dudosos_numeros": dudosos,
+            "leidos": leidos_n, "omitidos": len(omitidos), "omitidos_numeros": omitidos, "omitidos_detalle": omitidos_detalle, "por_causa": por_causa, "piezas": todas, "dudosos": len(dudosos), "dudosos_numeros": dudosos,
             "validados_con_error": len(con_error), "validados_con_error_numeros": con_error,
             "por_campo": {c: {**v, "acierto": round(v["ok"] / (v["ok"] + v["mal"]), 4) if v["ok"] + v["mal"] else None} for c, v in campos.items()},
             "errores_lectura": errores_lectura, "detalle": detalle}

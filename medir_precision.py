@@ -175,6 +175,7 @@ def main():
                        peores=a.peores, leer_texto=parsear)
         print(f"completo {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")
         for c, x in inf["por_campo"].items(): print(f"  {c:10s} {x['ok']:4d} ok {x['mal']:4d} mal  {'' if x['acierto'] is None else format(x['acierto'], '.1%')}")
+        print("omitidos por causa:", inf["por_causa"], "· suma", sum(inf["por_causa"].values()), "de", inf["omitidos"])
         print("informe:", inf["archivo"]); return
     vs = [v.strip().upper() for v in a.variantes.split(",") if v.strip()]
     if any(v not in ("V0", "V1", "V2", "V3", "V4") for v in vs): ap.error(f"variantes válidas: V0–V4 (llegó {a.variantes})")
@@ -186,6 +187,7 @@ def main():
         informes.append(inf)
         print(f"{v} {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")
         for c, x in inf["por_campo"].items(): print(f"  {c:10s} {x['ok']:4d} ok {x['mal']:4d} mal  {'' if x['acierto'] is None else format(x['acierto'], '.1%')}")
+        print("omitidos por causa:", inf["por_causa"])
         print("informe:", inf["archivo"])
     if len(informes) > 1:
         salida = DATOS / "referencia" / "informes" / f"{datetime.now():%Y%m%d-%H%M%S}_variantes.json"
