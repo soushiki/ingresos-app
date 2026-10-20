@@ -1,13 +1,25 @@
 """Texto plano (módulo 1) → documentos tipados: venta, gasto de caja, recibo de caja menor, factura de proveedor."""
 from __future__ import annotations
-import datetime, re, uuid
+import datetime, json, re, uuid
+from pathlib import Path
 from ..numeros import _MES, _MN, extraer_fecha, norm
 
 MARCA = "=== DOCUMENTO ==="
 _MONTO = re.compile(r"\$?\s*(\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,]\d{1,2})?(?!\d)")
-MEDIOS = [("nequi", "Nequi"), ("daviplata", "Daviplata"), ("transf", "Transferencia"), ("consign", "Transferencia"), ("bre-b", "Bre-B"), ("bre b", "Bre-B"),
-          ("llave", "Bre-B"), ("qr", "QR"), ("pse", "PSE"), ("rappi", "Rappi"), ("datafono", "Tarjeta"), ("tarjeta", "Tarjeta"), ("visa", "Tarjeta"),
-          ("mastercard", "Tarjeta"), ("master", "Tarjeta"), ("amex", "Tarjeta"), ("credito", "Tarjeta"), ("debito", "Tarjeta"), ("efectivo", "Efectivo")]
+# Medio de pago: el crudo que se lee (Nequi, Daviplata…) → uno de los 8 canónicos (mapa único en normalizacion.json/medio_canonico).
+MEDIOS_CANON = ("Efectivo", "Transferencia", "Tarjeta", "QR", "Bre-B", "PSE", "App", "Crédito personal")
+_MAPA_MEDIO = json.loads((Path(__file__).parent / "normalizacion.json").read_text(encoding="utf8"))["medio_canonico"]
+# crudo legible por clave (para medio_detalle / descripción del asiento); el orden de lectura es el del mapa, «credito personal» antes que «credito»
+MEDIOS = [(k, {"nequi": "Nequi", "daviplata": "Daviplata", "datafono": "Datáfono", "rappi": "Rappi"}.get(k, v)) for k, v in _MAPA_MEDIO.items()]
+
+
+def medio_canonico(texto) -> tuple:
+    """(medio, aviso): uno de MEDIOS_CANON, o ("", aviso) si no se reconoce; «(sin medio)»/vacío → ("", "") y nunca se inventa."""
+    n = norm(texto or "").strip()
+    if not n or n in ("(sin medio)", "sin medio"): return "", ""
+    for k, v in sorted(_MAPA_MEDIO.items(), key=lambda kv: -len(kv[0])):
+        if re.search(r"(?<![a-z])" + re.escape(k), n): return v, ""
+    return "", f"Medio de pago no reconocido: «{texto}»"
 # «PAGA CON …» de una comanda: tarjeta (datáfono), crédito personal (fiado) o electrónico (transferencia, app, QR…). El orden importa:
 # «CRED.PERSONA» no es tarjeta de crédito.
 PAGO_FIADO = r"paga con cred\w*\W*person"
@@ -61,19 +73,23 @@ def detectar_tipo(texto: str) -> str:
     return "otro"
 
 
-def _medio(texto: str, primeras: int = 3, solo_primeras=False) -> str:
+def _medio_crudo(texto: str, primeras: int = 3, solo_primeras=False) -> str:
     ls = _lineas(texto)
     zonas = [" ".join(ls[:primeras])] + ([] if solo_primeras else [l for l in ls if re.search(r"m[eé]todo de pago|medio pago|medio de pago", l, re.I)])
     for z in zonas:
         n = norm(z)
-        for k, v in MEDIOS:
-            if re.search(r"(?<![a-z])" + re.escape(k), n): return v
+        for k, v in sorted(_MAPA_MEDIO.items(), key=lambda kv: -len(kv[0])):
+            if re.search(r"(?<![a-z])" + re.escape(k), n): return dict(MEDIOS)[k]
     return ""
+
+
+def _medio(texto: str, primeras: int = 3, solo_primeras=False) -> str:
+    return medio_canonico(_medio_crudo(texto, primeras, solo_primeras))[0]
 
 
 def _base(tipo, texto):
     return dict(id=uuid.uuid4().hex[:8], tipo=tipo, numero="", fecha="", tercero="", detalle="", valor=0, consumo=0, propina=0,
-                domicilio=0, efectivo=0, tarjeta=0, transf=0, credito=0, medio_transf="", cliente="", descuento=0, cortesia=0, medio="", cuenta="", conf=0.0, motivo="", contar=True, dup_de="", avisos=[], texto=texto)
+                domicilio=0, efectivo=0, tarjeta=0, transf=0, credito=0, medio_transf="", cliente="", descuento=0, cortesia=0, medio="", medio_detalle="", cuenta="", conf=0.0, motivo="", contar=True, dup_de="", avisos=[], texto=texto)
 
 
 def _lineas_que(L, patron):
@@ -125,7 +141,7 @@ def parse_venta(texto):
     d["credito"] = sum(_valor_linea([l], PAGO_FIADO) for l in l_fiado)
     d["tarjeta"] = sum(_valor_linea([l], PAGO_TARJETA) for l in l_card)
     d["transf"] = sum(_valor_linea([l], PAGO_ELEC) for l in l_elec)
-    if l_elec: d["medio_transf"] = _medio(l_elec[0], 1, True) or "Transferencia"
+    if l_elec: d["medio_transf"] = _medio_crudo(l_elec[0], 1, True) or "Transferencia"
     efe_lineas = [l for l in L if re.match(r"^\W*(?:paga con )?efectivo\b", norm(l))]
     if efe_lineas:
         efe = _valor_linea(efe_lineas, r"efectivo") or (pagado - d["tarjeta"] - d["transf"] - d["credito"])    # «EFECTIVO» sin cifra = lo que dice PAGADO
@@ -188,7 +204,8 @@ def parse_gasto(texto):
             limpio = re.sub(r"[^A-Za-zÁÉÍÓÚÑáéíóúñ ]+.*$", "", l).strip()
             if len(limpio.split()) >= 2 and not re.search(r"firma|codigo|aprobado|recibo", norm(limpio)): d["detalle"] = limpio; break
     r = re.search(r"responsable\s*:?\s*([a-z ]+)", n); d["tercero"] = "Cuantías menores"
-    d["medio"] = (_medio(texto, 0).strip() or "Efectivo") if re.search(r"medio pago\s*:\s*\S", n) else "Efectivo"
+    d["medio_detalle"] = _medio_crudo(texto, 0) if re.search(r"medio pago\s*:\s*\S", n) else ""
+    d["medio"] = (_medio(texto, 0) or "Efectivo") if re.search(r"medio pago\s*:\s*\S", n) else "Efectivo"
     if not d["valor"]: d["avisos"].append("No se leyó el valor")
     if not d["numero"]: d["avisos"].append("No se leyó el consecutivo")
     return d
@@ -231,7 +248,8 @@ def parse_factura(texto):
         if nom: d["tercero"] = nom.title()
     f = next((l for l in L if re.search(r"factura", norm(l))), "")
     d["detalle"] = re.sub(r"\s+", " ", f).strip()
-    d["medio"] = _medio(texto, 3, True) or _medio(texto, 0)
+    d["medio_detalle"] = _medio_crudo(texto, 3, True) or _medio_crudo(texto, 0)
+    d["medio"] = medio_canonico(d["medio_detalle"])[0]
     if not d["valor"]: d["avisos"].append("No se leyó el total")
     if not d["tercero"]: d["avisos"].append("No se leyó el proveedor")
     if not d["medio"]: d["avisos"].append("No se leyó el medio de pago")
