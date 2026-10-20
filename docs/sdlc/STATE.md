@@ -26,6 +26,7 @@ current task: T4
 ## Pendientes
 - Usuario: smoke de v1.6.0 (`archive/extracto/06-test-report.md`), avisar al contador del recálculo de sept. 1–23 y de las cuentas «por confirmar»; borrar la rama local `respaldo/antes-limpieza-v1.6.0` cuando ya no haga falta.
 - Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC a v1.6.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
+- Nuevo (2026-10-20): el POS pasó de Ascomp a Vendty. Falta la fecha del cambio, una foto de un recibo Vendty y saber si Vendty exporta ventas a Excel/CSV; si exporta, posible ciclo «importar ventas Vendty» (S–M) en vez de OCR para los días nuevos.
 - Candidatos a ciclo: **M-25 Indra OCR (M, absorbe M-16)** — segundo lector R3 + orientación/enderezado, venv 3.14 aparte, licencia OpenRAIL-M. Marcador de renta (`docs/marcador-renta.html`) M-18 perfil fiscal (S) → M-19 NIT por tercero (S–M) → M-20 soporte por gasto + efectivo 771-5 (S) → M-21 impoconsumo bimestral (S) → M-22 pestaña Marcador (M) → M-23 cruce con facturas DIAN (M) → M-24 paquete de cierre (M). Antes de M-18: confirmar con el contador régimen, impoconsumo, ICA y saldos iniciales.
 
 ## Log
@@ -41,3 +42,4 @@ current task: T4
 2026-10-20 | 5-implement | T1 hecho (Sonnet): ocr_module/indra_worker.py — ready/numeros/upright/quit/EOF/{"error"}; probado a mano en el venv del spike → next T2
 2026-10-20 | 5-implement | T2 hecho (Opus): ocr_module/indra.py cliente + probar_motores.py (30 ✓) + probar_motores_falso.py; humo real pendiente (sin venv) → next T3
 2026-10-20 | 5-implement | T3 hecho (Sonnet): ocr_module/motores.py fachada (leer_digitos, detectar_giro, estado+aviso); +16 en probar_motores.py; todos los probar_*.py OK → next T4
+2026-10-20 | 5-implement | contexto nuevo: POS Ascomp → Vendty; web de Vendty: POS electrónico DIAN, informes por correo, Siigo; export/API sin documentar → T4 en espera de respuestas del usuario
