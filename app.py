@@ -399,10 +399,15 @@ def _facturas_cerca(lib: dict, tocados: dict, fecha: str, ventana: int) -> list:
     return out
 
 
+def _facturas_usadas(lib: dict, tocados: dict, fecha: str) -> set:
+    "FIX-3: factura_ids ya enlazadas o asignadas por lineas del extracto de OTROS dias."
+    return {x["factura_id"] for f, d in {**lib, **tocados}.items() if f != fecha for x in d.get("extracto", []) if x.get("factura_id")}
+
+
 def _recalcular_dia(lib: dict, fecha: str, reglas: dict, mem: dict, cfg: dict) -> dict:
     "Reclasifica el extracto del dia con la memoria y las facturas cercanas, lo reconstruye y lo deja en `lib`."
     dia = lib[fecha]
-    ext = extr.clasificar(dia["extracto"], reglas, mem, _facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"]))
+    ext = extr.clasificar(dia["extracto"], reglas, mem, _facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"]), _facturas_usadas(lib, {}, fecha))
     r = construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), ext)
     lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre"), ext)
     return lib[fecha]
@@ -473,6 +478,7 @@ def cont_ext_asignar(fecha, clave):
         if fid == "ninguna": ln["asignada"] = {"ninguna": True}
         elif fid:
             if fid not in {d.get("id") for d in _facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"])}: return jsonify(error="Factura desconocida"), 400
+            if fid in _facturas_usadas(lib, {}, fecha): return jsonify(error="Esa factura ya está enlazada a otra línea"), 400
             ln["asignada"] = {"factura_id": fid}
         else: ln["asignada"] = {"cuenta": cuenta}
         recordar = ""
@@ -512,7 +518,7 @@ def cont_extracto():
         nuevos_dias = {}
         for fecha, dia in tocados.items():
             if not any(x.get("imp") == imp for x in dia.get("extracto", [])): continue   # nada nuevo: el día queda como estaba
-            dia["extracto"] = extr.clasificar(dia["extracto"], reglas, mem["memoria"], _facturas_cerca(lib, tocados, fecha, reglas["ventana_factura_dias"]))
+            dia["extracto"] = extr.clasificar(dia["extracto"], reglas, mem["memoria"], _facturas_cerca(lib, tocados, fecha, reglas["ventana_factura_dias"]), _facturas_usadas(lib, tocados, fecha))
             r = construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), dia["extracto"])
             nuevos_dias[fecha] = {**dia, "documentos": r["documentos"], "cruces": r["cruces"], "filas": r["filas"], "pendientes": r["pendientes"],
                                   "debito": r["debito"], "credito": r["credito"], "diferencia": r["diferencia"], "guardado": ahora}

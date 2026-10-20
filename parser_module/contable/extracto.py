@@ -133,11 +133,11 @@ def _cuenta_recordada(memoria: dict, tercero: str) -> str:
     return c if isinstance(c, str) and re.fullmatch(r"[0-9]{8}", c) else ""
 
 
-def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = []) -> list:
-    """Pura: devuelve copias de las lineas con concepto, destino, cuenta, origen y avisos. Memoria por tercero (T7).
+def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = [], usadas=()) -> list:
+    """Pura (FIX-3: `usadas` = factura_ids ya enlazadas por lineas de otros dias, no se ofrecen): devuelve copias de las lineas con concepto, destino, cuenta, origen y avisos. Memoria por tercero (T7).
     Facturas (T8, ADR-015): una salida que iba a revisar y tiene UNA factura de banco candidata -> destino factura + factura_id (sin asiento, a confirmar);
     con 2 o mas -> revisar con «¿cuál factura?» y sin_asiento (no hay puente). Una factura no se enlaza a dos lineas."""
-    out, usadas = [], set()
+    out, usadas = [], set(usadas)
     for ln in lineas:
         # los avisos de clasificacion se recalculan desde cero (idempotente); otros avisos se conservan
         x = dict(ln, avisos=[a for a in (ln.get("avisos") or []) if a not in _AVISOS_CLASIF])

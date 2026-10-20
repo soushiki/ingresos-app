@@ -385,5 +385,26 @@ chk(_ru.status_code == 200 and not _ru.get_json()["dia"]["banco"].get("qr"), "T1
 chk(cli.get("/api/contable/extracto/diferencias").get_json()["diferencias"] == [], "T10: la diferencia queda en 0 (no se lista)")
 chk(bool(appmod._leer_libro()["2026-09-26"]["extracto"]), "T10: el día conserva el extracto")
 
+# --- FIX-3: una factura no se enlaza a dos líneas de días distintos ---
+_u3 = X.clasificar([sal8(-5000)], REGLAS, {}, [fac8("fa", "2026-09-23", 5000)], usadas=("fa",))[0]
+chk(_u3["destino"] == "revisar" and _u3["factura_id"] == "", "FIX-3: clasificar con usadas iniciales excluye esa factura")
+_F3 = fac8("F1", "2026-10-10", 50000)
+def _nuevo3():
+    d = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = d / "libro.json", d / "m.json"
+    appmod.RUTA_LIBRO.write_text(json.dumps({"2026-10-10": dict(fecha="2026-10-10", documentos=[_F3], banco={}, cierre={})}), encoding="utf8")
+def _o3(n): return (_dt.datetime(2026, 10, n, 5, 0), "PAGO PSE PROVEEDOR EJEMPLO SAS", "", -50000)
+def _enl3():
+    l = appmod._leer_libro(); return {f: l[f]["extracto"][0] for f in ("2026-10-09", "2026-10-11")}, l
+_nuevo3(); chk(sube(xlsx([_o3(9), _o3(11)])).status_code == 200, "FIX-3: importa juntas")
+_e3, _l3 = _enl3()
+chk(sorted(x["destino"] for x in _e3.values()) == ["factura", "revisar"] and sum(x["factura_id"] == "F1" for x in _e3.values()) == 1, f"FIX-3: juntas → solo una enlaza F1 ({[(x['destino'], x['factura_id']) for x in _e3.values()]})")
+chk(any(f["codigo"] == "51959501" for d in _l3.values() for f in d.get("filas", [])), "FIX-3: la otra queda en revisar con puente")
+_nuevo3(); sube(xlsx([_o3(9)])); sube(xlsx([_o3(9), _o3(11)]))
+_e3, _l3 = _enl3()
+chk(_e3["2026-10-09"]["factura_id"] == "F1" and _e3["2026-10-11"]["destino"] == "revisar" and _e3["2026-10-11"]["factura_id"] == "", "FIX-3: en dos importaciones → la segunda queda en revisar")
+_k3 = _e3["2026-10-11"]["clave"]
+chk(cli.post(f"/api/contable/extracto/2026-10-11/{_k3}", json=dict(factura_id="F1")).status_code == 400, "FIX-3: asignar a mano una factura ya enlazada en otra línea → 400")
+chk(cli.post(f"/api/contable/extracto/2026-10-11/{_k3}", json=dict(cuenta=CT)).status_code == 200 and appmod._leer_libro()["2026-10-09"]["extracto"][0]["factura_id"] == "F1", "FIX-3: recalcular otro día no suelta el enlace")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)
