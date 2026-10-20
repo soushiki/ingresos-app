@@ -21,13 +21,14 @@ Formato real del papel (OCR de `2/comandas/85319-318-rappi.jpg#1`, hoy entra com
   con ese papel → fila 13452501 débito 25.000 tercero Rappi medio App, débito = crédito; papel sin total → valor 0 + aviso. Suites verdes.
   — files: `parser_module/contable/documentos.py` (detectar_tipo, leer_texto, PARSERS, FAMILIA), `probar_contable.py`
   — hecho: tipo «rappi» (detectar_tipo, parse_rappi, FAMILIA comandas), no se fuerza a venta en «comandas»; probar_contable +3 checks; suites verdes
-- [ ] T2 (S) ID de Rappi fuera de la numeración + duplicado — R1, R2 — model: Sonnet
+- [x] T2 (S) ID de Rappi fuera de la numeración + duplicado — R1, R2 — model: Sonnet
   — las comandas con `rappi=True` no entran a los huecos/rangos de comandas (`asientos.py:89,96,426`, `relectura.py:121,200`):
   un helper `_es_comanda(d)` en vez de repetir el filtro. El duplicado por número (`asientos.py:160`) ya cubre «mismo ID = 1 venta»;
   verificar que deja `contar=False` + aviso en el segundo.
   — done when: probar_contable +2 checks: día con comandas 85318–85319 + papel Rappi → sin faltantes ni rangos raros por el ID;
   mismo ID dos veces → una sola fila 13452501 y aviso de duplicado. probar_relectura / probar_faltantes / probar_validar verdes.
   — files: `parser_module/contable/asientos.py`, `parser_module/contable/relectura.py`, `probar_contable.py`
+  — hecho: `_es_comanda` en asientos (faltantes, fuera_de_secuencia, aviso de secuencia) y relectura (_nums, sin número); mismo ID de Rappi = duplicado (contar=False, «duplicado de»); probar_contable +2 checks; suites verdes
 - [ ] T3 (S) Respaldo antes de recalcular — R3 — model: Sonnet
   — `_guardar_libro` copia a `datos/libro.antes-v1.4.0.json` (no a la de v1.3.0): sacar la versión a una constante (o leer `VERSION`)
   para no tocar el código en cada ciclo. Una sola vez, no se pisa.

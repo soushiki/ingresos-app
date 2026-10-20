@@ -300,4 +300,15 @@ chk(len(_f) == 1 and _f[0]["debito"] == 25000 and _f[0]["tercero"] == "Rappi" an
     f"Rappi: construir -> 13452501 debito 25.000 tercero Rappi medio App, debito = credito: {[(f['codigo'], f['debito'], f['tercero'], f['medio']) for f in _rr['filas']]}")
 _rs = leer_texto(PAPEL_RAPPI.replace("Total sugerido a facturar $25.000", "").replace("Subtotal $25.000", ""), "comandas")[0]
 chk(_rs["valor"] == 0 and any("total de Rappi" in a for a in _rs["avisos"]), f"Rappi: papel sin total -> valor 0 + aviso: {_rs['valor']} {_rs['avisos']}")
+# T2: el ID de Rappi no entra a la numeración de comandas; el mismo ID dos veces cuenta una vez
+from parser_module.contable.asientos import faltantes, fuera_de_secuencia
+_c1, _c2 = leer_texto(cmd(85318, "PAGA CON EFECTIVO $40,000"))[0], leer_texto(cmd(85319, "PAGA CON EFECTIVO $40,000"))[0]
+_r1 = leer_texto(PAPEL_RAPPI, "comandas")[0]
+chk(faltantes([_c1, _c2, _r1], {"factura_inicial": 85318, "factura_final": 85319}) == [] and fuera_de_secuencia([_c1, _c2, _r1, dict(_r1, numero="1000000002")], 50) == [],
+    "Rappi: el ID largo no crea faltantes ni comandas fuera de secuencia")
+_r2 = dict(leer_texto(PAPEL_RAPPI.replace("Juan Perez", "Ana Gomez"), "comandas")[0], id="otro")
+_rd = construir("2026-09-17", [_r1, _r2])
+_fd = [f for f in _rd["filas"] if f["codigo"] == "13452501"]
+chk(len(_fd) == 1 and _fd[0]["debito"] == 25000 and _r2["contar"] is False and any("duplicado" in str(x.get("aviso")) for x in _rd["datos"]),
+    f"Rappi: mismo ID dos veces -> una fila 13452501 y aviso de duplicado: {[(f['codigo'], f['debito']) for f in _rd['filas']]}")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

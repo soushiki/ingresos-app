@@ -8,6 +8,7 @@ from __future__ import annotations
 import json, re, threading, time
 from collections import Counter
 from ocr_module.preprocess import nitidez, variante
+from .asientos import _es_comanda
 from .documentos import MARCA, leer_texto, parse_venta
 from .validar import FALTA, cruces, faltantes, leer_nombre, notas_digitos, validar
 from . import recortes
@@ -118,7 +119,7 @@ def _con_v0(motor, texto):
 
 
 def _nums(docs) -> set:
-    return {int(d["numero"]) for d in docs if d.get("tipo") == "venta" and str(d.get("numero") or "").isdigit()}
+    return {int(d["numero"]) for d in docs if _es_comanda(d) and str(d.get("numero") or "").isdigit()}
 
 
 def _con_numero(d, esperados) -> bool:
@@ -197,7 +198,7 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
             docs = [d for g, _ in nuevos for d in g]
             if (_nums(docs) - _nums(grupos[i][0])) & set(falta):
                 grupos[i] = (docs, f"\n{MARCA}\n".join(t for _, t in nuevos)); falta = faltantes(todos(), esperados)
-    for d in [d for d in todos() if d["tipo"] == "venta" and not _con_numero(d, esperados)] if falta else []:
+    for d in [d for d in todos() if _es_comanda(d) and not _con_numero(d, esperados)] if falta else []:
         n = _cercano(d, falta)
         if n is not None: _por_cercania(d, n); falta = faltantes(todos(), esperados)
     ventas = [d for d in todos() if d["tipo"] == "venta"]
