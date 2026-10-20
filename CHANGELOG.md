@@ -2,6 +2,22 @@
 
 ## [Sin publicar]
 
+## [1.4.0] — 2026-10-19
+Rappi: cada papel de Rappi entra al libro como venta por cobrar a Rappi, con su ID y su valor.
+
+### Lectura
+- Nuevo tipo de papel «rappi» (texto con «Rappi» y «Total sugerido a facturar», o «ID» largo junto a «Plataforma»/«Fecha orden»). En una foto de comandas no se fuerza a venta del POS.
+- Número del documento = ID de Rappi; valor = «Total sugerido a facturar» (si falta: «Subtotal» con aviso; si tampoco: 0 + aviso «No se leyó el total de Rappi», nunca inventado). Medio «Rappi», tercero Rappi. La fecha sigue la regla de la carpeta.
+- Al subir la foto, el papel conserva ID y valor (no se re-lee como comanda) y `validar` solo pide ID y valor (sin hora, mesa ni aritmética).
+
+### Asientos
+- Venta Rappi → débito 13452501 (por cobrar a Rappi, medio App) / crédito ingresos; el abono semanal del bloque «rappi» del extracto la salda (sin cambios).
+- El ID de Rappi no entra a la numeración de comandas (sin faltantes ni avisos de secuencia falsos). El mismo ID dos veces = una sola venta, la segunda con «duplicado de».
+
+### Datos
+- La primera vez que se guarda el libro con esta versión se copia a `datos/libro.antes-v1.4.0.json` (una sola vez, no se pisa; la versión del respaldo es la constante `VERSION_RESPALDO` de `app.py`).
+- Los papeles de Rappi ya guardados no cambian al recalcular: hay que volver a subir sus fotos (ver runbook).
+
 ## [1.3.1] — 2026-10-19
 Arreglo M-17: el ajuste al cierre se recalcula en el Excel.
 

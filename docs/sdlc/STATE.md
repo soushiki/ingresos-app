@@ -5,7 +5,7 @@ goal: Que cada papel de Rappi se reconozca y entre al libro con su valor de prod
 size: S      # la ruta contable ya existe (POR_COBRAR si medio == "Rappi"; bloque «rappi» del extracto la salda); falta reconocer el papel y leer su ID y total
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # cuentas del PUC que ya usa la app; sin valores tributarios
-next: 7-release
+next: 8-maintain
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-19)
@@ -15,7 +15,7 @@ next: 7-release
 - [x] 4-plan
 - [x] 5-implement      (T1–T4, FIX-1, FIX-2 hechos)
 - [x] 6-test           (2.ª pasada: pasa)
-- [ ] 7-release
+- [x] 7-release      (v1.4.0)
 - [ ] 8-maintain
 
 (Mark skipped stages `- [~]`.)
@@ -44,3 +44,4 @@ Lo más barato: anotar a mano el valor de los ≈ 19 papeles/mes en ④ con medi
 2026-10-19 | 5-implement | FIX-1 (5a3bd18): leer_hoja ya no re-parsea el papel Rappi; _motivos_rappi pide solo ID + valor; probar_relectura +2; 18 suites verdes → FIX-2 (pasar _motivos_rappi a validar)
 2026-10-19 | 5-implement | FIX-2: validar trata rappi=True (solo número + valor; sin hora/mesa/caja); relectura usa validar (se quita _motivos_rappi); probar_validar +3; 18 suites verdes. Drive «REPORTES ADMINISTRADOR»: sept. igual al local (misma resolución), no se descarga → 6-test (2.ª pasada + smoke)
 2026-10-19 | 6-test | PASA (2.ª pasada): 18 suites verdes; smoke foto real 02-09 → ID 1000000001, 25.000, Rappi, validado, fila 13452501 cuadrada, duplicado = 1; −[01f] del 11-09 no se reproduce al recalcular. Runbook: re-subir fotos Rappi de sept. → 7-release
+2026-10-19 | 7-release | v1.4.0 lista: VERSION, CHANGELOG, 07-release.md (runbook: re-subir fotos Rappi de sept.); suite 18/18; cifras reales → 01f (ignorado), historial sin push reescrito con valores falsos; tag local v1.4.0, push pendiente (sin red) → 8-maintain
