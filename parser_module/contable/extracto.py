@@ -92,7 +92,25 @@ def cargar_reglas(ruta=None) -> dict:
     return r
 
 
-_AVISOS_CLASIF = ("signo inesperado", "sin concepto: ninguna regla encaja")
+AV_CONFIRMAR, AV_CUAL = "enlazada a una factura pagada por banco: confirma", "¿cuál factura?"
+_AVISOS_CLASIF = ("signo inesperado", "sin concepto: ninguna regla encaja", AV_CONFIRMAR, AV_CUAL)
+
+
+def _dia(f):
+    try:
+        return datetime.date.fromisoformat(str(f)[:10])
+    except ValueError:
+        return None
+
+
+def candidatas(linea: dict, facturas: list, ventana: int, usadas=()) -> list:
+    "ADR-015: documentos de banco (no efectivo) con el mismo valor exacto que la salida y fecha a +-ventana dias, aun sin enlazar."
+    dl, v = _dia(linea.get("fecha")), -(linea.get("valor") or 0)
+    if dl is None or v <= 0:
+        return []
+    return [f for f in facturas if f.get("tipo") in ("factura", "gasto_caja", "caja_menor_manuscrito") and not f.get("dup_de")
+            and f.get("medio") not in ("", None, "Efectivo") and f.get("valor") == v and f.get("id") not in usadas
+            and (df := _dia(f.get("fecha"))) is not None and abs((dl - df).days) <= ventana]
 
 
 def tercero_de(descripcion, reglas: dict) -> str:
@@ -116,8 +134,10 @@ def _cuenta_recordada(memoria: dict, tercero: str) -> str:
 
 
 def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = []) -> list:
-    "Pura: devuelve copias de las lineas con concepto, destino, cuenta, origen y avisos. Memoria por tercero (T7); facturas todavia no."
-    out = []
+    """Pura: devuelve copias de las lineas con concepto, destino, cuenta, origen y avisos. Memoria por tercero (T7).
+    Facturas (T8, ADR-015): una salida que iba a revisar y tiene UNA factura de banco candidata -> destino factura + factura_id (sin asiento, a confirmar);
+    con 2 o mas -> revisar con «¿cuál factura?» y sin_asiento (no hay puente). Una factura no se enlaza a dos lineas."""
+    out, usadas = [], set()
     for ln in lineas:
         # los avisos de clasificacion se recalculan desde cero (idempotente); otros avisos se conservan
         x = dict(ln, avisos=[a for a in (ln.get("avisos") or []) if a not in _AVISOS_CLASIF])
@@ -139,6 +159,17 @@ def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = 
             x.update(concepto=SIN_CONCEPTO, destino="revisar", cuenta="", origen="")
             x["avisos"].append("signo inesperado" if misma else "sin concepto: ninguna regla encaja")
         x.setdefault("tercero", "")
+        x["factura_id"] = ""
+        x.pop("sin_asiento", None)
+        if x["destino"] == "revisar" and facturas:
+            cs = candidatas(x, facturas, reglas["ventana_factura_dias"], usadas)
+            if len(cs) == 1:
+                x.update(destino="factura", cuenta="", origen="factura", factura_id=cs[0]["id"])
+                x["avisos"].append(AV_CONFIRMAR)
+                usadas.add(cs[0]["id"])
+            elif cs:
+                x["sin_asiento"] = True
+                x["avisos"].append(AV_CUAL)
         if x["destino"] == "revisar":   # ADR-014: solo lo que iba a revisar; lo opaco nunca se recuerda
             ter = tercero_de(x.get("descripcion"), reglas)
             if ter:

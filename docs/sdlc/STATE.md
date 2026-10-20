@@ -6,7 +6,7 @@ size: M      # importador nuevo + reglas de clasificación + asientos con cuenta
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
 next: 5-implement
-current task: T8 (T7 hecho)
+current task: T9 (T8 hecho; abierto: sin_asiento en asientos.py bloque 5 + facturas= en app.py:414)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -51,3 +51,4 @@ current task: T8 (T7 hecho)
 2026-10-20 | 5-implement | FIX-1 clasificar idempotente (recalcula sus 2 avisos, conserva otros) +2 checks; 20 suites verdes → T6 (opus)
 2026-10-20 | 5-implement | T6 casillas efectivas (vacía = extracto, digitada manda + aviso dif) y `extracto` conservado en todos los recálculos de app.py; +13 checks; 20 suites verdes; real simulado 23 días cuadran → T7
 2026-10-20 | 5-implement | T7 memoria por tercero (tercero_de + prefijos_tercero; solo líneas a revisar; sin_tercero nunca se recuerda; origen «recordada») +9 checks; 20 suites verdes → T8
+2026-10-20 | 5-implement | T8 enlace salida↔factura en clasificar (1 candidata → factura + confirmar; 2+ → revisar «¿cuál factura?» sin_asiento; ±3 días) +11 checks incl. fitness ADR-015; 20 suites verdes; abierto: asientos.py aún pone puente a sin_asiento y app.py no pasa facturas → T9

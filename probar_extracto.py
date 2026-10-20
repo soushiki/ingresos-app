@@ -305,5 +305,33 @@ chk(X.clasificar(_t7, REGLAS, _M) == _t7, "T7: idempotente con memoria")
 chk(X.clasificar([lin("TRANSF A ANA PRUEBA", -1)], REGLAS, {"ANA PRUEBA": "mal"})[0]["destino"] == "revisar", "T7: memoria mal formada se ignora")
 chk(X.clasificar([lin("IMPTO GOBIERNO 4X1000", -5)], REGLAS, {"": "51050501"})[0]["origen"] == "regla", "T7: una regla con cuenta no la pisa la memoria")
 
+# --- T8: enlace salida ↔ factura (R4, ADR-015) ---
+from parser_module.contable.documentos import _base as _bd
+def fac8(i, fecha, valor, medio="Transferencia", tipo="factura"):
+    return {**_bd(tipo, ""), "id": i, "fecha": fecha, "valor": valor, "medio": medio, "tercero": "Proveedor", "cuenta": "51359501"}
+def sal8(valor=-120000, fecha="2026-09-25"): return dict(lin("PAGO PSE PROVEEDOR EJEMPLO SAS", valor), fecha=fecha)
+_s = sal8()
+_r0 = X.clasificar([_s], REGLAS, {}, [fac8("fa", "2026-09-25", 99000)])[0]
+chk(_r0["destino"] == "revisar" and _r0["factura_id"] == "" and not _r0.get("sin_asiento"), "T8: 0 candidatas → sigue en revisar, sin enlace")
+_r1 = X.clasificar([_s], REGLAS, {}, [fac8("fa", "2026-09-23", 120000)])[0]
+chk(_r1["destino"] == "factura" and _r1["factura_id"] == "fa" and X.AV_CONFIRMAR in _r1["avisos"], "T8: 1 candidata → destino factura, factura_id y aviso «confirma»")
+_r2 = X.clasificar([_s], REGLAS, {}, [fac8("fa", "2026-09-23", 120000), fac8("fb", "2026-09-26", 120000)])[0]
+chk(_r2["destino"] == "revisar" and _r2["factura_id"] == "" and _r2.get("sin_asiento") is True and X.AV_CUAL in _r2["avisos"], "T8: 2 candidatas → revisar, sin enlace, sin_asiento y «¿cuál factura?»")
+chk(X.clasificar([_s], REGLAS, {}, [fac8("fa", "2026-09-22", 120000)])[0]["factura_id"] == "fa", "T8: borde a 3 días (antes) → enlaza")
+chk(X.clasificar([_s], REGLAS, {}, [fac8("fa", "2026-09-28", 120000)])[0]["factura_id"] == "fa", "T8: borde a 3 días (después) → enlaza")
+chk(X.clasificar([_s], REGLAS, {}, [fac8("fa", "2026-09-21", 120000)])[0]["destino"] == "revisar", "T8: a 4 días → no enlaza")
+chk(X.clasificar([_s], REGLAS, {}, [fac8("fa", "2026-09-25", 120000, medio="Efectivo")])[0]["destino"] == "revisar", "T8: una factura en efectivo nunca es candidata")
+_d2 = X.clasificar([sal8(), sal8()], REGLAS, {}, [fac8("fa", "2026-09-24", 120000)])
+chk([x["factura_id"] for x in _d2] == ["fa", ""] and _d2[1]["destino"] == "revisar", "T8: una factura no se enlaza a dos líneas")
+_F8 = [fac8("fa", "2026-09-23", 120000), fac8("fb", "2026-09-24", 5000), fac8("fc", "2026-09-24", 5000)]
+_c8 = X.clasificar([sal8(), sal8(-5000), lin("IMPTO GOBIERNO 4X1000", -610)], REGLAS, {}, _F8)
+chk(X.clasificar(_c8, REGLAS, {}, _F8) == _c8, "T8: clasificar(clasificar(L, facturas), facturas) == clasificar(L, facturas)")
+_sin = X.clasificar(_c8, REGLAS)[0]
+chk(_sin["factura_id"] == "" and _sin["destino"] == "revisar" and X.AV_CONFIRMAR not in _sin["avisos"], "T8: sin la factura, el enlace y su aviso se van al reclasificar")
+_F = fac8("fa", "2026-09-23", 120000)
+_r8 = A.construir("2026-09-25", [_F], {}, extracto=X.clasificar([sal8()], REGLAS, {}, [_F]))
+_cb = [f for f in _r8["filas"] if f["codigo"] == A.BANCO and f["credito"]]
+chk(len(_cb) == 1 and _cb[0]["credito"] == 120000 and _r8["debito"] == _r8["credito"], "ADR-015: gasto pagado contado dos veces")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)
