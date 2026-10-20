@@ -388,6 +388,75 @@ def _leer_ext_mem() -> dict:
     return m
 
 
+def _facturas_cerca(lib: dict, tocados: dict, fecha: str, ventana: int) -> list:
+    "ADR-015: documentos de los dias a +-ventana de `fecha` (el libro, con los dias en proceso encima)."
+    d0 = extr._dia(fecha)
+    if d0 is None: return []
+    out = []
+    for f, d in {**lib, **tocados}.items():
+        d1 = extr._dia(f)
+        if d1 is not None and abs((d1 - d0).days) <= ventana: out += d.get("documentos", [])
+    return out
+
+
+def _recalcular_dia(lib: dict, fecha: str, reglas: dict, mem: dict, cfg: dict) -> dict:
+    "Reclasifica el extracto del dia con la memoria y las facturas cercanas, lo reconstruye y lo deja en `lib`."
+    dia = lib[fecha]
+    ext = extr.clasificar(dia["extracto"], reglas, mem, _facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"]))
+    r = construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), ext)
+    lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre"), ext)
+    return lib[fecha]
+
+
+@app.get("/api/contable/extracto/revision")
+def cont_ext_revision():
+    "T9: lineas del extracto por revisar (sin cuenta, o enlazadas a una factura a confirmar) entre desde y hasta (ISO, opcionales)."
+    desde, hasta = request.args.get("desde", ""), request.args.get("hasta", "")
+    if (desde and not ISO.match(desde)) or (hasta and not ISO.match(hasta)): return jsonify(error="Fecha inválida"), 400
+    out = []
+    for f, d in sorted(_leer_libro().items()):
+        if (desde and f < desde) or (hasta and f > hasta): continue
+        for x in d.get("extracto", []):
+            if x.get("destino") == "revisar" or (x.get("destino") == "factura" and x.get("origen") == "factura"):
+                out.append({k: x.get(k) for k in ("fecha", "clave", "descripcion", "referencia", "valor", "avisos", "destino", "factura_id", "tercero")})
+    return jsonify(lineas=out)
+
+
+@app.post("/api/contable/extracto/<fecha>/<clave>")
+def cont_ext_asignar(fecha, clave):
+    """T9: {cuenta | factura_id | "ninguna", recordar}. cuenta ∈ plan_de_cuentas; factura_id de un documento cercano; "ninguna" = no es de una factura.
+    Recalcula el día, guarda el libro y luego (si recordar) la memoria por tercero (tmp + replace)."""
+    j = request.get_json(silent=True) or {}
+    if not ISO.match(fecha): return jsonify(error="Fecha inválida"), 400
+    cuenta, fid = str(j.get("cuenta") or ""), str(j.get("factura_id") or "")
+    if sum(map(bool, (cuenta, fid))) != 1: return jsonify(error="Indica una sola cosa: cuenta o factura_id"), 400
+    if cuenta and cuenta not in CATALOGO: return jsonify(error="Cuenta desconocida"), 400
+    try: reglas = extr.cargar_reglas()
+    except extr.ReglasInvalidas as e: return jsonify(error=str(e)), 400
+    with LOCK:
+        lib, mem, cfg = _leer_libro(), _leer_ext_mem(), _cont_cfg()
+        dia = copy.deepcopy(lib.get(fecha))
+        ln = next((x for x in (dia or {}).get("extracto", []) if x.get("clave") == clave), None)
+        if ln is None: return jsonify(error="No existe esa línea del extracto"), 404
+        if fid == "ninguna": ln["asignada"] = {"ninguna": True}
+        elif fid:
+            if fid not in {d.get("id") for d in _facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"])}: return jsonify(error="Factura desconocida"), 400
+            ln["asignada"] = {"factura_id": fid}
+        else: ln["asignada"] = {"cuenta": cuenta}
+        recordar = ""
+        if j.get("recordar"):
+            if not cuenta: return jsonify(error="Solo se recuerda una cuenta"), 400
+            recordar = extr.tercero_de(ln.get("descripcion"), reglas)
+            if not recordar: return jsonify(error="Esa línea no tiene un tercero que recordar"), 400
+        lib[fecha] = dia
+        out = _recalcular_dia(lib, fecha, reglas, mem["memoria"], cfg)
+        _guardar_libro(lib)
+        if recordar:
+            mem["memoria"][recordar] = cuenta
+            tmp = RUTA_EXT_MEM.with_suffix(".tmp"); tmp.write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_EXT_MEM)
+    return jsonify(ok=True, dia=out)
+
+
 @app.post("/api/contable/extracto")
 def cont_extracto():
     """ADR-012: sube el extracto (.xlsx). Todo o nada: valida reglas y archivo antes de escribir; una sola _guardar_libro."""
@@ -411,7 +480,7 @@ def cont_extracto():
         nuevos_dias = {}
         for fecha, dia in tocados.items():
             if not any(x.get("imp") == imp for x in dia.get("extracto", [])): continue   # nada nuevo: el día queda como estaba
-            dia["extracto"] = extr.clasificar(dia["extracto"], reglas, mem["memoria"])
+            dia["extracto"] = extr.clasificar(dia["extracto"], reglas, mem["memoria"], _facturas_cerca(lib, tocados, fecha, reglas["ventana_factura_dias"]))
             r = construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), dia["extracto"])
             nuevos_dias[fecha] = {**dia, "documentos": r["documentos"], "cruces": r["cruces"], "filas": r["filas"], "pendientes": r["pendientes"],
                                   "debito": r["debito"], "credito": r["credito"], "diferencia": r["diferencia"], "guardado": ahora}

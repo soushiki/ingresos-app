@@ -161,7 +161,13 @@ def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = 
         x.setdefault("tercero", "")
         x["factura_id"] = ""
         x.pop("sin_asiento", None)
-        if x["destino"] == "revisar" and facturas:
+        asg = x.get("asignada") or {}   # T9: lo que elegiste a mano manda y sobrevive a reclasificar
+        if asg.get("cuenta"):
+            x.update(destino="cuenta:manual", cuenta=asg["cuenta"], origen="manual")
+        elif asg.get("factura_id"):
+            x.update(destino="factura", cuenta="", origen="manual", factura_id=asg["factura_id"])
+            usadas.add(asg["factura_id"])
+        if x["destino"] == "revisar" and facturas and not asg.get("ninguna"):
             cs = candidatas(x, facturas, reglas["ventana_factura_dias"], usadas)
             if len(cs) == 1:
                 x.update(destino="factura", cuenta="", origen="factura", factura_id=cs[0]["id"])

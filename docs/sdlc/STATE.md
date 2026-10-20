@@ -6,7 +6,7 @@ size: M      # importador nuevo + reglas de clasificación + asientos con cuenta
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
 next: 5-implement
-current task: T9 (incluye sin_asiento en asientos.py + facturas= en app.py)
+current task: T10 (UI ⑤ revisión + «usar extracto»)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -28,6 +28,7 @@ current task: T9 (incluye sin_asiento en asientos.py + facturas= en app.py)
 - (hecho 2026-10-20) push de main + tag v1.5.0.
 - Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC a v1.5.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
 - Candidatos a ciclo: M-16 lector por línea (M).
+- Candidatos a ciclo después de #5 extracto: Marcador de renta (`docs/marcador-renta.html`), 7 pasos en orden, M-18..M-24 en `08-maintenance.md`: M-18 perfil fiscal (S) → M-19 NIT por tercero (S–M) → M-20 soporte por gasto + efectivo 771-5 (S) → M-21 impoconsumo bimestral (S) → M-22 pestaña Marcador (M) → M-23 cruce con facturas DIAN (M) → M-24 paquete de cierre (M). Antes de M-18: confirmar con el contador régimen, impoconsumo, ICA y saldos iniciales.
 
 ## Log
 <!-- YYYY-MM-DD | stage | one-line result -->
@@ -53,3 +54,4 @@ current task: T9 (incluye sin_asiento en asientos.py + facturas= en app.py)
 2026-10-20 | 5-implement | T7 memoria por tercero (tercero_de + prefijos_tercero; solo líneas a revisar; sin_tercero nunca se recuerda; origen «recordada») +9 checks; 20 suites verdes → T8
 2026-10-20 | 5-implement | T8 enlace salida↔factura en clasificar (1 candidata → factura + confirmar; 2+ → revisar «¿cuál factura?» sin_asiento; ±3 días) +11 checks incl. fitness ADR-015; 20 suites verdes; abierto: asientos.py aún pone puente a sin_asiento y app.py no pasa facturas → T9
 2026-10-20 | 5-implement | usuario: el abierto de T8 (sin_asiento en asientos.py, facturas= en app.py) entra en T9
+2026-10-20 | 5-implement | T9 rutas revisión (GET) y asignar (POST cuenta|factura_id|ninguna, recordar → memoria tmp+replace); `asignada` sobrevive a reclasificar; sin_asiento sin puente; import pasa facturas=; +16 checks, asignar < 300 ms; 20 suites verdes; «ninguna» deja la línea en revisión con puente (T10) → T10

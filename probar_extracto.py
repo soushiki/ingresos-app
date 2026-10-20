@@ -333,5 +333,37 @@ _r8 = A.construir("2026-09-25", [_F], {}, extracto=X.clasificar([sal8()], REGLAS
 _cb = [f for f in _r8["filas"] if f["codigo"] == A.BANCO and f["credito"]]
 chk(len(_cb) == 1 and _cb[0]["credito"] == 120000 and _r8["debito"] == _r8["credito"], "ADR-015: gasto pagado contado dos veces")
 
+# --- T9: revisión y asignación (R5, ADR-014/015) + sin_asiento + facturas= en la importación ---
+_t9 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = _t9 / "libro.json", _t9 / "m.json"
+_x2 = X.clasificar([sal8(-5000)], REGLAS, {}, [fac8("fa", "2026-09-23", 5000), fac8("fb", "2026-09-24", 5000)])
+_r9 = A.construir("2026-09-25", [], {}, extracto=_x2)
+chk(_x2[0].get("sin_asiento") and not _r9["filas"] and not _r9["pendientes"], "T9: 2 candidatas (sin_asiento) → ninguna fila ni puente 51959501 en el libro")
+chk([f["codigo"] for f in A.construir("2026-09-25", [], {}, extracto=X.clasificar([sal8(-5000)], REGLAS))["filas"]].count("51959501") == 1, "T9: sin_asiento ausente → el puente sigue como antes")
+_F9 = fac8("fa", "2026-09-23", 120000)
+appmod.RUTA_LIBRO.write_text(json.dumps({"2026-09-23": dict(fecha="2026-09-23", documentos=[_F9], banco={}, cierre={})}), encoding="utf8")
+_S9 = [(dia_(25), "PAGO PSE PROVEEDOR EJEMPLO SAS", "", -120000), (dia_(25), "TRANSF A ANA PRUEBA", "", -50000), (dia_(25), "TRANSF A TERCERO B", "", -7000)]
+chk(sube(xlsx(_S9)).status_code == 200, "T9: importa")
+_d9 = appmod._leer_libro()["2026-09-25"]; _e9 = {x["descripcion"]: x for x in _d9["extracto"]}
+chk(_e9["PAGO PSE PROVEEDOR EJEMPLO SAS"]["factura_id"] == "fa" and _e9["PAGO PSE PROVEEDOR EJEMPLO SAS"]["destino"] == "factura", "T9: importar enlaza la salida a su única factura")
+rv = cli.get("/api/contable/extracto/revision?desde=2026-09-01&hasta=2026-09-30").get_json()["lineas"]
+chk(len(rv) == 3 and {x["fecha"] for x in rv} == {"2026-09-25"}, f"T9: revisión lista las 3 líneas ({len(rv)})")
+chk(cli.get("/api/contable/extracto/revision?desde=mal").status_code == 400, "T9: revisión con fecha mala → 400")
+k_lg, k_m, k_f = _e9["TRANSF A ANA PRUEBA"]["clave"], _e9["TRANSF A TERCERO B"]["clave"], _e9["PAGO PSE PROVEEDOR EJEMPLO SAS"]["clave"]
+_u = lambda k, **b: cli.post(f"/api/contable/extracto/2026-09-25/{k}", json=b)
+_rev = lambda: [x["clave"] for x in cli.get("/api/contable/extracto/revision").get_json()["lineas"]]
+CT = next(c for c in A.CATALOGO if c.startswith("5105"))
+chk(_u(k_lg, cuenta="99999999").status_code == 400 and _u(k_lg, cuenta=CT, factura_id="fa").status_code == 400, "T9: cuenta fuera del plan o dos opciones → 400")
+chk(_u("0" * 16, cuenta=CT).status_code == 404 and _u(k_lg, factura_id="zzz").status_code == 400, "T9: línea o factura inexistente")
+t0 = time.time(); ra = _u(k_lg, cuenta=CT, recordar=True); dt = time.time() - t0
+da = ra.get_json()["dia"]
+chk(ra.status_code == 200 and dt < 0.3, f"T9: asignar con recordar → 200 en {dt*1000:.0f} ms < 300")
+chk(k_lg not in _rev(), "T9: asignar quita la línea de la revisión")
+chk(any(f["codigo"] == CT and f["debito"] == 50000 for f in da["filas"]) and da["debito"] == da["credito"], "T9: la fila pasa de 51959501 a la cuenta elegida")
+chk(json.loads(appmod.RUTA_EXT_MEM.read_text(encoding="utf8"))["memoria"].get("ANA PRUEBA") == CT and not list(_t9.glob("*.tmp")), "T9: recordar llena la memoria")
+chk(any(x["clave"] == k_lg and x["asignada"] == {"cuenta": CT} for x in appmod._leer_libro()["2026-09-25"]["extracto"]), "T9: la asignación sobrevive a reclasificar")
+chk(k_f in _rev(), "T9: el enlace único queda a confirmar en la revisión")
+chk(_u(k_f, factura_id="ninguna").status_code == 200 and k_f in _rev(), "T9: «ninguna» rechaza el enlace: vuelve a revisar")
+chk(_u(k_f, factura_id="fa").status_code == 200 and k_f not in _rev(), "T9: factura_id confirma el enlace y sale de la revisión")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)

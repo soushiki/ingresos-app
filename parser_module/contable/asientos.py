@@ -460,7 +460,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     al_puente = []
     for x in extracto or []:
         destino, v = str(x.get("destino") or "revisar"), int(x.get("valor") or 0)
-        if not v or not (destino == "revisar" or destino.split(":")[0] == "cuenta"): continue
+        if not v or x.get("sin_asiento") or not (destino == "revisar" or destino.split(":")[0] == "cuenta"): continue
         revisar = destino == "revisar" or not x.get("cuenta")
         cod, ter, desc = cfg["puente_gasto"] if revisar else x["cuenta"], x.get("tercero") or "Banco", x.get("descripcion") or x.get("concepto") or "Extracto"
         rep, lado = cfg["reporta_banco"], dict(grupo="Extracto", docs=[x["clave"]])
