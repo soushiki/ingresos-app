@@ -1,11 +1,11 @@
 # SDLC state
 
-project: ingresos_app · (sin ciclo abierto: elegir el próximo)
+project: ingresos_app · Indra OCR (M-25)
 goal: —
 size: —
 exposed: no  # app Flask local en 127.0.0.1
 regulated: —
-next: 8-maintain  # falta que el usuario elija el próximo ciclo → 0-triage
+next: 0-triage
 current task: —
 
 ## Stages
@@ -31,3 +31,4 @@ current task: —
 ## Log
 (log del ciclo #5 → archive/extracto/STATE.md)
 2026-10-20 | 8-maintain | #5 cerrado (v1.6.0); ciclo → archive/extracto/ (01–04, 06, 07, STATE); 08 al día; M-25 Indra OCR anotado (absorbe M-16); chequeo mensual 2026-11-17; falta elegir el próximo ciclo (M-25 recomendado o M-18)
+2026-10-20 | 8-maintain | usuario elige próximo ciclo: M-25 Indra OCR → next 0-triage
