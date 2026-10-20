@@ -352,7 +352,8 @@ def cont_releer():
 @app.post("/api/contable/asientos")
 def cont_asientos():
     j = request.get_json(silent=True) or {}
-    r = construir_asientos(j.get("fecha", ""), _clasificar(j.get("documentos", [])), j.get("banco", {}), _cont_cfg(), j.get("cierre"))
+    fecha = str(j.get("fecha", ""))   # ADR-012: la vista previa usa el extracto ya guardado en el día
+    r = construir_asientos(fecha, _clasificar(j.get("documentos", [])), j.get("banco", {}), _cont_cfg(), j.get("cierre"), _leer_libro().get(fecha, {}).get("extracto"))
     return jsonify(r)
 
 
@@ -431,7 +432,7 @@ def cont_libro():
 def cont_confirmar():
     j = request.get_json(silent=True) or {}; fecha = str(j.get("fecha", ""))
     if not ISO.match(fecha): return jsonify(error="Falta la fecha del día"), 400
-    r = construir_asientos(fecha, j.get("documentos", []), j.get("banco", {}), _cont_cfg(), j.get("cierre"))
+    r = construir_asientos(fecha, j.get("documentos", []), j.get("banco", {}), _cont_cfg(), j.get("cierre"), _leer_libro().get(fecha, {}).get("extracto"))
     if not r["filas"] and not r["pendientes"]: return jsonify(error="El día no tiene asientos"), 400   # R10: los pendientes también se guardan
     with LOCK:
         lib = _leer_libro()
@@ -439,16 +440,18 @@ def cont_confirmar():
         b = _bloqueos(fecha, r["documentos"])
         if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
         previos = [d for d in lib.get(fecha, {}).get("documentos", []) if estado_de(d) == "revisado" or (d.get("tipo") == "faltante" and d.get("estado") == "no_existe")]
-        if previos:   # T10/R8: volver a leer un día nunca pisa un recibo «revisado»
-            r = construir_asientos(fecha, _conservar_revisados(previos, j.get("documentos", [])), j.get("banco", {}), _cont_cfg(), j.get("cierre"))
-        lib[fecha] = _dia(fecha, r, j.get("banco", {}), j.get("cierre"))
+        ext = lib.get(fecha, {}).get("extracto")   # ADR-012: el extracto del día no viene del navegador; se conserva y se recalcula con él
+        if previos or ext:   # T10/R8: volver a leer un día nunca pisa un recibo «revisado»
+            r = construir_asientos(fecha, _conservar_revisados(previos, j.get("documentos", [])) if previos else j.get("documentos", []), j.get("banco", {}), _cont_cfg(), j.get("cierre"), ext)
+        lib[fecha] = _dia(fecha, r, j.get("banco", {}), j.get("cierre"), ext)
         _guardar_libro(lib)
     return jsonify(ok=True, dias=len(lib), diferencia=r["diferencia"])
 
 
-def _dia(fecha: str, r: dict, banco: dict, cierre) -> dict:
+def _dia(fecha: str, r: dict, banco: dict, cierre, extracto: list | None = None) -> dict:
+    """extracto: las líneas guardadas del día (ADR-012); `r` ya debe venir calculado con ellas. Un día sin extracto no gana la clave."""
     return dict(fecha=fecha, documentos=r["documentos"], banco=banco, cierre=cierre or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
-                diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"))
+                diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"), **({"extracto": extracto} if extracto else {}))
 
 
 def _conservar_revisados(previos: list, nuevos: list) -> list:
@@ -506,8 +509,8 @@ def _cambiar_faltante(fecha: str, doc_id: str, accion):
         if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
         try: docs[i] = accion(docs[i])
         except ValueError as e: return jsonify(error=str(e)), 400
-        r = construir_asientos(fecha, docs, dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
-        lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre")); _guardar_libro(lib)
+        r = construir_asientos(fecha, docs, dia.get("banco", {}), _cont_cfg(), dia.get("cierre"), dia.get("extracto"))
+        lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre"), dia.get("extracto")); _guardar_libro(lib)
     return jsonify(ok=True, diferencia=r["diferencia"], estado=docs[i]["estado"])
 
 
@@ -572,8 +575,8 @@ def cont_revision_confirmar(fecha, doc_id):
         if b: return jsonify(error="R7: el día tiene compras de un documento soporte transmitido", bloqueos=b), 409
         d.update(limpio); d["estado"], d["motivos"], d["revisado"] = "revisado", [], True
         if d.get("avisos"): d["avisos_resueltos"], d["avisos"] = list(d.get("avisos_resueltos") or []) + d["avisos"], []   # FIX-13: el aviso viejo del OCR ya no cuenta
-        r = construir_asientos(fecha, dia["documentos"], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
-        lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre")); _guardar_libro(lib)
+        r = construir_asientos(fecha, dia["documentos"], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"), dia.get("extracto"))
+        lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre"), dia.get("extracto")); _guardar_libro(lib)
         revisado = next(x for x in lib[fecha]["documentos"] if x.get("id") == doc_id)
         mes = str(revisado.get("fecha") or fecha)[:7]
         referencia.agregar(RUTA_REF / f"referencia_{mes}.json", mes, {**revisado, "fecha": revisado.get("fecha") or fecha})
@@ -609,7 +612,8 @@ def cont_importar():
         for d in dias:
             fecha = d["fecha"]; previo = lib.get(fecha)
             if previo is not None and leido(previo) == leido(d): inf["iguales"].append(fecha); continue
-            try: r = construir_asientos(fecha, copy.deepcopy(d["documentos"]), d["banco"], cfg, d["cierre"])
+            ext = (previo or {}).get("extracto")   # ADR-012: el crudo no trae el extracto; el del día se conserva
+            try: r = construir_asientos(fecha, copy.deepcopy(d["documentos"]), d["banco"], cfg, d["cierre"], ext)
             except Exception as e:  # noqa: BLE001  un documento que el cálculo no entiende: el día no entra y se dice por qué
                 inf["invalidos"].append(dict(fecha=fecha, motivo=f"no se pudo calcular: {str(e)[:120]}")); continue
             if previo is not None:
@@ -619,7 +623,7 @@ def cont_importar():
                     inf["conflictos"].append(dict(fecha=fecha, papeles_actuales=len(previo.get("documentos", [])), papeles_archivo=len(d["documentos"]))); continue
             lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=d["banco"], cierre=d["cierre"], cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"],
                               debito=r["debito"], credito=r["credito"], diferencia=r["diferencia"], guardado=d["guardado"] or datetime.now().isoformat(timespec="seconds"),
-                              importado=datetime.now().isoformat(timespec="seconds"))
+                              importado=datetime.now().isoformat(timespec="seconds"), **({"extracto": ext} if ext else {}))
             inf["reemplazados" if previo is not None else "nuevos"].append(fecha); cambio = True
         if cambio: _guardar_libro(lib)
     return jsonify(ok=True, **inf)
@@ -802,7 +806,7 @@ def sop_compra():
     d["cuenta"], d["conf"], d["motivo"] = r["cuenta"], r["conf"], r["motivo"]
     with LOCK:
         lib = _leer_libro(); dia = lib.get(fecha) or dict(fecha=fecha, banco={}, cierre={})
-        r = construir_asientos(fecha, dia.get("documentos", []) + [d], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"))
+        r = construir_asientos(fecha, dia.get("documentos", []) + [d], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"), dia.get("extracto"))
         lib[fecha] = {**dia, "documentos": r["documentos"], "cruces": r["cruces"], "filas": r["filas"], "pendientes": r["pendientes"], "debito": r["debito"],
                       "credito": r["credito"], "diferencia": r["diferencia"], "guardado": datetime.now().isoformat(timespec="seconds")}   # recalculado: sin aviso de FIX-6
         _guardar_libro(lib)

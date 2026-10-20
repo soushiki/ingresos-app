@@ -265,9 +265,34 @@ def fx_consumo_papeles() -> list:
     return ["-", *(["sum", col, PAPELES] for col in ("valor", "propina", "domicilio"))]
 
 
+CASILLA_DESC = {k: d for k, d, _ in RECAUDOS_BANCO} | {"rappi": "Pagos interbancarios Rappi"}
+
+
+def casillas_efectivas(banco: dict, extracto: list | None) -> tuple[dict, dict]:
+    """P1/ADR-012: la casilla «Recaudos del banco» digitada (> 0) manda; si está vacía, vale la suma de las líneas del extracto
+    con destino casilla:<clave> (tarjetas por el abono neto, P3). Devuelve (banco efectivo, dif) con dif[k] = digitada − extracto,
+    solo donde hay las dos cifras y no coinciden. La casilla digitada nunca se pisa."""
+    del_ext = defaultdict(int)
+    for x in extracto or []:
+        tipo, _, k = str(x.get("destino") or "").partition(":")
+        if tipo == "casilla" and k in CASILLA_DESC: del_ext[k] += int(x.get("valor") or 0)
+    efectivo, dif = dict(banco or {}), {}
+    for k, v in del_ext.items():
+        digitada = int(efectivo.get(k) or 0)
+        if digitada > 0:
+            if v > 0 and digitada != v: dif[k] = digitada - v
+        elif v > 0: efectivo[k] = v
+    return efectivo, dif
+
+
 def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None, extracto: list | None = None) -> dict:
-    """extracto: líneas de libro[fecha]["extracto"] ya clasificadas (extracto.clasificar, ADR-012); van al bloque 5."""
-    cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; banco = banco or {}; filas, avisos, pendientes = [], [], []
+    """extracto: líneas de libro[fecha]["extracto"] ya clasificadas (extracto.clasificar, ADR-012). Las de destino casilla llenan las casillas
+    vacías de `banco` (casillas_efectivas); las de destino cuenta o revisar van al bloque 5."""
+    cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; filas, avisos, pendientes = [], [], []
+    banco, dif_casillas = casillas_efectivas(banco, extracto)
+    for k, d in dif_casillas.items():   # R4/P1: no se elige en silencio; «usar extracto» (T10) borra la digitada
+        dig = int(banco[k])
+        avisos.append(f"{CASILLA_DESC[k]}: digitado {dig:,} ≠ extracto {dig - d:,} (diferencia {d:,}); se usó lo digitado".replace(",", "."))
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
     docs = [d for d in todos if d.get("contar") and d["tipo"] != "cierre"]
     datos = datos_ocr(fecha, todos, banco, cfg)

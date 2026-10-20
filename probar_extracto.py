@@ -190,7 +190,7 @@ fx = [f for f in r["filas"] if f["grupo"] == "Extracto"]
 C = {k: c["codigo"] for k, c in REGLAS["cuentas"].items()}
 lados = lambda x: {(f["codigo"], f["debito"], f["credito"]) for f in fx if f["docs"] == [x["clave"]]}
 chk(r["debito"] == r["credito"] > 0 and r["diferencia"] == 0, f"T3: día sin papeles (documentos: []) con extracto cuadra ({r['debito']} = {r['credito']})")
-chk(len(fx) == 2 * 5 and len(r["filas"]) == len(fx), f"T3: 5 líneas cuenta/revisar → 10 filas «Extracto» ({len(fx)})")
+chk(len(fx) == 2 * 5 and all(f["grupo"] == "venta" for f in r["filas"] if f not in fx), f"T3: 5 líneas cuenta/revisar → 10 filas «Extracto» ({len(fx)}); las casillas van a venta (T6)")
 chk(lados(DIA[0]) == {(C["gmf"], 610, 0), (C["banco"], 0, 610)}, "T3 R6: GMF débito 53152001 / crédito Bancos por el valor exacto")
 chk(lados(DIA[1]) == {(C["banco"], 37, 0), (C["rendimientos"], 0, 37)}, "T3 R6: rendimientos débito Bancos / crédito 42100505 por el valor exacto")
 chk(lados(DIA[6]) == {(C["banco"], 90000, 0), (C["por_cobrar_rappi"], 0, 90000)}, "T3 R6: abono Rappi con cuenta → crédito 13452501")
@@ -202,6 +202,7 @@ chk(set(pe) == {DIA[3]["clave"], DIA[5]["clave"]} and pe[DIA[3]["clave"]]["valor
 chk(all(len(f["docs"]) == 1 and f["reporta"] for f in fx), "T3 S2: cada fila guarda docs=[clave] y grupo «Extracto»")
 chk(any("extracto" in a and C["puente"] in a for a in r["avisos"]), "T3: aviso del día con las líneas que quedaron en el puente")
 chk(A.construir("2026-09-25", [], {}, extracto=[])["filas"] == [] == A.construir("2026-09-25", [], {})["filas"], "T3: sin extracto el día sigue igual")
+r = A.construir("2026-09-25", [], {}, extracto=[x for x in DIA if not x["destino"].startswith("casilla:")])   # las casillas salen con fórmula (probar_datos_ocr)
 ws = load_workbook(io.BytesIO(E.libro_a_excel({"2026-09-25": r["filas"]}, datos={"2026-09-25": r["datos"]})))["MOVIMIENTOS SEPTIEMBRE"]
 fl = [c for c in ws.iter_rows(min_row=9) if c[0].value is not None]
 chk(len(fl) == len(r["filas"]) and sum(c[5].value or 0 for c in fl) == sum(c[6].value or 0 for c in fl) == r["debito"], "T3 R8: el Excel exportado trae las filas y cuadra débito = crédito")
@@ -213,6 +214,30 @@ _c1 = X.clasificar([lin("IMPTO GOBIERNO 4X1000", 610), lin("COSA RARA", -5)], RE
 chk(X.clasificar(_c1, REGLAS) == _c1 and _c1[0]["avisos"] == ["signo inesperado"], "FIX-1: clasificar(clasificar(L)) == clasificar(L), sin avisos duplicados")
 _c2 = X.clasificar([dict(_c1[0], valor=-610)], REGLAS)
 chk(_c2[0]["avisos"] == [], "FIX-1: si la regla ahora encaja, el aviso viejo se va")
+
+# --- T6: casillas efectivas (R4, P1, ADR-012) ---
+from parser_module.contable import leer_texto
+from parser_module.contable.ejemplos import VENTA
+QR2 = X.clasificar([lin("PAGO QR ANA", 30000), lin("PAGO QR LUIS", 34000), lin("IMPTO GOBIERNO 4X1000", -256)], REGLAS)
+ef, dif = A.casillas_efectivas({}, QR2)
+chk(ef.get("qr") == 64000 and dif == {}, f"T6: casilla qr vacía → la suma del extracto (64.000), sin diferencia ({ef}, {dif})")
+ef, dif = A.casillas_efectivas({"qr": 70000, "nequi": "0"}, QR2)
+chk(ef["qr"] == 70000 and dif == {"qr": 6000}, f"T6: casilla qr digitada 70.000 manda; dif = digitada − extracto = 6.000 ({ef}, {dif})")
+ef, dif = A.casillas_efectivas({"qr": 64000}, QR2)
+chk(dif == {}, "T6: digitada = extracto → sin diferencia")
+bq = lambda r, medio: [f for f in r["filas"] if f["codigo"] == A.BANCO and f["debito"] and f["medio"] == medio]
+r = A.construir("2026-09-25", [], {}, extracto=QR2)
+chk([f["debito"] for f in bq(r, "QR")] == [64000] and r["diferencia"] == 0, f"T6: casilla QR vacía → 1 recaudo QR = extracto ({[f['debito'] for f in bq(r, 'QR')]})")
+r = A.construir("2026-09-25", [], {"qr": 70000}, extracto=QR2)
+chk([f["debito"] for f in bq(r, "QR")] == [70000], "ADR-012: recaudo contado dos veces (casilla digitada + líneas QR)")
+chk(any("6.000" in a and "QR" in a for a in r["avisos"]), f"T6: aviso del día con la diferencia digitada − extracto ({r['avisos']})")
+vt = leer_texto(VENTA)   # comanda 85531: 95.800 con tarjeta
+TJ = X.clasificar([lin("ABONO NETO VISA", 95800)], REGLAS)
+r = A.construir("2026-09-12", copy.deepcopy(vt), {}, extracto=TJ)
+chk([f["debito"] for f in bq(r, "Tarjeta")] == [95800] and r["diferencia"] == 0, f"ADR-012: recaudo contado dos veces (comanda con tarjeta + abono neto) {[f['debito'] for f in bq(r, 'Tarjeta')]}")
+chk(any(x["estado"] == "en extracto" and x["medio"] == "Tarjeta" for x in r["datos"]), "T6: la parte con tarjeta de la comanda queda «en extracto»")
+r = A.construir("2026-09-12", copy.deepcopy(vt), {}, extracto=[])
+chk([f["debito"] for f in bq(r, "Tarjeta")] == [95800], "T6: sin extracto el día sigue igual (la comanda con tarjeta entra sola)")
 
 # --- T4: POST /api/contable/extracto (ADR-012, todo o nada) ---
 import pathlib, time
@@ -246,6 +271,19 @@ _rg = X.RUTA_REGLAS; X.RUTA_REGLAS = _t / "no_existe.json"
 try: rr = sube(xlsx(S1))
 finally: X.RUTA_REGLAS = _rg
 chk(rr.status_code == 400 and appmod.RUTA_LIBRO.read_bytes() == antes, "T4: reglas rotas/ausentes → 400 sin escribir")
+
+# --- T6: editar o recalcular un día con extracto conserva `extracto` y lo pasa a construir (hallado en T4) ---
+qr_de = lambda d: [f["debito"] for f in d["filas"] if f["codigo"] == A.BANCO and f["medio"] == "QR"]
+ext5 = appmod._leer_libro()["2026-09-05"]["extracto"]
+chk(qr_de(appmod._leer_libro()["2026-09-05"]) == [5000], "T6: el import deja el recaudo QR del día 5 (casilla vacía = extracto)")
+rc = cli.post("/api/contable/libro", json=dict(fecha="2026-09-05", documentos=[], banco={"qr": 5200}, cierre={}, reemplazar=True))
+d5 = appmod._leer_libro()["2026-09-05"]
+chk(rc.status_code == 200 and d5["extracto"] == ext5 and qr_de(d5) == [5200], f"T6: guardar el día otra vez conserva `extracto` y usa la casilla digitada ({rc.status_code}, {qr_de(d5)})")
+rp = cli.post("/api/contable/asientos", json=dict(fecha="2026-09-06", documentos=[], banco={}))
+chk(qr_de(rp.get_json()) == [6000], "T6: la vista previa del día usa el extracto guardado")
+rs = cli.post("/api/soporte/compra", json=dict(fecha="2026-09-07", tercero="Proveedor X", descripcion="Hielo", valor=8000, medio="Efectivo"))
+d7 = appmod._leer_libro()["2026-09-07"]
+chk(rs.status_code == 200 and d7["extracto"] and qr_de(d7) == [7000] and d7["debito"] == d7["credito"], f"T6: añadir una compra manual recalcula con el extracto ({rs.status_code}, {qr_de(d7)})")
 if XLSX.exists():
     _t2 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = _t2 / "libro.json", _t2 / "m.json"
     t0 = time.time(); rx = sube(XLSX.read_bytes()); dt = time.time() - t0
