@@ -1,0 +1,28 @@
+{
+ "recibos": 107,
+ "recortes": 120,
+ "casados": 103,
+ "sin_casar": 17,
+ "errores_qwen_en_casados": 11,
+ "lectores": {
+  "tes": {
+   "confirma_numero": 27,
+   "confirma_total": 96,
+   "atrapa_error_qwen": 6,
+   "confirma_error_qwen": 5,
+   "dudoso_falso_r3b": 0,
+   "s_por_recorte": 0.222,
+   "numeros_por_recorte": 17.8
+  },
+  "ind": {
+   "confirma_numero": 81,
+   "confirma_total": 97,
+   "atrapa_error_qwen": 6,
+   "confirma_error_qwen": 5,
+   "dudoso_falso_r3b": 3,
+   "s_por_recorte": 0.114,
+   "numeros_por_recorte": 22.5
+  }
+ },
+ "pico_ram_indra_mb": 440.0
+}

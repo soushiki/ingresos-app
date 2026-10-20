@@ -1,0 +1,4 @@
+indra_venv/
+__pycache__/
+resultados/avance_*.json
+resultados/*.tmp

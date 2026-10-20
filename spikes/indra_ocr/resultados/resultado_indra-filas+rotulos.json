@@ -1,0 +1,131 @@
+{
+ "motor": "indra-filas+rotulos",
+ "total": 107,
+ "leidos": 79,
+ "omitidos": 28,
+ "omitidos_numeros": [
+  "85339",
+  "85340",
+  "85372",
+  "85375",
+  "85373",
+  "85374",
+  "85388",
+  "85387",
+  "85389",
+  "85390",
+  "85409",
+  "85411",
+  "85402",
+  "85404",
+  "85405",
+  "85439",
+  "85442",
+  "85481",
+  "85483",
+  "85486",
+  "85515",
+  "85517",
+  "85520",
+  "85518",
+  "85536",
+  "85526",
+  "85587",
+  "85568"
+ ],
+ "por_causa": {
+  "tipo": 0,
+  "corte": 0,
+  "número": 28
+ },
+ "dudosos": 22,
+ "validados_con_error": 8,
+ "validados_con_error_numeros": [
+  "85408",
+  "85413",
+  "85433",
+  "85485",
+  "85516",
+  "85562",
+  "85582",
+  "85586"
+ ],
+ "errores_lectura": [],
+ "por_campo": {
+  "fecha": {
+   "ok": 71,
+   "mal": 8,
+   "acierto": 0.8987
+  },
+  "consumo": {
+   "ok": 75,
+   "mal": 4,
+   "acierto": 0.9494
+  },
+  "propina": {
+   "ok": 73,
+   "mal": 6,
+   "acierto": 0.9241
+  },
+  "domicilio": {
+   "ok": 71,
+   "mal": 8,
+   "acierto": 0.8987
+  },
+  "descuento": {
+   "ok": 73,
+   "mal": 6,
+   "acierto": 0.9241
+  },
+  "cortesia": {
+   "ok": 77,
+   "mal": 2,
+   "acierto": 0.9747
+  },
+  "efectivo": {
+   "ok": 71,
+   "mal": 8,
+   "acierto": 0.8987
+  },
+  "tarjeta": {
+   "ok": 77,
+   "mal": 2,
+   "acierto": 0.9747
+  },
+  "transf": {
+   "ok": 76,
+   "mal": 3,
+   "acierto": 0.962
+  },
+  "credito": {
+   "ok": 79,
+   "mal": 0,
+   "acierto": 1.0
+  },
+  "medio": {
+   "ok": 72,
+   "mal": 7,
+   "acierto": 0.9114
+  }
+ },
+ "nit": {
+  "ok": 49,
+  "de": 52
+ },
+ "items": {
+  "ref": 171,
+  "leidos": 152,
+  "aciertos": 119
+ },
+ "tiempo": {
+  "fotos": 20,
+  "trozos": 120,
+  "ocr_s_por_foto": 0.7,
+  "total_s_por_foto": 1.27
+ },
+ "pico_ram_mb": {
+  "motor": 440.2,
+  "proceso_python": 76.5
+ },
+ "indra_carga_s": 0.85
+}

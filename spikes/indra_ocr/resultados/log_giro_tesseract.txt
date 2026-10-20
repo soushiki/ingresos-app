@@ -1,0 +1,241 @@
+[1/240] 11/comandas/85515 al 520.jpg @+0°: app 3/6 núm · indra 2/6 núm (k=0, skew=+0.0) · 4 s/caso · quedan ≈ 15 min
+[2/240] 11/comandas/85515 al 520.jpg @+90°: app 3/6 núm · indra 2/6 núm (k=1, skew=+0.0) · 4 s/caso · quedan ≈ 14 min
+[3/240] 11/comandas/85515 al 520.jpg @+180°: app 0/6 núm · indra 2/6 núm (k=2, skew=+0.0) · 4 s/caso · quedan ≈ 14 min
+[4/240] 11/comandas/85515 al 520.jpg @+270°: app 3/6 núm · indra 2/6 núm (k=3, skew=+0.0) · 4 s/caso · quedan ≈ 14 min
+[5/240] 11/comandas/85515 al 520.jpg @+4°: app 1/6 núm · indra 1/6 núm (k=0, skew=-4.2) · 4 s/caso · quedan ≈ 14 min
+[6/240] 11/comandas/85515 al 520.jpg @-8°: app 0/6 núm · indra 2/6 núm (k=0, skew=+7.7) · 3 s/caso · quedan ≈ 14 min
+[7/240] 11/comandas/85515 al 520.jpg @+15°: app 0/6 núm · indra 1/6 núm (k=0, skew=-15.2) · 3 s/caso · quedan ≈ 13 min
+[8/240] 11/comandas/85515 al 520.jpg @-25°: app 0/6 núm · indra 2/6 núm (k=0, skew=+24.8) · 3 s/caso · quedan ≈ 13 min
+[9/240] 11/comandas/85515 al 520.jpg @+40°: app 0/6 núm · indra 2/6 núm (k=0, skew=-40.3) · 3 s/caso · quedan ≈ 13 min
+[10/240] 11/comandas/85515 al 520.jpg @+100°: app 0/6 núm · indra 3/6 núm (k=1, skew=-10.2) · 3 s/caso · quedan ≈ 13 min
+[11/240] 11/comandas/85515 al 520.jpg @+200°: app 0/6 núm · indra 2/6 núm (k=2, skew=-20.2) · 3 s/caso · quedan ≈ 13 min
+[12/240] 11/comandas/85515 al 520.jpg @-80°: app 0/6 núm · indra 3/6 núm (k=3, skew=-10.2) · 3 s/caso · quedan ≈ 13 min
+[13/240] 12/comandas/85524-526 al 529 y 531.jpg @+0°: app 0/6 núm · indra 0/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 13 min
+[14/240] 12/comandas/85524-526 al 529 y 531.jpg @+90°: app 0/6 núm · indra 0/6 núm (k=2, skew=+0.0) · 4 s/caso · quedan ≈ 13 min
+[15/240] 12/comandas/85524-526 al 529 y 531.jpg @+180°: app 0/6 núm · indra 0/6 núm (k=3, skew=+0.0) · 4 s/caso · quedan ≈ 13 min
+[16/240] 12/comandas/85524-526 al 529 y 531.jpg @+270°: app 0/6 núm · indra 0/6 núm (k=0, skew=+0.0) · 4 s/caso · quedan ≈ 13 min
+[17/240] 12/comandas/85524-526 al 529 y 531.jpg @+4°: app 0/6 núm · indra 2/6 núm (k=1, skew=-2.5) · 4 s/caso · quedan ≈ 13 min
+[18/240] 12/comandas/85524-526 al 529 y 531.jpg @-8°: app 0/6 núm · indra 1/6 núm (k=1, skew=+9.5) · 4 s/caso · quedan ≈ 13 min
+[19/240] 12/comandas/85524-526 al 529 y 531.jpg @+15°: app 0/6 núm · indra 1/6 núm (k=1, skew=-13.5) · 4 s/caso · quedan ≈ 13 min
+[20/240] 12/comandas/85524-526 al 529 y 531.jpg @-25°: app 0/6 núm · indra 1/6 núm (k=1, skew=+26.5) · 4 s/caso · quedan ≈ 13 min
+[21/240] 12/comandas/85524-526 al 529 y 531.jpg @+40°: app 0/6 núm · indra 1/6 núm (k=1, skew=-38.5) · 3 s/caso · quedan ≈ 13 min
+[22/240] 12/comandas/85524-526 al 529 y 531.jpg @+100°: app 0/6 núm · indra 1/6 núm (k=2, skew=-8.5) · 3 s/caso · quedan ≈ 13 min
+[23/240] 12/comandas/85524-526 al 529 y 531.jpg @+200°: app 0/6 núm · indra 2/6 núm (k=3, skew=-18.5) · 3 s/caso · quedan ≈ 13 min
+[24/240] 12/comandas/85524-526 al 529 y 531.jpg @-80°: app 1/6 núm · indra 1/6 núm (k=0, skew=-8.5) · 3 s/caso · quedan ≈ 13 min
+[25/240] 12/comandas/85532-533-535-550-552-557.jpg @+0°: app 0/1 núm · indra 0/1 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 13 min
+[26/240] 12/comandas/85532-533-535-550-552-557.jpg @+90°: app 0/1 núm · indra 0/1 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 12 min
+[27/240] 12/comandas/85532-533-535-550-552-557.jpg @+180°: app 0/1 núm · indra 0/1 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 12 min
+[28/240] 12/comandas/85532-533-535-550-552-557.jpg @+270°: app 0/1 núm · indra 0/1 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 12 min
+[29/240] 12/comandas/85532-533-535-550-552-557.jpg @+4°: app 0/1 núm · indra 0/1 núm (k=0, skew=-3.6) · 3 s/caso · quedan ≈ 12 min
+[30/240] 12/comandas/85532-533-535-550-552-557.jpg @-8°: app 1/1 núm · indra 0/1 núm (k=0, skew=+8.4) · 3 s/caso · quedan ≈ 12 min
+[31/240] 12/comandas/85532-533-535-550-552-557.jpg @+15°: app 0/1 núm · indra 0/1 núm (k=0, skew=-14.6) · 3 s/caso · quedan ≈ 12 min
+[32/240] 12/comandas/85532-533-535-550-552-557.jpg @-25°: app 0/1 núm · indra 0/1 núm (k=0, skew=+25.4) · 3 s/caso · quedan ≈ 12 min
+[33/240] 12/comandas/85532-533-535-550-552-557.jpg @+40°: app 0/1 núm · indra 0/1 núm (k=0, skew=-39.6) · 3 s/caso · quedan ≈ 12 min
+[34/240] 12/comandas/85532-533-535-550-552-557.jpg @+100°: app 0/1 núm · indra 0/1 núm (k=1, skew=-9.6) · 3 s/caso · quedan ≈ 12 min
+[35/240] 12/comandas/85532-533-535-550-552-557.jpg @+200°: app 0/1 núm · indra 0/1 núm (k=2, skew=-19.6) · 3 s/caso · quedan ≈ 12 min
+[36/240] 12/comandas/85532-533-535-550-552-557.jpg @-80°: app 0/1 núm · indra 0/1 núm (k=3, skew=-9.6) · 3 s/caso · quedan ≈ 12 min
+[37/240] 12/comandas/85534-536-537-538-540-541.jpg @+0°: app 2/6 núm · indra 2/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 12 min
+[38/240] 12/comandas/85534-536-537-538-540-541.jpg @+90°: app 2/6 núm · indra 2/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 12 min
+[39/240] 12/comandas/85534-536-537-538-540-541.jpg @+180°: app 0/6 núm · indra 2/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 12 min
+[40/240] 12/comandas/85534-536-537-538-540-541.jpg @+270°: app 2/6 núm · indra 2/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 11 min
+[41/240] 12/comandas/85534-536-537-538-540-541.jpg @+4°: app 0/6 núm · indra 0/6 núm (k=0, skew=-3.3) · 3 s/caso · quedan ≈ 11 min
+[42/240] 12/comandas/85534-536-537-538-540-541.jpg @-8°: app 0/6 núm · indra 4/6 núm (k=0, skew=+8.7) · 3 s/caso · quedan ≈ 11 min
+[43/240] 12/comandas/85534-536-537-538-540-541.jpg @+15°: app 0/6 núm · indra 2/6 núm (k=0, skew=-14.3) · 3 s/caso · quedan ≈ 11 min
+[44/240] 12/comandas/85534-536-537-538-540-541.jpg @-25°: app 0/6 núm · indra 2/6 núm (k=0, skew=+25.7) · 3 s/caso · quedan ≈ 11 min
+[45/240] 12/comandas/85534-536-537-538-540-541.jpg @+40°: app 0/6 núm · indra 3/6 núm (k=0, skew=-39.3) · 3 s/caso · quedan ≈ 11 min
+[46/240] 12/comandas/85534-536-537-538-540-541.jpg @+100°: app 0/6 núm · indra 1/6 núm (k=1, skew=-9.3) · 3 s/caso · quedan ≈ 11 min
+[47/240] 12/comandas/85534-536-537-538-540-541.jpg @+200°: app 0/6 núm · indra 1/6 núm (k=2, skew=-19.3) · 3 s/caso · quedan ≈ 11 min
+[48/240] 12/comandas/85534-536-537-538-540-541.jpg @-80°: app 0/6 núm · indra 1/6 núm (k=3, skew=-9.3) · 3 s/caso · quedan ≈ 11 min
+[49/240] 13/comandas/85560 al 565.jpg @+0°: app 3/5 núm · indra 3/5 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 11 min
+[50/240] 13/comandas/85560 al 565.jpg @+90°: app 2/5 núm · indra 3/5 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 11 min
+[51/240] 13/comandas/85560 al 565.jpg @+180°: app 2/5 núm · indra 3/5 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 11 min
+[52/240] 13/comandas/85560 al 565.jpg @+270°: app 2/5 núm · indra 3/5 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 11 min
+[53/240] 13/comandas/85560 al 565.jpg @+4°: app 2/5 núm · indra 3/5 núm (k=1, skew=-4.2) · 3 s/caso · quedan ≈ 11 min
+[54/240] 13/comandas/85560 al 565.jpg @-8°: app 0/5 núm · indra 3/5 núm (k=1, skew=+7.8) · 3 s/caso · quedan ≈ 11 min
+[55/240] 13/comandas/85560 al 565.jpg @+15°: app 0/5 núm · indra 3/5 núm (k=1, skew=-15.2) · 3 s/caso · quedan ≈ 11 min
+[56/240] 13/comandas/85560 al 565.jpg @-25°: app 0/5 núm · indra 2/5 núm (k=1, skew=+24.8) · 3 s/caso · quedan ≈ 11 min
+[57/240] 13/comandas/85560 al 565.jpg @+40°: app 0/5 núm · indra 4/5 núm (k=1, skew=-40.2) · 3 s/caso · quedan ≈ 11 min
+[58/240] 13/comandas/85560 al 565.jpg @+100°: app 0/5 núm · indra 3/5 núm (k=2, skew=-10.2) · 3 s/caso · quedan ≈ 10 min
+[59/240] 13/comandas/85560 al 565.jpg @+200°: app 0/5 núm · indra 3/5 núm (k=3, skew=-20.2) · 3 s/caso · quedan ≈ 10 min
+[60/240] 13/comandas/85560 al 565.jpg @-80°: app 0/5 núm · indra 3/5 núm (k=0, skew=-10.2) · 3 s/caso · quedan ≈ 10 min
+[61/240] 13/comandas/85566 al 569-558-559.jpg @+0°: app 0/1 núm · indra 0/1 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[62/240] 13/comandas/85566 al 569-558-559.jpg @+90°: app 0/1 núm · indra 0/1 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[63/240] 13/comandas/85566 al 569-558-559.jpg @+180°: app 0/1 núm · indra 0/1 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[64/240] 13/comandas/85566 al 569-558-559.jpg @+270°: app 0/1 núm · indra 0/1 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[65/240] 13/comandas/85566 al 569-558-559.jpg @+4°: app 0/1 núm · indra 0/1 núm (k=0, skew=-3.1) · 3 s/caso · quedan ≈ 10 min
+[66/240] 13/comandas/85566 al 569-558-559.jpg @-8°: app 0/1 núm · indra 0/1 núm (k=0, skew=+8.9) · 3 s/caso · quedan ≈ 10 min
+[67/240] 13/comandas/85566 al 569-558-559.jpg @+15°: app 0/1 núm · indra 0/1 núm (k=0, skew=-14.1) · 3 s/caso · quedan ≈ 10 min
+[68/240] 13/comandas/85566 al 569-558-559.jpg @-25°: app 0/1 núm · indra 0/1 núm (k=0, skew=+25.9) · 3 s/caso · quedan ≈ 10 min
+[69/240] 13/comandas/85566 al 569-558-559.jpg @+40°: app 0/1 núm · indra 0/1 núm (k=0, skew=-39.1) · 3 s/caso · quedan ≈ 10 min
+[70/240] 13/comandas/85566 al 569-558-559.jpg @+100°: app 0/1 núm · indra 0/1 núm (k=1, skew=-9.1) · 3 s/caso · quedan ≈ 10 min
+[71/240] 13/comandas/85566 al 569-558-559.jpg @+200°: app 0/1 núm · indra 0/1 núm (k=2, skew=-19.1) · 3 s/caso · quedan ≈ 10 min
+[72/240] 13/comandas/85566 al 569-558-559.jpg @-80°: app 0/1 núm · indra 0/1 núm (k=3, skew=-9.1) · 3 s/caso · quedan ≈ 10 min
+[73/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+0°: app 1/7 núm · indra 1/7 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[74/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+90°: app 0/7 núm · indra 1/7 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[75/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+180°: app 0/7 núm · indra 1/7 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[76/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+270°: app 0/7 núm · indra 1/7 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 10 min
+[77/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+4°: app 2/7 núm · indra 2/7 núm (k=0, skew=-4.0) · 3 s/caso · quedan ≈ 9 min
+[78/240] 13/comandas/85582 al 584 y 586 al 588.jpg @-8°: app 1/7 núm · indra 1/7 núm (k=0, skew=+8.0) · 3 s/caso · quedan ≈ 9 min
+[79/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+15°: app 0/7 núm · indra 1/7 núm (k=0, skew=-15.1) · 3 s/caso · quedan ≈ 9 min
+[80/240] 13/comandas/85582 al 584 y 586 al 588.jpg @-25°: app 0/7 núm · indra 0/7 núm (k=0, skew=+24.9) · 3 s/caso · quedan ≈ 9 min
+[81/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+40°: app 0/7 núm · indra 0/7 núm (k=0, skew=-40.1) · 3 s/caso · quedan ≈ 9 min
+[82/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+100°: app 0/7 núm · indra 0/7 núm (k=1, skew=-10.0) · 3 s/caso · quedan ≈ 9 min
+[83/240] 13/comandas/85582 al 584 y 586 al 588.jpg @+200°: app 0/7 núm · indra 2/7 núm (k=2, skew=-20.1) · 3 s/caso · quedan ≈ 9 min
+[84/240] 13/comandas/85582 al 584 y 586 al 588.jpg @-80°: app 0/7 núm · indra 0/7 núm (k=3, skew=-10.0) · 3 s/caso · quedan ≈ 9 min
+[85/240] 3/comanda/85330-331-333-335 al 337.jpg @+0°: app 2/6 núm · indra 2/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 9 min
+[86/240] 3/comanda/85330-331-333-335 al 337.jpg @+90°: app 2/6 núm · indra 2/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 9 min
+[87/240] 3/comanda/85330-331-333-335 al 337.jpg @+180°: app 2/6 núm · indra 2/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 9 min
+[88/240] 3/comanda/85330-331-333-335 al 337.jpg @+270°: app 1/6 núm · indra 2/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 9 min
+[89/240] 3/comanda/85330-331-333-335 al 337.jpg @+4°: app 4/6 núm · indra 2/6 núm (k=0, skew=-4.1) · 3 s/caso · quedan ≈ 9 min
+[90/240] 3/comanda/85330-331-333-335 al 337.jpg @-8°: app 3/6 núm · indra 2/6 núm (k=0, skew=+7.9) · 3 s/caso · quedan ≈ 9 min
+[91/240] 3/comanda/85330-331-333-335 al 337.jpg @+15°: app 0/6 núm · indra 1/6 núm (k=0, skew=-15.1) · 3 s/caso · quedan ≈ 9 min
+[92/240] 3/comanda/85330-331-333-335 al 337.jpg @-25°: app 0/6 núm · indra 3/6 núm (k=0, skew=+24.9) · 3 s/caso · quedan ≈ 9 min
+[93/240] 3/comanda/85330-331-333-335 al 337.jpg @+40°: app 0/6 núm · indra 2/6 núm (k=0, skew=-40.1) · 4 s/caso · quedan ≈ 9 min
+[94/240] 3/comanda/85330-331-333-335 al 337.jpg @+100°: app 0/6 núm · indra 3/6 núm (k=1, skew=-10.1) · 4 s/caso · quedan ≈ 9 min
+[95/240] 3/comanda/85330-331-333-335 al 337.jpg @+200°: app 0/6 núm · indra 3/6 núm (k=2, skew=-20.1) · 4 s/caso · quedan ≈ 8 min
+[96/240] 3/comanda/85330-331-333-335 al 337.jpg @-80°: app 0/6 núm · indra 3/6 núm (k=3, skew=-10.1) · 4 s/caso · quedan ≈ 8 min
+[97/240] 3/comanda/85334-338 al 3341-343.jpg @+0°: app 1/6 núm · indra 1/6 núm (k=0, skew=+0.0) · 4 s/caso · quedan ≈ 8 min
+[98/240] 3/comanda/85334-338 al 3341-343.jpg @+90°: app 1/6 núm · indra 1/6 núm (k=1, skew=+0.0) · 4 s/caso · quedan ≈ 8 min
+[99/240] 3/comanda/85334-338 al 3341-343.jpg @+180°: app 0/6 núm · indra 1/6 núm (k=2, skew=+0.0) · 4 s/caso · quedan ≈ 8 min
+[100/240] 3/comanda/85334-338 al 3341-343.jpg @+270°: app 1/6 núm · indra 1/6 núm (k=3, skew=+0.0) · 4 s/caso · quedan ≈ 8 min
+[101/240] 3/comanda/85334-338 al 3341-343.jpg @+4°: app 1/6 núm · indra 1/6 núm (k=0, skew=-3.8) · 4 s/caso · quedan ≈ 8 min
+[102/240] 3/comanda/85334-338 al 3341-343.jpg @-8°: app 1/6 núm · indra 0/6 núm (k=0, skew=+8.2) · 4 s/caso · quedan ≈ 8 min
+[103/240] 3/comanda/85334-338 al 3341-343.jpg @+15°: app 0/6 núm · indra 2/6 núm (k=0, skew=-14.7) · 4 s/caso · quedan ≈ 8 min
+[104/240] 3/comanda/85334-338 al 3341-343.jpg @-25°: app 0/6 núm · indra 2/6 núm (k=0, skew=+25.2) · 4 s/caso · quedan ≈ 8 min
+[105/240] 3/comanda/85334-338 al 3341-343.jpg @+40°: app 0/6 núm · indra 0/6 núm (k=0, skew=-39.7) · 4 s/caso · quedan ≈ 8 min
+[106/240] 3/comanda/85334-338 al 3341-343.jpg @+100°: app 0/6 núm · indra 0/6 núm (k=1, skew=-9.8) · 4 s/caso · quedan ≈ 8 min
+[107/240] 3/comanda/85334-338 al 3341-343.jpg @+200°: app 0/6 núm · indra 0/6 núm (k=2, skew=-19.8) · 4 s/caso · quedan ≈ 8 min
+[108/240] 3/comanda/85334-338 al 3341-343.jpg @-80°: app 0/6 núm · indra 0/6 núm (k=3, skew=-9.8) · 4 s/caso · quedan ≈ 8 min
+[109/240] 4/comandas/85366 al 371.jpg @+0°: app 2/6 núm · indra 2/6 núm (k=0, skew=+0.0) · 4 s/caso · quedan ≈ 8 min
+[110/240] 4/comandas/85366 al 371.jpg @+90°: app 2/6 núm · indra 2/6 núm (k=1, skew=+0.0) · 4 s/caso · quedan ≈ 8 min
+[111/240] 4/comandas/85366 al 371.jpg @+180°: app 0/6 núm · indra 2/6 núm (k=2, skew=+0.0) · 4 s/caso · quedan ≈ 8 min
+[112/240] 4/comandas/85366 al 371.jpg @+270°: app 2/6 núm · indra 2/6 núm (k=3, skew=+0.0) · 4 s/caso · quedan ≈ 7 min
+[113/240] 4/comandas/85366 al 371.jpg @+4°: app 1/6 núm · indra 3/6 núm (k=0, skew=-3.4) · 4 s/caso · quedan ≈ 7 min
+[114/240] 4/comandas/85366 al 371.jpg @-8°: app 2/6 núm · indra 1/6 núm (k=0, skew=+8.6) · 4 s/caso · quedan ≈ 7 min
+[115/240] 4/comandas/85366 al 371.jpg @+15°: app 0/6 núm · indra 3/6 núm (k=0, skew=-14.4) · 4 s/caso · quedan ≈ 7 min
+[116/240] 4/comandas/85366 al 371.jpg @-25°: app 0/6 núm · indra 3/6 núm (k=0, skew=+25.5) · 4 s/caso · quedan ≈ 7 min
+[117/240] 4/comandas/85366 al 371.jpg @+40°: app 0/6 núm · indra 2/6 núm (k=0, skew=-39.4) · 4 s/caso · quedan ≈ 7 min
+[118/240] 4/comandas/85366 al 371.jpg @+100°: app 0/6 núm · indra 1/6 núm (k=1, skew=-9.4) · 4 s/caso · quedan ≈ 7 min
+[119/240] 4/comandas/85366 al 371.jpg @+200°: app 0/6 núm · indra 3/6 núm (k=2, skew=-19.4) · 4 s/caso · quedan ≈ 7 min
+[120/240] 4/comandas/85366 al 371.jpg @-80°: app 0/6 núm · indra 1/6 núm (k=3, skew=-9.4) · 4 s/caso · quedan ≈ 7 min
+[121/240] 4/comandas/85372 al 377.jpg @+0°: app 1/5 núm · indra 1/5 núm (k=0, skew=+0.0) · 4 s/caso · quedan ≈ 7 min
+[122/240] 4/comandas/85372 al 377.jpg @+90°: app 1/5 núm · indra 1/5 núm (k=1, skew=+0.0) · 4 s/caso · quedan ≈ 7 min
+[123/240] 4/comandas/85372 al 377.jpg @+180°: app 1/5 núm · indra 1/5 núm (k=2, skew=+0.0) · 4 s/caso · quedan ≈ 7 min
+[124/240] 4/comandas/85372 al 377.jpg @+270°: app 1/5 núm · indra 1/5 núm (k=3, skew=+0.0) · 4 s/caso · quedan ≈ 7 min
+[125/240] 4/comandas/85372 al 377.jpg @+4°: app 1/5 núm · indra 1/5 núm (k=0, skew=-3.6) · 4 s/caso · quedan ≈ 7 min
+[126/240] 4/comandas/85372 al 377.jpg @-8°: app 1/5 núm · indra 1/5 núm (k=0, skew=+8.4) · 4 s/caso · quedan ≈ 7 min
+[127/240] 4/comandas/85372 al 377.jpg @+15°: app 0/5 núm · indra 2/5 núm (k=0, skew=-14.6) · 4 s/caso · quedan ≈ 7 min
+[128/240] 4/comandas/85372 al 377.jpg @-25°: app 0/5 núm · indra 2/5 núm (k=0, skew=+25.4) · 4 s/caso · quedan ≈ 7 min
+[129/240] 4/comandas/85372 al 377.jpg @+40°: app 0/5 núm · indra 0/5 núm (k=0, skew=-39.5) · 4 s/caso · quedan ≈ 6 min
+[130/240] 4/comandas/85372 al 377.jpg @+100°: app 0/5 núm · indra 1/5 núm (k=1, skew=-9.6) · 4 s/caso · quedan ≈ 6 min
+[131/240] 4/comandas/85372 al 377.jpg @+200°: app 0/5 núm · indra 2/5 núm (k=2, skew=-19.6) · 4 s/caso · quedan ≈ 6 min
+[132/240] 4/comandas/85372 al 377.jpg @-80°: app 0/5 núm · indra 1/5 núm (k=3, skew=-9.6) · 4 s/caso · quedan ≈ 6 min
+[133/240] 5/comandas/85387 al 392.jpg @+0°: app 0/6 núm · indra 0/6 núm (k=0, skew=+0.0) · 4 s/caso · quedan ≈ 6 min
+[134/240] 5/comandas/85387 al 392.jpg @+90°: app 0/6 núm · indra 0/6 núm (k=1, skew=+0.0) · 4 s/caso · quedan ≈ 6 min
+[135/240] 5/comandas/85387 al 392.jpg @+180°: app 0/6 núm · indra 0/6 núm (k=2, skew=+0.0) · 4 s/caso · quedan ≈ 6 min
+[136/240] 5/comandas/85387 al 392.jpg @+270°: app 0/6 núm · indra 0/6 núm (k=3, skew=+0.0) · 4 s/caso · quedan ≈ 6 min
+[137/240] 5/comandas/85387 al 392.jpg @+4°: app 0/6 núm · indra 0/6 núm (k=0, skew=-3.9) · 4 s/caso · quedan ≈ 6 min
+[138/240] 5/comandas/85387 al 392.jpg @-8°: app 0/6 núm · indra 0/6 núm (k=0, skew=+8.1) · 4 s/caso · quedan ≈ 6 min
+[139/240] 5/comandas/85387 al 392.jpg @+15°: app 0/6 núm · indra 0/6 núm (k=0, skew=-14.9) · 4 s/caso · quedan ≈ 6 min
+[140/240] 5/comandas/85387 al 392.jpg @-25°: app 0/6 núm · indra 0/6 núm (k=0, skew=+25.2) · 3 s/caso · quedan ≈ 6 min
+[141/240] 5/comandas/85387 al 392.jpg @+40°: app 0/6 núm · indra 0/6 núm (k=0, skew=-39.9) · 3 s/caso · quedan ≈ 6 min
+[142/240] 5/comandas/85387 al 392.jpg @+100°: app 0/6 núm · indra 0/6 núm (k=1, skew=-9.9) · 3 s/caso · quedan ≈ 6 min
+[143/240] 5/comandas/85387 al 392.jpg @+200°: app 0/6 núm · indra 0/6 núm (k=2, skew=-19.9) · 3 s/caso · quedan ≈ 6 min
+[144/240] 5/comandas/85387 al 392.jpg @-80°: app 0/6 núm · indra 0/6 núm (k=3, skew=-9.9) · 3 s/caso · quedan ≈ 6 min
+[145/240] 5/comandas/85400 y 402 al 406.jpg @+0°: app 1/6 núm · indra 1/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 6 min
+[146/240] 5/comandas/85400 y 402 al 406.jpg @+90°: app 1/6 núm · indra 1/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 5 min
+[147/240] 5/comandas/85400 y 402 al 406.jpg @+180°: app 0/6 núm · indra 1/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 5 min
+[148/240] 5/comandas/85400 y 402 al 406.jpg @+270°: app 0/6 núm · indra 1/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 5 min
+[149/240] 5/comandas/85400 y 402 al 406.jpg @+4°: app 0/6 núm · indra 2/6 núm (k=0, skew=-3.7) · 3 s/caso · quedan ≈ 5 min
+[150/240] 5/comandas/85400 y 402 al 406.jpg @-8°: app 0/6 núm · indra 0/6 núm (k=0, skew=+8.3) · 3 s/caso · quedan ≈ 5 min
+[151/240] 5/comandas/85400 y 402 al 406.jpg @+15°: app 0/6 núm · indra 0/6 núm (k=0, skew=-14.6) · 3 s/caso · quedan ≈ 5 min
+[152/240] 5/comandas/85400 y 402 al 406.jpg @-25°: app 0/6 núm · indra 1/6 núm (k=0, skew=+25.4) · 3 s/caso · quedan ≈ 5 min
+[153/240] 5/comandas/85400 y 402 al 406.jpg @+40°: app 0/6 núm · indra 1/6 núm (k=0, skew=-39.6) · 3 s/caso · quedan ≈ 5 min
+[154/240] 5/comandas/85400 y 402 al 406.jpg @+100°: app 0/6 núm · indra 0/6 núm (k=1, skew=-9.7) · 3 s/caso · quedan ≈ 5 min
+[155/240] 5/comandas/85400 y 402 al 406.jpg @+200°: app 0/6 núm · indra 0/6 núm (k=2, skew=-19.6) · 3 s/caso · quedan ≈ 5 min
+[156/240] 5/comandas/85400 y 402 al 406.jpg @-80°: app 0/6 núm · indra 0/6 núm (k=3, skew=-9.7) · 3 s/caso · quedan ≈ 5 min
+[157/240] 5/comandas/85407 al 412.jpg @+0°: app 1/6 núm · indra 1/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 5 min
+[158/240] 5/comandas/85407 al 412.jpg @+90°: app 1/6 núm · indra 1/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 5 min
+[159/240] 5/comandas/85407 al 412.jpg @+180°: app 0/6 núm · indra 1/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 5 min
+[160/240] 5/comandas/85407 al 412.jpg @+270°: app 1/6 núm · indra 1/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 5 min
+[161/240] 5/comandas/85407 al 412.jpg @+4°: app 0/6 núm · indra 2/6 núm (k=0, skew=-4.0) · 3 s/caso · quedan ≈ 5 min
+[162/240] 5/comandas/85407 al 412.jpg @-8°: app 2/6 núm · indra 1/6 núm (k=0, skew=+8.0) · 3 s/caso · quedan ≈ 5 min
+[163/240] 5/comandas/85407 al 412.jpg @+15°: app 0/6 núm · indra 2/6 núm (k=0, skew=-15.0) · 3 s/caso · quedan ≈ 4 min
+[164/240] 5/comandas/85407 al 412.jpg @-25°: app 0/6 núm · indra 2/6 núm (k=0, skew=+25.0) · 3 s/caso · quedan ≈ 4 min
+[165/240] 5/comandas/85407 al 412.jpg @+40°: app 0/6 núm · indra 0/6 núm (k=0, skew=-40.0) · 3 s/caso · quedan ≈ 4 min
+[166/240] 5/comandas/85407 al 412.jpg @+100°: app 0/6 núm · indra 3/6 núm (k=1, skew=-10.0) · 3 s/caso · quedan ≈ 4 min
+[167/240] 5/comandas/85407 al 412.jpg @+200°: app 0/6 núm · indra 2/6 núm (k=2, skew=-20.0) · 3 s/caso · quedan ≈ 4 min
+[168/240] 5/comandas/85407 al 412.jpg @-80°: app 0/6 núm · indra 3/6 núm (k=3, skew=-10.0) · 3 s/caso · quedan ≈ 4 min
+[169/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+0°: app 1/5 núm · indra 1/5 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 4 min
+[170/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+90°: app 1/5 núm · indra 1/5 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 4 min
+[171/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+180°: app 1/5 núm · indra 1/5 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 4 min
+[172/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+270°: app 2/5 núm · indra 1/5 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 4 min
+[173/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+4°: app 1/5 núm · indra 1/5 núm (k=0, skew=-4.3) · 3 s/caso · quedan ≈ 4 min
+[174/240] 5/comandas/85413 al 415 y 417 al 419.jpg @-8°: app 1/5 núm · indra 2/5 núm (k=0, skew=+7.7) · 3 s/caso · quedan ≈ 4 min
+[175/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+15°: app 0/5 núm · indra 3/5 núm (k=0, skew=-15.3) · 3 s/caso · quedan ≈ 4 min
+[176/240] 5/comandas/85413 al 415 y 417 al 419.jpg @-25°: app 0/5 núm · indra 3/5 núm (k=0, skew=+24.6) · 3 s/caso · quedan ≈ 4 min
+[177/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+40°: app 0/5 núm · indra 3/5 núm (k=0, skew=-40.3) · 3 s/caso · quedan ≈ 4 min
+[178/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+100°: app 1/5 núm · indra 0/5 núm (k=1, skew=-10.3) · 3 s/caso · quedan ≈ 4 min
+[179/240] 5/comandas/85413 al 415 y 417 al 419.jpg @+200°: app 0/5 núm · indra 2/5 núm (k=2, skew=-20.3) · 3 s/caso · quedan ≈ 4 min
+[180/240] 5/comandas/85413 al 415 y 417 al 419.jpg @-80°: app 0/5 núm · indra 0/5 núm (k=3, skew=-10.3) · 3 s/caso · quedan ≈ 3 min
+[181/240] 6/comandas/85428 al 431 y 433-434.jpg @+0°: app 3/6 núm · indra 3/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[182/240] 6/comandas/85428 al 431 y 433-434.jpg @+90°: app 3/6 núm · indra 3/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[183/240] 6/comandas/85428 al 431 y 433-434.jpg @+180°: app 3/6 núm · indra 3/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[184/240] 6/comandas/85428 al 431 y 433-434.jpg @+270°: app 3/6 núm · indra 3/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[185/240] 6/comandas/85428 al 431 y 433-434.jpg @+4°: app 3/6 núm · indra 2/6 núm (k=0, skew=-4.5) · 3 s/caso · quedan ≈ 3 min
+[186/240] 6/comandas/85428 al 431 y 433-434.jpg @-8°: app 0/6 núm · indra 5/6 núm (k=0, skew=+7.4) · 3 s/caso · quedan ≈ 3 min
+[187/240] 6/comandas/85428 al 431 y 433-434.jpg @+15°: app 0/6 núm · indra 1/6 núm (k=0, skew=-15.6) · 3 s/caso · quedan ≈ 3 min
+[188/240] 6/comandas/85428 al 431 y 433-434.jpg @-25°: app 0/6 núm · indra 4/6 núm (k=0, skew=+24.5) · 3 s/caso · quedan ≈ 3 min
+[189/240] 6/comandas/85428 al 431 y 433-434.jpg @+40°: app 0/6 núm · indra 4/6 núm (k=0, skew=-40.6) · 3 s/caso · quedan ≈ 3 min
+[190/240] 6/comandas/85428 al 431 y 433-434.jpg @+100°: app 0/6 núm · indra 3/6 núm (k=1, skew=-10.6) · 3 s/caso · quedan ≈ 3 min
+[191/240] 6/comandas/85428 al 431 y 433-434.jpg @+200°: app 0/6 núm · indra 3/6 núm (k=2, skew=-20.6) · 3 s/caso · quedan ≈ 3 min
+[192/240] 6/comandas/85428 al 431 y 433-434.jpg @-80°: app 0/6 núm · indra 3/6 núm (k=3, skew=-10.6) · 3 s/caso · quedan ≈ 3 min
+[193/240] 6/comandas/85435 al 440.jpg @+0°: app 5/6 núm · indra 5/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[194/240] 6/comandas/85435 al 440.jpg @+90°: app 5/6 núm · indra 5/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[195/240] 6/comandas/85435 al 440.jpg @+180°: app 0/6 núm · indra 5/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[196/240] 6/comandas/85435 al 440.jpg @+270°: app 0/6 núm · indra 5/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 3 min
+[197/240] 6/comandas/85435 al 440.jpg @+4°: app 1/6 núm · indra 3/6 núm (k=0, skew=-3.1) · 3 s/caso · quedan ≈ 2 min
+[198/240] 6/comandas/85435 al 440.jpg @-8°: app 0/6 núm · indra 3/6 núm (k=0, skew=+8.9) · 3 s/caso · quedan ≈ 2 min
+[199/240] 6/comandas/85435 al 440.jpg @+15°: app 0/6 núm · indra 3/6 núm (k=0, skew=-14.1) · 3 s/caso · quedan ≈ 2 min
+[200/240] 6/comandas/85435 al 440.jpg @-25°: app 0/6 núm · indra 5/6 núm (k=0, skew=+25.8) · 3 s/caso · quedan ≈ 2 min
+[201/240] 6/comandas/85435 al 440.jpg @+40°: app 0/6 núm · indra 2/6 núm (k=0, skew=-39.1) · 3 s/caso · quedan ≈ 2 min
+[202/240] 6/comandas/85435 al 440.jpg @+100°: app 0/6 núm · indra 2/6 núm (k=1, skew=-9.1) · 3 s/caso · quedan ≈ 2 min
+[203/240] 6/comandas/85435 al 440.jpg @+200°: app 0/6 núm · indra 3/6 núm (k=2, skew=-19.1) · 3 s/caso · quedan ≈ 2 min
+[204/240] 6/comandas/85435 al 440.jpg @-80°: app 0/6 núm · indra 2/6 núm (k=3, skew=-9.1) · 3 s/caso · quedan ≈ 2 min
+[205/240] 6/comandas/85441 al 446.jpg @+0°: app 2/6 núm · indra 2/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 2 min
+[206/240] 6/comandas/85441 al 446.jpg @+90°: app 2/6 núm · indra 2/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 2 min
+[207/240] 6/comandas/85441 al 446.jpg @+180°: app 2/6 núm · indra 2/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 2 min
+[208/240] 6/comandas/85441 al 446.jpg @+270°: app 2/6 núm · indra 2/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 2 min
+[209/240] 6/comandas/85441 al 446.jpg @+4°: app 2/6 núm · indra 1/6 núm (k=0, skew=-3.5) · 3 s/caso · quedan ≈ 2 min
+[210/240] 6/comandas/85441 al 446.jpg @-8°: app 0/6 núm · indra 2/6 núm (k=0, skew=+8.6) · 3 s/caso · quedan ≈ 2 min
+[211/240] 6/comandas/85441 al 446.jpg @+15°: app 0/6 núm · indra 3/6 núm (k=0, skew=-14.4) · 3 s/caso · quedan ≈ 2 min
+[212/240] 6/comandas/85441 al 446.jpg @-25°: app 0/6 núm · indra 3/6 núm (k=0, skew=+25.6) · 3 s/caso · quedan ≈ 2 min
+[213/240] 6/comandas/85441 al 446.jpg @+40°: app 0/6 núm · indra 2/6 núm (k=0, skew=-39.3) · 3 s/caso · quedan ≈ 2 min
+[214/240] 6/comandas/85441 al 446.jpg @+100°: app 0/6 núm · indra 2/6 núm (k=1, skew=-9.5) · 3 s/caso · quedan ≈ 2 min
+[215/240] 6/comandas/85441 al 446.jpg @+200°: app 0/6 núm · indra 2/6 núm (k=2, skew=-19.4) · 3 s/caso · quedan ≈ 1 min
+[216/240] 6/comandas/85441 al 446.jpg @-80°: app 0/6 núm · indra 2/6 núm (k=3, skew=-9.5) · 3 s/caso · quedan ≈ 1 min
+[217/240] 6/comandas/85447 al 452.jpg @+0°: app 2/5 núm · indra 2/5 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 1 min
+[218/240] 6/comandas/85447 al 452.jpg @+90°: app 2/5 núm · indra 2/5 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 1 min
+[219/240] 6/comandas/85447 al 452.jpg @+180°: app 0/5 núm · indra 2/5 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 1 min
+[220/240] 6/comandas/85447 al 452.jpg @+270°: app 2/5 núm · indra 2/5 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 1 min
+[221/240] 6/comandas/85447 al 452.jpg @+4°: app 2/5 núm · indra 2/5 núm (k=0, skew=-3.6) · 3 s/caso · quedan ≈ 1 min
+[222/240] 6/comandas/85447 al 452.jpg @-8°: app 2/5 núm · indra 1/5 núm (k=0, skew=+8.4) · 3 s/caso · quedan ≈ 1 min
+[223/240] 6/comandas/85447 al 452.jpg @+15°: app 0/5 núm · indra 3/5 núm (k=0, skew=-14.5) · 3 s/caso · quedan ≈ 1 min
+[224/240] 6/comandas/85447 al 452.jpg @-25°: app 0/5 núm · indra 4/5 núm (k=0, skew=+25.5) · 3 s/caso · quedan ≈ 1 min
+[225/240] 6/comandas/85447 al 452.jpg @+40°: app 0/5 núm · indra 2/5 núm (k=0, skew=-39.5) · 3 s/caso · quedan ≈ 1 min
+[226/240] 6/comandas/85447 al 452.jpg @+100°: app 0/5 núm · indra 1/5 núm (k=1, skew=-9.5) · 3 s/caso · quedan ≈ 1 min
+[227/240] 6/comandas/85447 al 452.jpg @+200°: app 0/5 núm · indra 3/5 núm (k=2, skew=-19.5) · 3 s/caso · quedan ≈ 1 min
+[228/240] 6/comandas/85447 al 452.jpg @-80°: app 0/5 núm · indra 1/5 núm (k=3, skew=-9.5) · 3 s/caso · quedan ≈ 1 min
+[229/240] 9/comandas/85481 al 486.jpg @+0°: app 0/6 núm · indra 0/6 núm (k=0, skew=+0.0) · 3 s/caso · quedan ≈ 1 min
+[230/240] 9/comandas/85481 al 486.jpg @+90°: app 0/6 núm · indra 0/6 núm (k=1, skew=+0.0) · 3 s/caso · quedan ≈ 1 min
+[231/240] 9/comandas/85481 al 486.jpg @+180°: app 0/6 núm · indra 0/6 núm (k=2, skew=+0.0) · 3 s/caso · quedan ≈ 1 min
+[232/240] 9/comandas/85481 al 486.jpg @+270°: app 0/6 núm · indra 0/6 núm (k=3, skew=+0.0) · 3 s/caso · quedan ≈ 0 min
+[233/240] 9/comandas/85481 al 486.jpg @+4°: app 2/6 núm · indra 1/6 núm (k=0, skew=-3.1) · 3 s/caso · quedan ≈ 0 min
+[234/240] 9/comandas/85481 al 486.jpg @-8°: app 0/6 núm · indra 2/6 núm (k=0, skew=+8.9) · 3 s/caso · quedan ≈ 0 min
+[235/240] 9/comandas/85481 al 486.jpg @+15°: app 0/6 núm · indra 4/6 núm (k=0, skew=-14.1) · 3 s/caso · quedan ≈ 0 min
+[236/240] 9/comandas/85481 al 486.jpg @-25°: app 0/6 núm · indra 1/6 núm (k=0, skew=+25.9) · 3 s/caso · quedan ≈ 0 min
+[237/240] 9/comandas/85481 al 486.jpg @+40°: app 0/6 núm · indra 2/6 núm (k=0, skew=-39.1) · 3 s/caso · quedan ≈ 0 min
+[238/240] 9/comandas/85481 al 486.jpg @+100°: app 0/6 núm · indra 3/6 núm (k=1, skew=-9.1) · 3 s/caso · quedan ≈ 0 min
+[239/240] 9/comandas/85481 al 486.jpg @+200°: app 0/6 núm · indra 2/6 núm (k=2, skew=-19.1) · 3 s/caso · quedan ≈ 0 min
+[240/240] 9/comandas/85481 al 486.jpg @-80°: app 0/6 núm · indra 3/6 núm (k=3, skew=-9.1) · 3 s/caso · quedan ≈ 0 min
+{"0": {"app": {"cuarto_ok": 20, "numeros": 30, "totales": 100, "s_giro": 0.45}, "indra": {"cuarto_ok": 18, "numeros": 29, "totales": 100, "s_giro": 0.15}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.0, "app_inclinacion_restante": 0}, "90": {"app": {"cuarto_ok": 14, "numeros": 28, "totales": 88, "s_giro": 0.47}, "indra": {"cuarto_ok": 18, "numeros": 29, "totales": 100, "s_giro": 0.17}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.0, "app_inclinacion_restante": 0}, "180": {"app": {"cuarto_ok": 7, "numeros": 11, "totales": 35, "s_giro": 0.46}, "indra": {"cuarto_ok": 18, "numeros": 29, "totales": 100, "s_giro": 0.16}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.0, "app_inclinacion_restante": 0}, "270": {"app": {"cuarto_ok": 10, "numeros": 22, "totales": 76, "s_giro": 0.47}, "indra": {"cuarto_ok": 18, "numeros": 29, "totales": 100, "s_giro": 0.17}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.0, "app_inclinacion_restante": 0}, "4": {"app": {"cuarto_ok": 18, "numeros": 23, "totales": 86, "s_giro": 0.51}, "indra": {"cuarto_ok": 18, "numeros": 29, "totales": 100, "s_giro": 0.18}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 4}, "-8": {"app": {"cuarto_ok": 19, "numeros": 14, "totales": 73, "s_giro": 0.54}, "indra": {"cuarto_ok": 18, "numeros": 31, "totales": 100, "s_giro": 0.2}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 8}, "15": {"app": {"cuarto_ok": 17, "numeros": 0, "totales": 14, "s_giro": 0.56}, "indra": {"cuarto_ok": 18, "numeros": 35, "totales": 100, "s_giro": 0.21}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 15}, "-25": {"app": {"cuarto_ok": 14, "numeros": 0, "totales": 1, "s_giro": 0.58}, "indra": {"cuarto_ok": 18, "numeros": 40, "totales": 100, "s_giro": 0.23}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 25}, "40": {"app": {"cuarto_ok": 19, "numeros": 0, "totales": 1, "s_giro": 0.61}, "indra": {"cuarto_ok": 18, "numeros": 30, "totales": 100, "s_giro": 0.24}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 40}, "100": {"app": {"cuarto_ok": 2, "numeros": 1, "totales": 15, "s_giro": 0.54}, "indra": {"cuarto_ok": 18, "numeros": 27, "totales": 101, "s_giro": 0.22}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 10}, "200": {"app": {"cuarto_ok": 3, "numeros": 0, "totales": 1, "s_giro": 0.58}, "indra": {"cuarto_ok": 18, "numeros": 35, "totales": 100, "s_giro": 0.23}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 20}, "-80": {"app": {"cuarto_ok": 0, "numeros": 1, "totales": 11, "s_giro": 0.54}, "indra": {"cuarto_ok": 18, "numeros": 27, "totales": 101, "s_giro": 0.22}, "recibos": 107, "hojas": 20, "indra_inclinacion_restante_max": 0.9, "app_inclinacion_restante": 10}}

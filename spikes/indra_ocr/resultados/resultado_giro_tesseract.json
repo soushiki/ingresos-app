@@ -1,0 +1,218 @@
+{
+ "0": {
+  "app": {
+   "cuarto_ok": 20,
+   "numeros": 30,
+   "totales": 100,
+   "s_giro": 0.45
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 29,
+   "totales": 100,
+   "s_giro": 0.15
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.0,
+  "app_inclinacion_restante": 0
+ },
+ "90": {
+  "app": {
+   "cuarto_ok": 14,
+   "numeros": 28,
+   "totales": 88,
+   "s_giro": 0.47
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 29,
+   "totales": 100,
+   "s_giro": 0.17
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.0,
+  "app_inclinacion_restante": 0
+ },
+ "180": {
+  "app": {
+   "cuarto_ok": 7,
+   "numeros": 11,
+   "totales": 35,
+   "s_giro": 0.46
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 29,
+   "totales": 100,
+   "s_giro": 0.16
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.0,
+  "app_inclinacion_restante": 0
+ },
+ "270": {
+  "app": {
+   "cuarto_ok": 10,
+   "numeros": 22,
+   "totales": 76,
+   "s_giro": 0.47
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 29,
+   "totales": 100,
+   "s_giro": 0.17
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.0,
+  "app_inclinacion_restante": 0
+ },
+ "4": {
+  "app": {
+   "cuarto_ok": 18,
+   "numeros": 23,
+   "totales": 86,
+   "s_giro": 0.51
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 29,
+   "totales": 100,
+   "s_giro": 0.18
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 4
+ },
+ "-8": {
+  "app": {
+   "cuarto_ok": 19,
+   "numeros": 14,
+   "totales": 73,
+   "s_giro": 0.54
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 31,
+   "totales": 100,
+   "s_giro": 0.2
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 8
+ },
+ "15": {
+  "app": {
+   "cuarto_ok": 17,
+   "numeros": 0,
+   "totales": 14,
+   "s_giro": 0.56
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 35,
+   "totales": 100,
+   "s_giro": 0.21
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 15
+ },
+ "-25": {
+  "app": {
+   "cuarto_ok": 14,
+   "numeros": 0,
+   "totales": 1,
+   "s_giro": 0.58
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 40,
+   "totales": 100,
+   "s_giro": 0.23
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 25
+ },
+ "40": {
+  "app": {
+   "cuarto_ok": 19,
+   "numeros": 0,
+   "totales": 1,
+   "s_giro": 0.61
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 30,
+   "totales": 100,
+   "s_giro": 0.24
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 40
+ },
+ "100": {
+  "app": {
+   "cuarto_ok": 2,
+   "numeros": 1,
+   "totales": 15,
+   "s_giro": 0.54
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 27,
+   "totales": 101,
+   "s_giro": 0.22
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 10
+ },
+ "200": {
+  "app": {
+   "cuarto_ok": 3,
+   "numeros": 0,
+   "totales": 1,
+   "s_giro": 0.58
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 35,
+   "totales": 100,
+   "s_giro": 0.23
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 20
+ },
+ "-80": {
+  "app": {
+   "cuarto_ok": 0,
+   "numeros": 1,
+   "totales": 11,
+   "s_giro": 0.54
+  },
+  "indra": {
+   "cuarto_ok": 18,
+   "numeros": 27,
+   "totales": 101,
+   "s_giro": 0.22
+  },
+  "recibos": 107,
+  "hojas": 20,
+  "indra_inclinacion_restante_max": 0.9,
+  "app_inclinacion_restante": 10
+ }
+}
