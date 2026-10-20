@@ -16,7 +16,7 @@ current task: —
 - [x] 4-plan         (T1–T4, 1 iteración ≈ 4–5 h)
 - [x] 5-implement
 - [x] 6-test         (2.ª pasada: verde; smoke manual 1–3 del usuario pendiente)
-- [x] 7-release      (v1.5.0, tag local; push pendiente)
+- [x] 7-release      (v1.5.0 publicada)
 - [ ] 8-maintain     (chequeo mensual 2026-11-17)
 
 ## Ciclos anteriores
@@ -25,7 +25,7 @@ current task: —
 
 ## Pendientes
 - (hecho 2026-10-19) push de main + tag v1.4.0.
-- push de main + tag v1.5.0 (pendiente de confirmación).
+- (hecho 2026-10-20) push de main + tag v1.5.0.
 - Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC, smoke de v1.3.x.
 - Candidatos a ciclo: #5 extracto bancario (M), M-16 lector por línea (M).
 
@@ -45,3 +45,4 @@ current task: —
 2026-10-20 | 5-implement | FIX-1 hecho: paréntesis en desc de recaudos (asientos.py:368), check nuevo en probar_medios (banco/Rappi con «· Ordenes:»; falla sin el fix), 19 suites verdes → 6-test (2.ª pasada)
 2026-10-20 | 6-test | 2.ª pasada: 19/19 verdes, FIX-1 verificado (recaudos banco/Rappi con «· Ordenes:»), R1–R4 cubiertos; smoke manual al usuario → 7-release
 2026-10-20 | 7-release | v1.5.0: VERSION_RESPALDO 1.5.0, CHANGELOG, 07-release (runbook + rollback 1.5.0), suite 19/19, pre-flight OK, tag local; push pendiente → 8-maintain
+2026-10-20 | 7-release | push main + tag v1.5.0 a origin (550907b..c7da075)
