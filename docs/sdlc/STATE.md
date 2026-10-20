@@ -5,8 +5,8 @@ goal: Que todo asiento del libro y del Excel use un solo vocabulario de medio de
 size: S      # la columna medio ya existe; es normalizar valores (lectura, libro, Excel) + vaciar en asientos sin caja; sin pantallas nuevas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # etiqueta interna; no cambia cuentas del PUC ni valores tributarios
-next: 5-implement
-current task: T4
+next: 6-test
+current task: —
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-19: Tarjeta y Crédito personal se quedan; el libro viejo se normaliza al leer/recalcular, sin migración)
@@ -14,7 +14,7 @@ current task: T4
 - [x] 2-requirements (aprobado 2026-10-19: R1–R4)
 - [~] 3-design       (S)
 - [x] 4-plan         (T1–T4, 1 iteración ≈ 4–5 h)
-- [ ] 5-implement
+- [x] 5-implement
 - [ ] 6-test
 - [ ] 7-release
 - [ ] 8-maintain     (chequeo mensual 2026-11-17)
@@ -39,3 +39,4 @@ current task: T4
 2026-10-19 | 5-implement | T1 hecho: medio_canonico + MEDIOS_CANON + mapa en normalizacion.json, probar_medios 53 checks, 19 suites verdes → T2
 2026-10-20 | 5-implement | T2 hecho: medio canónico en DATOS OCR/libro, sin caja→vacío, medio_detalle (+columna «Medio según el papel» en exportar, aprobada), probar_medios 65 checks, 19 suites verdes → T3
 2026-10-20 | 5-implement | T3 hecho: factura Mixto → medio del mayor pago (detalle Mixto, aviso); app y contable.html con los 8 medios; Nequi manual → Transferencia; 19 suites verdes → T4
+2026-10-20 | 5-implement | T4 hecho: fixture libro viejo (Nequi/Datáfono/Mixto/sin medio) → solo los 8 o vacío; septiembre en memoria: 6 medios (Efectivo, Transferencia, Tarjeta, QR, Bre-B, Crédito personal) + vacío; 19 suites verdes → 6-test

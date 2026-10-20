@@ -83,5 +83,27 @@ chk((xf["medio"], xf["medio_detalle"]) == ("Tarjeta", "Mixto"), f"factura Mixto 
 chk(any("F91" in a and "revisa el medio" in a for a in rm["avisos"]), "factura Mixto mantiene el aviso «revisa el medio»")
 chk(next(x for x in rm["datos"] if x["id"] == "fsin")["medio"] == "", "factura Mixto sin pagos leídos: medio vacío, sin inventar")
 
+# T4 (R4): libro viejo (guardado antes de v1.5, con «Nequi», «Datáfono», «Mixto», «(sin medio)» en `medio`) → recalcular → Excel solo con los 8 o vacío
+import io, copy
+from openpyxl import load_workbook
+from parser_module.contable import libro_a_excel
+viejos = []
+for n, med in [("92001", "Nequi"), ("92002", "Datáfono"), ("92003", "Mixto"), ("92004", "(sin medio)")]:
+    v = dict(leer_texto(cmd(int(n), "PAGA CON NEQUI $40,0"))[0], id="v" + n, numero=n, medio=med, avisos=[])
+    if med == "Mixto": v.update(efectivo=25000, tarjeta=15000, transf=0, credito=0)
+    if med == "(sin medio)": v.update(efectivo=0, tarjeta=0, transf=0, credito=0)
+    viejos.append(v)
+rv = {"2026-09-17": construir("2026-09-17", copy.deepcopy(viejos))}
+xl = load_workbook(io.BytesIO(libro_a_excel({k: r["filas"] for k, r in rv.items()}, "Neg", "1", {k: r["datos"] for k, r in rv.items()})))
+for pref, fila_enc in (("DATOS OCR", 1), ("MOVIMIENTOS", 8)):
+    ws = next((w for w in xl.worksheets if w.title.startswith(pref)), None)
+    chk(ws is not None, f"Excel tiene la hoja {pref}")
+    if ws is None: continue
+    enc = [str(c.value or "").lower() for c in ws[fila_enc]]
+    col = next(i for i, h in enumerate(enc) if "medio" in h and "detalle" not in h)
+    vals = {r[col].value for r in ws.iter_rows(min_row=fila_enc + 1) if r[col].value is not None}
+    chk(bool(vals) and vals <= CANON, f"libro viejo recalculado: {pref} solo con los 8 o vacío ({sorted(vals)})")
+chk(not any(x["medio"] in ("Nequi", "Datáfono", "Mixto", "(sin medio)") for r in rv.values() for x in r["datos"]), "libro viejo: ningún Nequi/Datáfono/Mixto/(sin medio) en DATOS OCR")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)
