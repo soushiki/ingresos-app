@@ -2,6 +2,14 @@
 
 ## [Sin publicar]
 
+## [1.3.1] — 2026-10-19
+Arreglo M-17: el ajuste al cierre se recalcula en el Excel.
+
+### Asientos
+- DATOS OCR guarda el total del cierre, y el ajuste «cierre > papeles» es una fórmula (total − MIN(total, papeles)): si se corrige una comanda en el Excel, el ajuste cambia con ella.
+- La venta de los papeles sale de un solo helper (`consumo_papeles`), el mismo para la app y el Excel. Una cortesía ya no cuenta como papel, así que el ajuste no queda corto.
+- Rige al recalcular el día; sin migración de datos.
+
 ## [1.3.0] — 2026-10-19
 Cierre de caja: el día del libro cuadra con el cierre y el pasivo 2815 (domicilios y propinas por pagar) deja de crecer.
 
