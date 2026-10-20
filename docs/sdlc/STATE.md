@@ -5,8 +5,8 @@ goal: Leer el extracto del banco (Excel/CSV descargado) y que cada línea quede 
 size: M      # importador nuevo + reglas de clasificación + asientos con cuentas PUC nuevas + pantalla de revisión; días, no horas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
-next: 7-release
-current task: release v1.6.0 preparada; falta limpiar cifras reales del historial sin publicar, tag y push
+next: 8-maintain
+current task: — (v1.6.0 publicada)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -16,7 +16,7 @@ current task: release v1.6.0 preparada; falta limpiar cifras reales del historia
 - [x] 4-plan         (13 tareas en 3 iteraciones ≈15–16 h)
 - [x] 5-implement  (3 iteraciones: T1–T13 + FIX-1..3)
 - [x] 6-test       (it.3 PASS 2026-10-20; smoke del usuario pendiente)
-- [ ] 7-release      (v1.6.0 commit local; tag + push esperan la limpieza de datos reales)
+- [x] 7-release      (v1.6.0 publicada 2026-10-20; cifras reales → 01g, historial reescrito)
 - [ ] 8-maintain
 
 ## Ciclos anteriores
@@ -26,6 +26,7 @@ current task: release v1.6.0 preparada; falta limpiar cifras reales del historia
 ## Pendientes
 - (hecho 2026-10-19) push de main + tag v1.4.0.
 - (hecho 2026-10-20) push de main + tag v1.5.0.
+- (hecho 2026-10-20) push de main + tag v1.6.0. Usuario: smoke de v1.6.0 (06), avisar al contador del recálculo de sept. 1–23 y de las cuentas «por confirmar»; borrar la rama local `respaldo/antes-limpieza-v1.6.0` cuando ya no haga falta.
 - Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC a v1.5.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
 - Candidatos a ciclo: M-16 lector por línea (M).
 - Candidatos a ciclo después de #5 extracto: Marcador de renta (`docs/marcador-renta.html`), 7 pasos en orden, M-18..M-24 en `08-maintenance.md`: M-18 perfil fiscal (S) → M-19 NIT por tercero (S–M) → M-20 soporte por gasto + efectivo 771-5 (S) → M-21 impoconsumo bimestral (S) → M-22 pestaña Marcador (M) → M-23 cruce con facturas DIAN (M) → M-24 paquete de cierre (M). Antes de M-18: confirmar con el contador régimen, impoconsumo, ICA y saldos iniciales.
@@ -64,3 +65,4 @@ current task: release v1.6.0 preparada; falta limpiar cifras reales del historia
 2026-10-20 | 5-implement | T13 aceptación sept. real sobre copia: 1–23 → 513 nuevas · 94 por revisar; «1–30» = mismo archivo (solo 1–23) → 0 nuevas, idempotente; 3 revisadas → 91; 30 días cuadran, 722 filas = MOVIMIENTOS, 0 recaudos dobles; datos reales intactos (sha256); 20 suites verdes; iteración 3 completa → next 6-test
 2026-10-20 | 6-test | it.3 PASS: 20/20 suites; R3, R9 cubiertos; navegador: totales sept. (total en 01g) y «Deshacer» quita 513 = día recalculado; menores sin tarea; hallazgo release: días 1–23 del libro real son anteriores a las reglas de cierre, importar los recalcula (01-sep débito cambia (cifras en 01g)) → next 7-release
 2026-10-20 | 7-release | v1.6.0 preparada (VERSION, CHANGELOG, VERSION_RESPALDO 1.6.0, 07-release.md); 20/20 verdes; push bloqueado: cifras reales + nombre de tercero en los 25 commits sin publicar → decisión del usuario
+2026-10-20 | 7-release | v1.6.0 publicada: cifras reales y nombres → 01g (ignorado) y ../data/extracto_oraculo.json; historial sin publicar reescrito; 20/20 verdes; push main + tag → next 8-maintain
