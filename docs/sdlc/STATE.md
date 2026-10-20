@@ -1,68 +1,33 @@
 # SDLC state
 
-project: ingresos_app · extracto bancario (01c #5)
-goal: Leer el extracto del banco (Excel/CSV descargado) y que cada línea quede clasificada (nómina, arriendo, servicios, 4x1000, rendimientos, abonos Rappi, proveedores, transferencias de venta) y genere su asiento en el libro y el Excel; lo dudoso queda para que el usuario elija la cuenta.
-size: M      # importador nuevo + reglas de clasificación + asientos con cuentas PUC nuevas + pantalla de revisión; días, no horas
+project: ingresos_app · (sin ciclo abierto: elegir el próximo)
+goal: —
+size: —
 exposed: no  # app Flask local en 127.0.0.1
-regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
-next: 8-maintain
-current task: — (v1.6.0 publicada)
+regulated: —
+next: 8-maintain  # falta que el usuario elija el próximo ciclo → 0-triage
+current task: —
 
 ## Stages
-- [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
-- [x] 1-research     (light: muestra real Bancolombia + hoja MOVIMIENTOS etiquetada; riesgo doble conteo con casillas banco)
-- [x] 2-requirements (aprobado 2026-10-20: R1–R9; casillas banco se llenan del extracto; cuentas del manual en JSON «por confirmar»; tarjetas por neto)
-- [x] 3-design       (aprobado 2026-10-20: ADR-012..015, incluido 015 salida↔factura)
-- [x] 4-plan         (13 tareas en 3 iteraciones ≈15–16 h)
-- [x] 5-implement  (3 iteraciones: T1–T13 + FIX-1..3)
-- [x] 6-test       (it.3 PASS 2026-10-20; smoke del usuario pendiente)
-- [x] 7-release      (v1.6.0 publicada 2026-10-20; cifras reales → 01g, historial reescrito)
+- [ ] 0-triage
+- [ ] 1-research
+- [ ] 2-requirements
+- [ ] 3-design
+- [ ] 4-plan
+- [ ] 5-implement
+- [ ] 6-test
+- [ ] 7-release
 - [ ] 8-maintain
 
 ## Ciclos anteriores
-- Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0, medio de pago v1.5.0 → `archive/<ciclo>/`.
-- Siguen en su sitio: `01b`, `01c` (insumo de #5/#8), `01d`, `01e`, `01f` (ignorados), `08-maintenance.md`, `adr/`.
+- Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0, medio de pago v1.5.0, extracto bancario v1.6.0 → `archive/<ciclo>/`.
+- Siguen en su sitio: `01b`, `01c`, `01d`, `01e`, `01f`, `01g` (ignorados), `08-maintenance.md`, `adr/`.
 
 ## Pendientes
-- (hecho 2026-10-19) push de main + tag v1.4.0.
-- (hecho 2026-10-20) push de main + tag v1.5.0.
-- (hecho 2026-10-20) push de main + tag v1.6.0. Usuario: smoke de v1.6.0 (06), avisar al contador del recálculo de sept. 1–23 y de las cuentas «por confirmar»; borrar la rama local `respaldo/antes-limpieza-v1.6.0` cuando ya no haga falta.
-- Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC a v1.5.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
-- Candidatos a ciclo: M-16 lector por línea (M).
-- Candidatos a ciclo después de #5 extracto: Marcador de renta (`docs/marcador-renta.html`), 7 pasos en orden, M-18..M-24 en `08-maintenance.md`: M-18 perfil fiscal (S) → M-19 NIT por tercero (S–M) → M-20 soporte por gasto + efectivo 771-5 (S) → M-21 impoconsumo bimestral (S) → M-22 pestaña Marcador (M) → M-23 cruce con facturas DIAN (M) → M-24 paquete de cierre (M). Antes de M-18: confirmar con el contador régimen, impoconsumo, ICA y saldos iniciales.
+- Usuario: smoke de v1.6.0 (`archive/extracto/06-test-report.md`), avisar al contador del recálculo de sept. 1–23 y de las cuentas «por confirmar»; borrar la rama local `respaldo/antes-limpieza-v1.6.0` cuando ya no haga falta.
+- Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC a v1.6.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
+- Candidatos a ciclo: **M-25 Indra OCR (M, absorbe M-16)** — segundo lector R3 + orientación/enderezado, venv 3.14 aparte, licencia OpenRAIL-M. Marcador de renta (`docs/marcador-renta.html`) M-18 perfil fiscal (S) → M-19 NIT por tercero (S–M) → M-20 soporte por gasto + efectivo 771-5 (S) → M-21 impoconsumo bimestral (S) → M-22 pestaña Marcador (M) → M-23 cruce con facturas DIAN (M) → M-24 paquete de cierre (M). Antes de M-18: confirmar con el contador régimen, impoconsumo, ICA y saldos iniciales.
 
 ## Log
-<!-- YYYY-MM-DD | stage | one-line result -->
-(log del ciclo #8 → archive/medio-de-pago/STATE.md)
-2026-10-19 | 8-maintain | revisión: sin ítems nuevos, 08 al día; chequeo mensual 2026-11-17; falta elegir el próximo ciclo (#8 S recomendado)
-2026-10-20 | 7-release | push main + tag v1.5.0 a origin (550907b..c7da075)
-2026-10-20 | 8-maintain | #8 cerrado (v1.5.0); ciclo → archive/medio-de-pago/ (02, 04, 06, 07, STATE); 08 al día; sin ítems nuevos; chequeo mensual 2026-11-17; falta elegir el próximo ciclo (#5 o M-16)
-2026-10-20 | 8-maintain | sin ítems nuevos; usuario elige próximo ciclo: #5 extracto bancario (M) → next 0-triage
-2026-10-20 | 0-triage | #5 extracto bancario: Excel/CSV (sin OCR), v1 clasificar + asientos, M, regulated yes → next 1-research
-2026-10-20 | 1-research | 01-research.md: formato real (4 col, Valor con signo), concepto por reglas ancladas, cuenta de salidas = usuario + memoria por tercero; riesgo doble conteo; preguntas a contabilidad → next 2-requirements
-2026-10-20 | 2-requirements | 02-requirements.md aprobado: 9 historias (6 Must), P1 llenar casillas, P2 cuentas JSON por confirmar, P3 tarjeta neto → next 3-design
-2026-10-20 | 3-design | 03-design.md + ADR-012 (extracto en el día, casillas derivadas), 013 (reglas JSON), 014 (memoria por tercero), 015 (salida↔factura); gate pendiente
-2026-10-20 | 3-design | aprobado por el usuario (incl. ADR-015) → next 4-plan
-2026-10-20 | 4-plan | 04-plan.md: 13 tareas (9 M + 4 S) en 3 iteraciones ≈15–16 h; it.1 importar + asientos automáticos → next 5-implement T1
-2026-10-20 | 5-implement | T1 reglas extracto (JSON 14 reglas, clasificar) 511/513 = 99,6 % vs MOVIMIENTOS, 2 excepciones aceptadas; 24–30 sept sin oráculo → T2
-2026-10-20 | 5-implement | T2 leer_xlsx (ExtractoInvalido, topes 5 MB/5 000 filas, ocurrencia+clave sha1) real 513 líneas, suma = Valor; 20 suites verdes → T3 (opus)
-2026-10-20 | 5-implement | T3 bloque 5 «Extracto» en construir (GMF, rendimientos, cuenta Rappi, revisar → puente + pendiente) cuadra en libro y Excel; 20 suites verdes → T4
-2026-10-20 | 5-implement | T4 POST /api/contable/extracto (todo o nada, mezcla por clave, memoria tmp+replace) +14 checks, real 513 < 3 s; 20 suites verdes; hallazgo: _dia borra `extracto` al editar un día → añadido a T6 → T5
-2026-10-20 | 5-implement | T5 pestaña ⑤ Extracto: subir septiembre «513 nuevas · 94 por revisar», re-subir no duplica, error claro, 375/768 px ok; hallazgo arreglado: export Excel no pasaba extracto= (app.py); datos reales restaurados; 20 suites verdes; iteración 1 completa → next 6-test
-2026-10-20 | 6-test | it.1: 20/20 suites verdes; R1, R2, R6, R7, R8 cubiertos; review: FIX-1 clasificar duplica avisos al reclasificar (añadido al inicio de la it.2); smoke del usuario pendiente → next 5-implement FIX-1
-2026-10-20 | 5-implement | FIX-1 clasificar idempotente (recalcula sus 2 avisos, conserva otros) +2 checks; 20 suites verdes → T6 (opus)
-2026-10-20 | 5-implement | T6 casillas efectivas (vacía = extracto, digitada manda + aviso dif) y `extracto` conservado en todos los recálculos de app.py; +13 checks; 20 suites verdes; real simulado 23 días cuadran → T7
-2026-10-20 | 5-implement | T7 memoria por tercero (tercero_de + prefijos_tercero; solo líneas a revisar; sin_tercero nunca se recuerda; origen «recordada») +9 checks; 20 suites verdes → T8
-2026-10-20 | 5-implement | T8 enlace salida↔factura en clasificar (1 candidata → factura + confirmar; 2+ → revisar «¿cuál factura?» sin_asiento; ±3 días) +11 checks incl. fitness ADR-015; 20 suites verdes; abierto: asientos.py aún pone puente a sin_asiento y app.py no pasa facturas → T9
-2026-10-20 | 5-implement | usuario: el abierto de T8 (sin_asiento en asientos.py, facturas= en app.py) entra en T9
-2026-10-20 | 5-implement | T9 rutas revisión (GET) y asignar (POST cuenta|factura_id|ninguna, recordar → memoria tmp+replace); `asignada` sobrevive a reclasificar; sin_asiento sin puente; import pasa facturas=; +16 checks, asignar < 300 ms; 20 suites verdes; «ninguna» deja la línea en revisión con puente (T10) → T10
-2026-10-20 | 5-implement | T10 UI ⑤ revisión (tarjetas con cuenta + recordar, confirmar/rechazar factura) y diferencias con «usar extracto» (GET .../diferencias, POST .../<fecha>/usar/<medio>) +7 checks; navegador con sept. real: asignar saca la línea (94→93, fila a 51050601), «usar extracto» deja 0 diferencias; 375/768 px sin scroll lateral; datos restaurados; 20 suites verdes; iteración 2 completa → next 6-test
-2026-10-20 | 6-test | it.2: 20/20 suites verdes; R4, R5, R7 cubiertos; review: FIX-2 (Must, memoria pisa sin_asiento → salida perdida) y FIX-3 (Should, factura enlazada en 2 días) añadidos al inicio de la it.3; smoke del usuario pendiente → next 5-implement FIX-2
-2026-10-20 | 5-implement | FIX-2 memoria no toca líneas sin_asiento (siguen en revisar «¿cuál factura?», salen en GET .../revision) +2 checks incl. invariante; 20 suites verdes → FIX-3
-2026-10-20 | 5-implement | FIX-3 factura no se enlaza a 2 líneas de días distintos (`usadas` en clasificar, _facturas_usadas en import y recálculo, asignar ya enlazada → 400) +6 checks; 20 suites verdes; 877ce4c → T11
-2026-10-20 | 5-implement | T11 GET /api/contable/extracto/totales?mes= (por concepto, total, dif_por_medio; mes inválido → 400) + tarjeta «Totales del mes» en ⑤; +9 checks; sept. real = MOVIMIENTOS salvo las 2 excepciones de T1, total = suma de Valor; 375 px sin scroll lateral; 20 suites verdes → T12
-2026-10-20 | 5-implement | T12 DELETE /api/contable/extracto/importacion/<imp> (404 si no existe; recalcula; borra solo días creados y vacíos vía `dias_creados`) + GET .../importaciones + tarjeta «Importaciones» con «Deshacer»; +9 checks (construir por día igual a antes); 375 px sin scroll lateral; 20 suites verdes; 335492b → T13
-2026-10-20 | 5-implement | T13 aceptación sept. real sobre copia: 1–23 → 513 nuevas · 94 por revisar; «1–30» = mismo archivo (solo 1–23) → 0 nuevas, idempotente; 3 revisadas → 91; 30 días cuadran, 722 filas = MOVIMIENTOS, 0 recaudos dobles; datos reales intactos (sha256); 20 suites verdes; iteración 3 completa → next 6-test
-2026-10-20 | 6-test | it.3 PASS: 20/20 suites; R3, R9 cubiertos; navegador: totales sept. (total en 01g) y «Deshacer» quita 513 = día recalculado; menores sin tarea; hallazgo release: días 1–23 del libro real son anteriores a las reglas de cierre, importar los recalcula (01-sep débito cambia (cifras en 01g)) → next 7-release
-2026-10-20 | 7-release | v1.6.0 preparada (VERSION, CHANGELOG, VERSION_RESPALDO 1.6.0, 07-release.md); 20/20 verdes; push bloqueado: cifras reales + nombre de tercero en los 25 commits sin publicar → decisión del usuario
-2026-10-20 | 7-release | v1.6.0 publicada: cifras reales y nombres → 01g (ignorado) y ../data/extracto_oraculo.json; historial sin publicar reescrito; 20/20 verdes; push main + tag → next 8-maintain
+(log del ciclo #5 → archive/extracto/STATE.md)
+2026-10-20 | 8-maintain | #5 cerrado (v1.6.0); ciclo → archive/extracto/ (01–04, 06, 07, STATE); 08 al día; M-25 Indra OCR anotado (absorbe M-16); chequeo mensual 2026-11-17; falta elegir el próximo ciclo (M-25 recomendado o M-18)
