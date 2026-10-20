@@ -20,29 +20,18 @@ current task: —
 - [ ] 8-maintain     (chequeo mensual 2026-11-17)
 
 ## Ciclos anteriores
-- Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0 → `archive/<ciclo>/`.
+- Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0, medio de pago v1.5.0 → `archive/<ciclo>/`.
 - Siguen en su sitio: `01b`, `01c` (insumo de #5/#8), `01d`, `01e`, `01f` (ignorados), `08-maintenance.md`, `adr/`.
 
 ## Pendientes
 - (hecho 2026-10-19) push de main + tag v1.4.0.
 - (hecho 2026-10-20) push de main + tag v1.5.0.
-- Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC, smoke de v1.3.x.
+- Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC a v1.5.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
 - Candidatos a ciclo: #5 extracto bancario (M), M-16 lector por línea (M).
 
 ## Log
 <!-- YYYY-MM-DD | stage | one-line result -->
-2026-10-19 | 8-maintain | #6 cerrado (v1.4.0); ciclo Rappi → archive/rappi/ (02, 04, 06, 07, STATE); 08 al día; push pendiente de confirmación
-2026-10-19 | 8-maintain | push main + tag v1.4.0 a origin (ff61c7e..2f70187)
+(log del ciclo #8 → archive/medio-de-pago/STATE.md)
 2026-10-19 | 8-maintain | revisión: sin ítems nuevos, 08 al día; chequeo mensual 2026-11-17; falta elegir el próximo ciclo (#8 S recomendado)
-2026-10-19 | 0-triage | ciclo #8 abierto y confirmado: S, 8 medios (con Tarjeta y Crédito personal), normalizar al leer → 2-requirements
-2026-10-19 | 2-requirements | R1–R4 aprobados (Nequi/Daviplata→Transferencia, Mixto→mayor valor, desconocido→vacío+aviso) → 4-plan
-2026-10-19 | 4-plan | 04-plan.md: T1 mapa único medio_canonico, T2 asientos (sin caja→vacío, desc conserva Nequi), T3 Mixto + app, T4 libro viejo/R4 → 5-implement
-2026-10-19 | 5-implement | T1 hecho: medio_canonico + MEDIOS_CANON + mapa en normalizacion.json, probar_medios 53 checks, 19 suites verdes → T2
-2026-10-20 | 5-implement | T2 hecho: medio canónico en DATOS OCR/libro, sin caja→vacío, medio_detalle (+columna «Medio según el papel» en exportar, aprobada), probar_medios 65 checks, 19 suites verdes → T3
-2026-10-20 | 5-implement | T3 hecho: factura Mixto → medio del mayor pago (detalle Mixto, aviso); app y contable.html con los 8 medios; Nequi manual → Transferencia; 19 suites verdes → T4
-2026-10-20 | 5-implement | T4 hecho: fixture libro viejo (Nequi/Datáfono/Mixto/sin medio) → solo los 8 o vacío; septiembre en memoria: 6 medios (Efectivo, Transferencia, Tarjeta, QR, Bre-B, Crédito personal) + vacío; 19 suites verdes → 6-test
-2026-10-20 | 6-test | 1.ª pasada: 19/19 suites verdes, R1–R4 cubiertos; revisión: FIX-1 (descripción de recaudos perdió «Ordenes:», asientos.py:368) → 5-implement
-2026-10-20 | 5-implement | FIX-1 hecho: paréntesis en desc de recaudos (asientos.py:368), check nuevo en probar_medios (banco/Rappi con «· Ordenes:»; falla sin el fix), 19 suites verdes → 6-test (2.ª pasada)
-2026-10-20 | 6-test | 2.ª pasada: 19/19 verdes, FIX-1 verificado (recaudos banco/Rappi con «· Ordenes:»), R1–R4 cubiertos; smoke manual al usuario → 7-release
-2026-10-20 | 7-release | v1.5.0: VERSION_RESPALDO 1.5.0, CHANGELOG, 07-release (runbook + rollback 1.5.0), suite 19/19, pre-flight OK, tag local; push pendiente → 8-maintain
 2026-10-20 | 7-release | push main + tag v1.5.0 a origin (550907b..c7da075)
+2026-10-20 | 8-maintain | #8 cerrado (v1.5.0); ciclo → archive/medio-de-pago/ (02, 04, 06, 07, STATE); 08 al día; sin ítems nuevos; chequeo mensual 2026-11-17; falta elegir el próximo ciclo (#5 o M-16)
