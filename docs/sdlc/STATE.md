@@ -6,7 +6,7 @@ size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
 next: 5-implement
-current task: T5 (I2)
+current task: T6 (I2)
 
 ## Stages
 - [x] 0-triage
@@ -46,3 +46,4 @@ current task: T5 (I2)
 2026-10-20 | 5-implement | Vendty no está instalado: llega ≈ nov. 2026; fotos actuales = Ascomp → M-25 sigue, T4 sale de espera
 2026-10-20 | 5-implement | T4 hecho (Sonnet): app.py `_leer_hoja` y medir_precision `--completo` usan motores.leer_digitos; capacidades trae motor+aviso (sin venv: tesseract + «Indra no disponible…»); 21 probar_*.py OK; I1 completa → next 6-test (humo real con Indra espera a T8)
 2026-10-20 | 6-test | I1 pasa: 21 probar_* OK; +1 check capacidades (motor/aviso) que faltaba; R1 numérico sin medir (sin venv → tras T8); menor: cerrar() sin plazo → anotado en T10 → next 5-implement (T5)
+2026-10-20 | 5-implement | T5 hecho (Sonnet): spikes/indra_ocr/fondo.py; fondo blanco = replicar (residual 0,00° en 3 hojas × 8/25/45°, mismos recortes; medido por perfil de proyección, sin Indra) → línea en ADR-018 → next T6
