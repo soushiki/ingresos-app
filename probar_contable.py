@@ -277,7 +277,7 @@ appmod._guardar_libro(_nuevo)
 chk(_bk.exists() and _bk.read_text(encoding="utf8") == _txt0, "R3: la primera escritura crea el respaldo idéntico al libro original")
 _bk.write_text("marca", encoding="utf8"); appmod._guardar_libro(_orig)
 chk(_bk.read_text(encoding="utf8") == "marca", "R3: la segunda escritura no toca el respaldo")
-chk(appmod.VERSION_RESPALDO == "1.5.0" and _bk13.read_text(encoding="utf8") == "v130", "R3 (v1.5.0): respaldo de la versión nueva; la copia de v1.3.0 sigue igual")
+chk(appmod.VERSION_RESPALDO == "1.6.0" and _bk13.read_text(encoding="utf8") == "v130", "R3 (v1.6.0): respaldo de la versión nueva; la copia de v1.3.0 sigue igual")
 appmod._guardar_libro(_orig)
 _cam = [a for a in avisos_export() if "cambió" in a]
 chk(len(_cam) == 1 and "2026-09-16" in _cam[0], f"R3: día con cierre > papeles confirmado antes → el Excel lo lista en «cambió desde que se confirmó»: {_cam}")

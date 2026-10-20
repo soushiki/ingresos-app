@@ -6,7 +6,7 @@ size: M      # importador nuevo + reglas de clasificación + asientos con cuenta
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
 next: 7-release
-current task: — (ciclo implementado y probado)
+current task: release v1.6.0 preparada; falta limpiar cifras reales del historial sin publicar, tag y push
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -16,7 +16,7 @@ current task: — (ciclo implementado y probado)
 - [x] 4-plan         (13 tareas en 3 iteraciones ≈15–16 h)
 - [x] 5-implement  (3 iteraciones: T1–T13 + FIX-1..3)
 - [x] 6-test       (it.3 PASS 2026-10-20; smoke del usuario pendiente)
-- [ ] 7-release
+- [ ] 7-release      (v1.6.0 commit local; tag + push esperan la limpieza de datos reales)
 - [ ] 8-maintain
 
 ## Ciclos anteriores
@@ -63,3 +63,4 @@ current task: — (ciclo implementado y probado)
 2026-10-20 | 5-implement | T12 DELETE /api/contable/extracto/importacion/<imp> (404 si no existe; recalcula; borra solo días creados y vacíos vía `dias_creados`) + GET .../importaciones + tarjeta «Importaciones» con «Deshacer»; +9 checks (construir por día igual a antes); 375 px sin scroll lateral; 20 suites verdes; 335492b → T13
 2026-10-20 | 5-implement | T13 aceptación sept. real sobre copia: 1–23 → 513 nuevas · 94 por revisar; «1–30» = mismo archivo (solo 1–23) → 0 nuevas, idempotente; 3 revisadas → 91; 30 días cuadran, 722 filas = MOVIMIENTOS, 0 recaudos dobles; datos reales intactos (sha256); 20 suites verdes; iteración 3 completa → next 6-test
 2026-10-20 | 6-test | it.3 PASS: 20/20 suites; R3, R9 cubiertos; navegador: totales sept. (total en 01g) y «Deshacer» quita 513 = día recalculado; menores sin tarea; hallazgo release: días 1–23 del libro real son anteriores a las reglas de cierre, importar los recalcula (01-sep débito cambia (cifras en 01g)) → next 7-release
+2026-10-20 | 7-release | v1.6.0 preparada (VERSION, CHANGELOG, VERSION_RESPALDO 1.6.0, 07-release.md); 20/20 verdes; push bloqueado: cifras reales + nombre de tercero en los 25 commits sin publicar → decisión del usuario

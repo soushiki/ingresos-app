@@ -2,6 +2,28 @@
 
 ## [Sin publicar]
 
+## [1.6.0] — 2026-10-20
+Extracto bancario: el Excel que se descarga del banco entra al libro, cada línea clasificada y con su asiento; lo dudoso queda para que elijas la cuenta.
+
+### Importar (pestaña ⑤ «Extracto»)
+- Subir el .xlsx del banco (hoja «Hoja 1», 4 columnas; tope 5 MB y 5 000 filas). Todo o nada: un archivo malo no cambia el libro y muestra el motivo.
+- Re-subir el mismo archivo o uno que se cruza no duplica: cada línea tiene una clave y se mezcla por ella. Resumen «N nuevas, M ya estaban · K por revisar».
+- «Importaciones» lista cada archivo subido y «Deshacer» lo quita y recalcula los días; borra los días que el archivo había creado y quedaron vacíos.
+
+### Clasificar
+- Reglas en `extracto_reglas.json` (prefijo + signo → concepto → destino): GMF 4x1000 → 53152001, rendimientos → 42100505, Rappi → 13452501, abonos de tarjetas, QR, llave y Rappi → su casilla del día. Las cuentas quedan «por confirmar» con el contador.
+- Lo que no encaja sale «por revisar» contra la cuenta puente 51959501, con un pendiente en el día.
+- Memoria por tercero: al asignar una cuenta con «recordar», las próximas transferencias a ese tercero salen solas («recordada»). Las descripciones sin tercero nunca se recuerdan.
+- Una salida igual a una factura pagada por banco (±3 días) se enlaza a ella y no da asiento propio; se confirma o se rechaza. Con 2 o más candidatas queda «¿cuál factura?». Una factura se enlaza a una sola línea.
+
+### Asientos y casillas
+- Casilla del banco vacía → se llena con el extracto. Digitada → manda la digitada y el día avisa la diferencia; «Usar extracto» la borra.
+- «Totales del mes» por concepto, con la diferencia digitado vs extracto por medio.
+- Editar o recalcular un día conserva su extracto. El Excel exportado trae las filas «Extracto».
+
+### Datos
+- Sin migración de soporte.db. Importar recalcula los días tocados: los guardados antes de v1.3.0 toman las reglas de cierre (filas 13809501 y 2815xx que hoy faltan). La primera vez que se guarda con esta versión se copia a `datos/libro.antes-v1.6.0.json`.
+
 ## [1.5.0] — 2026-10-20
 Medio de pago: el libro y el Excel usan un solo vocabulario de 8 medios (Efectivo, Transferencia, Bre-B, QR, PSE, Tarjeta, Crédito personal, App).
 
