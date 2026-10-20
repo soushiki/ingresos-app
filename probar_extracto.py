@@ -433,5 +433,26 @@ _k3 = _e3["2026-10-11"]["clave"]
 chk(cli.post(f"/api/contable/extracto/2026-10-11/{_k3}", json=dict(factura_id="F1")).status_code == 400, "FIX-3: asignar a mano una factura ya enlazada en otra línea → 400")
 chk(cli.post(f"/api/contable/extracto/2026-10-11/{_k3}", json=dict(cuenta=CT)).status_code == 200 and appmod._leer_libro()["2026-10-09"]["extracto"][0]["factura_id"] == "F1", "FIX-3: recalcular otro día no suelta el enlace")
 
+# --- T12: deshacer una importación (R9) ---
+def _cons12(lib): return {f: (lambda r: (r["filas"], r["pendientes"], r["debito"], r["credito"], r["diferencia"]))(appmod.construir_asientos(f, d.get("documentos", []), d.get("banco", {}), appmod._cont_cfg(), d.get("cierre"), d.get("extracto"))) for f, d in lib.items()}
+_nuevo3(); _l0 = appmod._leer_libro(); _c0 = _cons12(_l0)
+_i1 = sube(xlsx([_o3(9)])).get_json()["imp"]
+_l1 = appmod._leer_libro(); _c1 = _cons12(_l1)
+_i2 = sube(xlsx([_o3(9), _o3(11)])).get_json()["imp"]
+chk(set(appmod._leer_ext_mem()["importaciones"][_i2]["dias_creados"]) == {"2026-10-11"}, "T12: la importación guarda los días que creó")
+_r = cli.delete(f"/api/contable/extracto/importacion/{_i2}")
+chk(_r.status_code == 200 and _r.get_json()["dias_borrados"] == ["2026-10-11"] and _r.get_json()["quitadas"] == 1, "T12: deshacer la 2.ª quita su línea y borra el día que creó")
+chk(_cons12(appmod._leer_libro()) == _c1 and set(appmod._leer_libro()) == set(_l1), "T12: tras deshacer la 2.ª el libro (construir por día) = antes de ella")
+chk(appmod._leer_libro()["2026-10-09"]["extracto"][0]["factura_id"] == "F1" and _i2 not in appmod._leer_ext_mem()["importaciones"], "T12: conserva el enlace de la 1.ª y borra el registro")
+chk(cli.delete(f"/api/contable/extracto/importacion/{_i1}").status_code == 200 and _cons12(appmod._leer_libro()) == _c0 and set(appmod._leer_libro()) == set(_l0), "T12: deshacer la 1.ª deja el libro como al inicio")
+chk("extracto" not in appmod._leer_libro()["2026-10-10"] and not list(appmod.RUTA_LIBRO.parent.glob("*.tmp")), "T12: sin clave extracto ni .tmp")
+_b = appmod.RUTA_LIBRO.read_bytes()
+chk(cli.delete(f"/api/contable/extracto/importacion/{_i1}").status_code == 404 and cli.delete("/api/contable/extracto/importacion/nada").status_code == 404 and appmod.RUTA_LIBRO.read_bytes() == _b, "T12: id desconocido o repetido → 404 sin escribir")
+_i3 = sube(xlsx([_o3(9)])).get_json()["imp"]; _m3 = appmod._leer_ext_mem(); del _m3["importaciones"][_i3]["dias_creados"]
+appmod.RUTA_EXT_MEM.write_text(json.dumps(_m3), encoding="utf8")
+chk(cli.delete(f"/api/contable/extracto/importacion/{_i3}").status_code == 200 and "extracto" not in appmod._leer_libro()["2026-10-09"], "T12: registro antiguo sin dias_creados sigue deshaciéndose")
+chk(all(i["imp"] != _i3 for i in cli.get("/api/contable/extracto/importaciones").get_json()["importaciones"]), "T12: la lista de importaciones ya no la trae")
+
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)

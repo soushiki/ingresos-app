@@ -176,6 +176,7 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
  <div class="card"><div class="bar"><h2 style="margin:0">Totales del mes</h2><span class="sp"></span><input type="month" id="xt_mes" aria-label="Mes del extracto"></div>
   <p id="xt_vacio" class="m" role="status" style="margin:8px 0 0">No hay extracto en ese mes.</p>
   <div style="overflow-wrap:anywhere"><table id="xt_tb" style="width:100%;border-collapse:collapse;display:none"><tbody id="xt_ls"></tbody></table></div><div id="xt_dif" class="m"></div></div>
+ <div class="card"><h2 style="margin:0 0 6px">Importaciones</h2><p id="xi_vacio" class="m" role="status" style="margin:0">Aún no hay importaciones.</p><div id="xi_ls" style="overflow-wrap:anywhere"></div></div>
  <div class="card"><h2>Diferencias por medio</h2>
   <p class="m" style="margin:0 0 8px">Cuando la casilla que digitaste no coincide con el extracto, manda lo digitado. «Usar extracto» borra la casilla y vale el extracto.</p>
   <p id="xd_vacio" class="m" role="status" style="margin:0">No hay diferencias entre las casillas y el extracto.</p><div id="xd_ls"></div></div>
@@ -469,7 +470,11 @@ function difExt(d){const b=el("button",{type:"button",class:"g xd_usar",id:`xd_$
  b.onclick=()=>postExt(`/api/contable/extracto/${encodeURIComponent(d.fecha)}/usar/${encodeURIComponent(d.medio)}`,{},[b],"Casilla borrada: vale el extracto");return f}
 async function cargarExtRev(){let j,d;try{const [a,b]=await Promise.all([fetch("/api/contable/extracto/revision"),fetch("/api/contable/extracto/diferencias")]);j=await a.json();d=await b.json();if(!a.ok||!b.ok)throw new Error(j.error||d.error||"error")}catch(e){return toast("No se pudo cargar el extracto: "+e.message)}
  $("xr_n").textContent=j.lineas.length?j.lineas.length+" por revisar":"";$("xr_vacio").style.display=j.lineas.length?"none":"";$("xr_ls").replaceChildren(...j.lineas.map(lineaExt));
- $("xd_vacio").style.display=d.diferencias.length?"none":"";$("xd_ls").replaceChildren(...d.diferencias.map(difExt));cargarExtTot()}
+ $("xd_vacio").style.display=d.diferencias.length?"none":"";$("xd_ls").replaceChildren(...d.diferencias.map(difExt));cargarExtTot();cargarExtImp()}
+async function cargarExtImp(){let j;try{const a=await fetch("/api/contable/extracto/importaciones");j=await a.json();if(!a.ok)throw new Error(j.error||"error")}catch(e){return toast("No se pudieron cargar las importaciones: "+e.message)}
+ $("xi_vacio").style.display=j.importaciones.length?"none":"";
+ $("xi_ls").replaceChildren(...j.importaciones.map(i=>{const b=el("button",{class:"g",id:"xi_"+i.imp,type:"button"},"Deshacer");b.onclick=()=>deshacerImp(i);return el("div",{class:"bar",style:"padding:4px 0"},el("span",null,`${i.archivo||"(sin nombre)"} · ${i.fecha.replace("T"," ")} · ${i.nuevas} nuevas`),el("span",{class:"sp"}),b)}))}
+async function deshacerImp(i){if(!confirm(`¿Deshacer la importación de ${i.archivo||"este archivo"}? Se quitan sus ${i.nuevas} líneas y los días que ella creó.`))return;try{const a=await fetch("/api/contable/extracto/importacion/"+encodeURIComponent(i.imp),{method:"DELETE"}),j=await a.json().catch(()=>({}));if(!a.ok)throw new Error(j.error||"error "+a.status);toast(`Deshecho: ${j.quitadas} líneas quitadas`)}catch(e){toast("No se pudo deshacer: "+e.message)}cargarLibro();cargarExtRev()}
 async function cargarExtTot(){const m=$("xt_mes").value;if(!m)return;let j;try{const a=await fetch("/api/contable/extracto/totales?mes="+encodeURIComponent(m));j=await a.json();if(!a.ok)throw new Error(j.error||"error")}catch(e){return toast("No se pudieron cargar los totales: "+e.message)}
  const ks=Object.keys(j.totales).sort(),fila=(a,b,s)=>{const t=el("tr",null,el("td",{style:"padding:4px 6px"},a),el("td",{style:"padding:4px 6px;text-align:right;white-space:nowrap"},b));if(s)t.style.fontWeight="700";return t};
  $("xt_tb").style.display=ks.length?"":"none";$("xt_vacio").style.display=ks.length?"none":"";

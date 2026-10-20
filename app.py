@@ -510,6 +510,41 @@ def cont_ext_asignar(fecha, clave):
     return jsonify(ok=True, dia=out)
 
 
+@app.get("/api/contable/extracto/importaciones")
+def cont_ext_importaciones():
+    "T12: importaciones del extracto, las más recientes primero."
+    m = _leer_ext_mem()["importaciones"]
+    return jsonify(importaciones=[dict(imp=k, archivo=v.get("archivo", ""), fecha=v.get("fecha", ""), nuevas=v.get("nuevas", 0)) for k, v in sorted(m.items(), key=lambda kv: kv[1].get("fecha", ""), reverse=True)])
+
+
+@app.delete("/api/contable/extracto/importacion/<imp>")
+def cont_ext_deshacer(imp):
+    """T12/R9: quita las líneas de esa importación, recalcula los días y borra los que ella creó y quedan vacíos.
+    Libro primero y memoria después (tmp + replace); si falla entre los dos, un reintento da 200 sin cambios en el libro."""
+    try: reglas = extr.cargar_reglas()
+    except extr.ReglasInvalidas as e: return jsonify(error=str(e)), 400
+    with LOCK:
+        mem, lib, cfg = _leer_ext_mem(), _leer_libro(), _cont_cfg()
+        info = mem["importaciones"].get(imp)
+        if info is None: return jsonify(error="No existe esa importación"), 404
+        creados, quitadas, borrados, tocados = set(info.get("dias_creados") or []), 0, [], []
+        for fecha in sorted(lib):
+            dia = lib[fecha]
+            if not any(x.get("imp") == imp for x in dia.get("extracto", [])): continue
+            resto = [x for x in dia["extracto"] if x.get("imp") != imp]; quitadas += len(dia["extracto"]) - len(resto)
+            if not resto and fecha in creados and not dia.get("documentos") and not any((dia.get("banco") or {}).values()) and not any((dia.get("cierre") or {}).values()):
+                del lib[fecha]; borrados.append(fecha); continue
+            lib[fecha] = dict(dia, extracto=resto); tocados.append(fecha)
+        for fecha in tocados:   # recalcula con lo que queda (la memoria y las facturas libres pueden cambiar el destino de las demás)
+            dia = lib[fecha]
+            if dia["extracto"]: _recalcular_dia(lib, fecha, reglas, mem["memoria"], cfg)
+            else: lib[fecha] = _dia(fecha, construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), None), dia.get("banco", {}), dia.get("cierre"))
+        if tocados or borrados: _guardar_libro(lib)
+        del mem["importaciones"][imp]
+        tmp = RUTA_EXT_MEM.with_suffix(".tmp"); tmp.write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_EXT_MEM)
+    return jsonify(ok=True, quitadas=quitadas, dias_borrados=borrados)
+
+
 @app.post("/api/contable/extracto")
 def cont_extracto():
     """ADR-012: sube el extracto (.xlsx). Todo o nada: valida reglas y archivo antes de escribir; una sola _guardar_libro."""
@@ -525,6 +560,7 @@ def cont_extracto():
     with LOCK:
         mem, lib, cfg = _leer_ext_mem(), _leer_libro(), _cont_cfg()
         nuevas, ya, tocados = 0, 0, {}
+        lib_antes = set(lib)
         for ln in lineas:
             dia = tocados.get(ln["fecha"]) or copy.deepcopy(lib.get(ln["fecha"])) or dict(fecha=ln["fecha"], documentos=[], banco={}, cierre={})
             tocados[ln["fecha"]] = dia
@@ -539,7 +575,7 @@ def cont_extracto():
                                   "debito": r["debito"], "credito": r["credito"], "diferencia": r["diferencia"], "guardado": ahora}
         if nuevos_dias:
             lib.update(nuevos_dias); _guardar_libro(lib)
-        mem["importaciones"][imp] = dict(archivo=os.path.basename(f.filename or "")[:200], sha256=sha, fecha=ahora, nuevas=nuevas, ya_estaban=ya)
+        mem["importaciones"][imp] = dict(archivo=os.path.basename(f.filename or "")[:200], sha256=sha, fecha=ahora, nuevas=nuevas, ya_estaban=ya, dias_creados=sorted(f for f in nuevos_dias if f not in lib_antes))
         tmp = RUTA_EXT_MEM.with_suffix(".tmp"); tmp.write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_EXT_MEM)
     revisar = sum(1 for d in nuevos_dias.values() for x in d["extracto"] if x.get("imp") == imp and x.get("destino") == "revisar")
     return jsonify(ok=True, imp=imp, nuevas=nuevas, ya_estaban=ya, por_revisar=revisar, dias=sorted(nuevos_dias))
