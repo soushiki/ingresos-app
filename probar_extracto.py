@@ -208,5 +208,44 @@ chk(len(fl) == len(r["filas"]) and sum(c[5].value or 0 for c in fl) == sum(c[6].
 eq = [c[4] for c in fl if str(c[4].value).startswith("=")]
 chk(eq and all(c.data_type == "s" for c in eq), "T3 S5: una descripción del banco que empieza con «=» sale como texto")
 
+
+# --- T4: POST /api/contable/extracto (ADR-012, todo o nada) ---
+import pathlib, time
+import app as appmod
+_t = pathlib.Path(tempfile.mkdtemp())
+appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM, appmod.RUTA_SOPORTE = _t / "libro.json", _t / "extracto_memoria.json", _t / "soporte.db"
+cli = appmod.app.test_client()
+def sube(datos, nombre="e.xlsx"): return cli.post("/api/contable/extracto", data={"archivo": (io.BytesIO(datos), nombre)}, content_type="multipart/form-data")
+def dia_(n): return _dt.datetime(2026, 9, n, 5, 0)
+S1 = [(dia_(n), f"PAGO QR P{n}", "", 1000 * n) for n in range(1, 24)] + [(dia_(23), "IMPTO GOBIERNO 4X1000", "", -610), (dia_(23), "IMPTO GOBIERNO 4X1000", "", -610)]
+S2 = S1 + [(dia_(n), f"PAGO QR P{n}", "", 1000 * n) for n in range(24, 31)]
+r1 = sube(xlsx(S1)); j1 = r1.get_json()
+chk(r1.status_code == 200 and (j1["nuevas"], j1["ya_estaban"]) == (25, 0), f"T4: importar 1–23 → 25 nuevas, 0 ya estaban ({j1})")
+lib1 = appmod._leer_libro()
+chk(len(lib1) == 23 and all(d["extracto"] for d in lib1.values()) and lib1["2026-09-23"]["debito"] == lib1["2026-09-23"]["credito"], "T4: crea los 23 días y los deja cuadrados")
+chk(len(lib1["2026-09-23"]["extracto"]) == 3 and [x["ocurrencia"] for x in lib1["2026-09-23"]["extracto"] if x["valor"] == -610] == [1, 2], "T4: dos líneas idénticas del mismo día quedan ambas (ocurrencia 1 y 2)")
+r2 = sube(xlsx(S2)); j2 = r2.get_json(); lib2 = appmod._leer_libro()
+chk(r2.status_code == 200 and (j2["nuevas"], j2["ya_estaban"]) == (7, 25), f"T4: importar 1–30 → 7 nuevas, 25 ya estaban ({j2})")
+chk(len(lib2) == 30 and sum(len(d["extracto"]) for d in lib2.values()) == 32, "T4: sin duplicar (32 líneas en 30 días)")
+chk(j2["dias"] == [f"2026-09-{n}" for n in range(24, 31)], "T4: solo recalcula los días con líneas nuevas")
+r3 = sube(xlsx(S2)); chk(r3.get_json()["nuevas"] == 0 and r3.get_json()["ya_estaban"] == 32, "T4: el mismo archivo otra vez: 0 nuevas")
+mem = json.loads(appmod.RUTA_EXT_MEM.read_text(encoding="utf8"))
+chk(len(mem["importaciones"]) == 3 and j1["imp"] in mem["importaciones"] and mem["importaciones"][j1["imp"]]["nuevas"] == 25 and not list(_t.glob("*.tmp")), "T4: importaciones[imp] en extracto_memoria.json (sin .tmp sobrantes)")
+antes, mem_antes = appmod.RUTA_LIBRO.read_bytes(), appmod.RUTA_EXT_MEM.read_bytes()
+malos = [b"no soy xlsx", xlsx(S1, hoja="Otra"), xlsx([(dia_(1), "A", "", 1), ("mala", "B", "", 2)])]
+res = [sube(b) for b in malos]
+chk(all(x.status_code == 400 and x.get_json()["error"] for x in res), "T4: archivo malo → 400 {error}")
+chk(appmod.RUTA_LIBRO.read_bytes() == antes and appmod.RUTA_EXT_MEM.read_bytes() == mem_antes, "T4: archivo malo deja libro.json y la memoria byte a byte iguales")
+chk(cli.post("/api/contable/extracto", data={}, content_type="multipart/form-data").status_code == 400, "T4: sin archivo → 400")
+_rg = X.RUTA_REGLAS; X.RUTA_REGLAS = _t / "no_existe.json"
+try: rr = sube(xlsx(S1))
+finally: X.RUTA_REGLAS = _rg
+chk(rr.status_code == 400 and appmod.RUTA_LIBRO.read_bytes() == antes, "T4: reglas rotas/ausentes → 400 sin escribir")
+if XLSX.exists():
+    _t2 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = _t2 / "libro.json", _t2 / "m.json"
+    t0 = time.time(); rx = sube(XLSX.read_bytes()); dt = time.time() - t0
+    chk(rx.status_code == 200 and rx.get_json()["nuevas"] == 513 and dt < 3, f"T4: el real (513 líneas) entra en {dt:.1f} s < 3 s")
+    chk(sube(XLSX.read_bytes()).get_json()["ya_estaban"] == 513, "T4: el real otra vez: 513 ya estaban")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)

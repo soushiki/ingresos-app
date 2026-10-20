@@ -1,7 +1,7 @@
 """Ingresos Diarios · Fotos de cierres de caja manuscritos → tabla → Excel.
 Ejecuta:  python app.py   (abre http://127.0.0.1:5050)"""
 from __future__ import annotations
-import copy, io, json, os, re, shutil, threading, webbrowser
+import copy, hashlib, io, json, secrets, os, re, shutil, threading, webbrowser
 from datetime import datetime
 from pathlib import Path
 import requests
@@ -20,7 +20,7 @@ from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta, MEDIOS_CANON, medio_canonico
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de
-from parser_module.contable import referencia
+from parser_module.contable import referencia, extracto as extr
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura, faltantes
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
@@ -373,6 +373,53 @@ def cont_recorte(nombre):
     b = recortes.abrir(nombre, RUTA_RECORTES)
     if b is None: return jsonify(error="sin recorte"), 404
     return send_file(io.BytesIO(b), mimetype="image/jpeg")
+
+
+RUTA_EXT_MEM = DATOS / "extracto_memoria.json"
+
+
+def _leer_ext_mem() -> dict:
+    try: m = json.loads(RUTA_EXT_MEM.read_text(encoding="utf8"))
+    except (FileNotFoundError, json.JSONDecodeError): m = {}
+    if not isinstance(m, dict): m = {}
+    if not isinstance(m.get("memoria"), dict): m["memoria"] = {}
+    if not isinstance(m.get("importaciones"), dict): m["importaciones"] = {}
+    return m
+
+
+@app.post("/api/contable/extracto")
+def cont_extracto():
+    """ADR-012: sube el extracto (.xlsx). Todo o nada: valida reglas y archivo antes de escribir; una sola _guardar_libro."""
+    f = request.files.get("archivo")
+    if not f: return jsonify(error="No llegó ningún archivo."), 400
+    datos = f.read(extr.MAX_BYTES + 1)
+    try:
+        reglas = extr.cargar_reglas()
+        lineas = extr.leer_xlsx(datos)
+    except (extr.ReglasInvalidas, extr.ExtractoInvalido) as e: return jsonify(error=str(e)), 400
+    ahora = datetime.now().isoformat(timespec="seconds"); sha = hashlib.sha256(datos).hexdigest()
+    imp = f"{ahora.replace('-', '').replace(':', '').replace('T', '')}-{sha[:8]}-{secrets.token_hex(2)}"
+    with LOCK:
+        mem, lib, cfg = _leer_ext_mem(), _leer_libro(), _cont_cfg()
+        nuevas, ya, tocados = 0, 0, {}
+        for ln in lineas:
+            dia = tocados.get(ln["fecha"]) or copy.deepcopy(lib.get(ln["fecha"])) or dict(fecha=ln["fecha"], documentos=[], banco={}, cierre={})
+            tocados[ln["fecha"]] = dia
+            if any(x.get("clave") == ln["clave"] for x in dia.get("extracto", [])): ya += 1; continue
+            dia.setdefault("extracto", []).append(dict(ln, imp=imp)); nuevas += 1
+        nuevos_dias = {}
+        for fecha, dia in tocados.items():
+            if not any(x.get("imp") == imp for x in dia.get("extracto", [])): continue   # nada nuevo: el día queda como estaba
+            dia["extracto"] = extr.clasificar(dia["extracto"], reglas, mem["memoria"])
+            r = construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), dia["extracto"])
+            nuevos_dias[fecha] = {**dia, "documentos": r["documentos"], "cruces": r["cruces"], "filas": r["filas"], "pendientes": r["pendientes"],
+                                  "debito": r["debito"], "credito": r["credito"], "diferencia": r["diferencia"], "guardado": ahora}
+        if nuevos_dias:
+            lib.update(nuevos_dias); _guardar_libro(lib)
+        mem["importaciones"][imp] = dict(archivo=os.path.basename(f.filename or "")[:200], sha256=sha, fecha=ahora, nuevas=nuevas, ya_estaban=ya)
+        tmp = RUTA_EXT_MEM.with_suffix(".tmp"); tmp.write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_EXT_MEM)
+    revisar = sum(1 for d in nuevos_dias.values() for x in d["extracto"] if x.get("imp") == imp and x.get("destino") == "revisar")
+    return jsonify(ok=True, imp=imp, nuevas=nuevas, ya_estaban=ya, por_revisar=revisar, dias=sorted(nuevos_dias))
 
 
 @app.get("/api/contable/libro")
