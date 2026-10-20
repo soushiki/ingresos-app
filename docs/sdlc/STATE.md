@@ -21,8 +21,8 @@ next: 8-maintain
 (Mark skipped stages `- [~]`.)
 
 ## Ciclos anteriores
-- Documento soporte → `archive/documento-soporte/`; precisión OCR v1.1.0 → `archive/precision-ocr/`; recibos omitidos v1.2.0 → `archive/recibos-omitidos/`.
-- Siguen en su sitio: `01b`, `01c` (insumo de este ciclo), `01d`, `08-maintenance.md`, `adr/`.
+- Documento soporte → `archive/documento-soporte/`; precisión OCR v1.1.0 → `archive/precision-ocr/`; recibos omitidos v1.2.0 → `archive/recibos-omitidos/`; cierre de caja v1.3.0 → `archive/cierre-de-caja/` (01e ignorado queda aquí).
+- Siguen en su sitio: `01b`, `01c` (insumo de #5/#6/#8), `01d`, `08-maintenance.md`, `adr/`.
 
 ## Punto de partida (de 01c y del código)
 - `validar.cruces` ya compara cierre vs. papeles (01-09: el cierre supera a los papeles en ≈ 30 %). La puente 13809501 ya existe (venta sin medio).
@@ -47,3 +47,5 @@ Sirve un mes, pero son 30 ajustes por mes y el pasivo 2815 sigue mal en cada exp
 2026-10-19 | 6-test | PASA: R1–R3 y aceptación a–e cubiertas, 18/18 suites verdes; revisión sin bloqueantes (2 notas bajas → M-17); smoke de 4 pasos pendiente del usuario → 7-release
 2026-10-19 | 7-release | v1.3.0 preparada: VERSION, CHANGELOG, 07-release.md (runbook + rollback con libro.antes-v1.3.0.json); suite 18/18, pre-flight OK; commit local. Falta: decidir cifras reales en docs/commit T4 (repo público), luego tag + push y smoke del usuario
 2026-10-19 | 7-release | v1.3.0 publicada (tag + push main). Cifras reales → 01e-cifras-cierre.md (ignorado), commits T1–T4 reescritos sin cifras antes del push; respaldo local backup/pre-scrub-v1.3.0. Falta smoke del usuario → 8-maintain
+2026-10-19 | 8-maintain | #2/#4 cerrados en 08 (v1.3.0); 02/04/06/07 + copia de STATE → archive/cierre-de-caja/. Abiertos: smoke v1.3.0 (usuario), M-17 XS, M-16 M, #5 M, #6/#8 S, cruce efectivo; chequeo mensual 2026-11-17
+2026-10-19 | 8-maintain | Revisión de abiertos: limpieza de archivo sin commit; siguiente propuesto M-17 XS (fx fijo del ajuste R1) tras smoke v1.3.0; espera elección del usuario

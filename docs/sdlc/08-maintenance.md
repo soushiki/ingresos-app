@@ -4,7 +4,8 @@
 v1.1.0 (precisión del OCR) publicada 2026-10-18: con error 12,2 % → 3,4 %, pero metas N3 no cumplidas (omitidos 16,8 %, 58/107 dudosos).
 v1.2.0 (recibos omitidos, M-13) publicada 2026-10-19: omitidos 13 → 5/103 y los que faltan salen como «Falta N» en ④; N3 sigue abierta → M-16. Abiertos: M-16 lector por línea, M-14 calibrar
 `umbral_laplaciano`, M-15 tope de tiempo por recibo. Del ciclo documento soporte: cruce de efectivo con el
-manual, extracto 24–30, features #2/#4/#5/#6/#8 (nuevo ciclo desde 0-triage). Dependencias auditadas 2026-10-17 (limpio, versiones fijas).
+manual, extracto 24–30, features #5/#6/#8 (nuevo ciclo desde 0-triage). Dependencias auditadas 2026-10-17 (limpio, versiones fijas).
+v1.3.0 (cierre de caja, #2 + #4) publicada 2026-10-19: el cierre manda (→ puente) y el pago de propinas/domicilios debita 2815; ciclo en `archive/cierre-de-caja/`. Deuda nueva M-17.
 
 ## Registro
 | fecha | tipo | ítem | tamaño | estado |
@@ -12,8 +13,8 @@ manual, extracto 24–30, features #2/#4/#5/#6/#8 (nuevo ciclo desde 0-triage). 
 | 2026-10-17 | bug | M-1: crudo hecho a mano con factura de valor negativo entra al libro contable como cifra negativa (el soporte la ignora). Fix: `leer_crudo` rechaza valor < 0 salvo en campos de cierre (`faltante_impreso`). Test primero | XS | cerrado 2026-10-17: rechaza `valor` < 0 en papeles que no son cierre; check en probar_datos_ocr |
 | 2026-10-17 | bug | M-2: `id` de documento repetido dentro de un día en el crudo no se rechaza → dos papeles con el mismo id. Fix: inválido R10 en `leer_crudo`. Test primero | XS | cerrado 2026-10-17: id repetido en el día → inválido R10; check en probar_datos_ocr |
 | 2026-10-17 | bug | M-3: Host con «@» (user@host) en el before_request: no explotable (solo 127.0.0.1), pero el parseo debería tomar lo de después de «@» o rechazarlo | XS | cerrado 2026-10-17: Werkzeug ya daba host vacío (403); se agrega rechazo explícito de «@»; 2 checks |
-| 2026-10-17 | feature | 01c #2: el total del cierre de caja manda; la diferencia va a la cuenta puente | S | nuevo ciclo |
-| 2026-10-17 | feature | 01c #4: débito a 2815 al pagar propinas/domicilios (hoy el pasivo crece sin fin) | S | nuevo ciclo |
+| 2026-10-17 | feature | 01c #2: el total del cierre de caja manda; la diferencia va a la cuenta puente | S | cerrado 2026-10-19 (v1.3.0, R1): diferencia cierre > papeles → 13809501/41401501 con aviso; papeles > cierre solo aviso |
+| 2026-10-17 | feature | 01c #4: débito a 2815 al pagar propinas/domicilios (hoy el pasivo crece sin fin) | S | cerrado 2026-10-19 (v1.3.0, R2): débito 28150502/28150501 desde el cierre sin repetir vales; sept. 2815 baja ≈ 21 % (residuo → días sin cierre). Pendiente: smoke del usuario |
 | 2026-10-17 | feature | 01c #6: detección Rappi → 13452501 (manual 2,4 M; la app 0). Usuario 2026-10-17: Rappi es un aliado; el cliente le paga a Rappi (Rappi se queda domicilio y tarifa de servicio) y Rappi le da al restaurante solo el valor del producto, con liquidación semanal por la cuenta bancaria, no por recibo. Su servicio no va en el papel: lo cobra aparte con débitos semanales en el banco (gasto, no descuento de la venta). El papel de Rappi (p. ej. 17-09 Rolando, ID 2503423706, «Total sugerido a facturar» $36.600) entra hoy como venta sin número ni valor: 19 papeles así | S | nuevo ciclo |
 | 2026-10-17 | feature | 01c #8: vocabulario único de medio de pago; vacío en asientos que no son de caja | S | nuevo ciclo |
 | 2026-10-17 | bug? | 01c #9: días en que la app supera al manual (25-09 +568 k, 27-09 +660 k, 30-09 +178 k con la puente de T2) | S | investigado 2026-10-17: **no hay duplicados**. 25-09: la app suma lo que dice el POS (cierre 1.997.800). El manual registra lo que llegó al banco: transferencias 1,02 M frente a 1,55 M, y tarjetas netas 171 k frente a 281 k brutas. 27-09: el manual no tiene la fila de efectivo del cierre (575.900) ni el 27 ni el 28. 30-09: el manual no tiene el crédito personal (111.450) ni la venta sin medio (110.450, puente). Se le pregunta a contabilidad. Queda M-4. 2026-10-17: el usuario decide que las transferencias sin recibo salen del extracto → casillas del banco llenas para 1–23 sept. (falta 24–30) |
@@ -40,7 +41,7 @@ v1.0.1 publicada (M-4 sale en la próxima versión; main sigue en v1.0.0). Conta
 - [ ] Métricas: ¿el contador usa ③ cada semana? ¿cuántos DS transmitidos o anulados?
 - [ ] Errores: revisar la consola de `iniciar.bat` en el PC del contador; anotar los 3 que más se repiten
 - [ ] Respaldo: restaurar una copia de `datos/soporte.db` en una carpeta aparte y abrir ③
-- [x] Podar docs/sdlc (adelantado 2026-10-17): 01–07 y spike → `docs/sdlc/archive/documento-soporte/`; adr/ queda en su sitio (decisiones vigentes); 01b/01c quedan como insumo del ciclo #2/#4
+- [x] Podar docs/sdlc (2026-10-19: ciclo cierre de caja → `archive/cierre-de-caja/`; adelantado 2026-10-17): 01–07 y spike → `docs/sdlc/archive/documento-soporte/`; adr/ queda en su sitio (decisiones vigentes); 01b/01c quedan como insumo del ciclo #2/#4
 
 ## Hallazgos al cargar el extracto (2026-10-17)
 | fecha | tipo | ítem | tamaño | estado |
