@@ -49,3 +49,4 @@ Sirve un mes, pero son 30 ajustes por mes y el pasivo 2815 sigue mal en cada exp
 2026-10-19 | 7-release | v1.3.0 publicada (tag + push main). Cifras reales → 01e-cifras-cierre.md (ignorado), commits T1–T4 reescritos sin cifras antes del push; respaldo local backup/pre-scrub-v1.3.0. Falta smoke del usuario → 8-maintain
 2026-10-19 | 8-maintain | #2/#4 cerrados en 08 (v1.3.0); 02/04/06/07 + copia de STATE → archive/cierre-de-caja/. Abiertos: smoke v1.3.0 (usuario), M-17 XS, M-16 M, #5 M, #6/#8 S, cruce efectivo; chequeo mensual 2026-11-17
 2026-10-19 | 8-maintain | Revisión de abiertos: limpieza de archivo sin commit; siguiente propuesto M-17 XS (fx fijo del ajuste R1) tras smoke v1.3.0; espera elección del usuario
+2026-10-19 | 8-maintain | M-17 XS hecho (5→6): ajuste R1 como fórmula en el Excel + helper consumo_papeles (cortesía fuera); probar_datos_ocr +4, 18/18 verdes

@@ -238,6 +238,18 @@ def estado_de(d: dict) -> str:
     return "revisado" if d.get("revisado") else "dudoso" if d.get("avisos") else "validado"
 
 
+PAPELES = dict(bloque="venta", estado="<>no cuenta")   # M-17: filas de venta de DATOS OCR que cuentan como papel (una cortesía sin pago no tiene fila que cuente)
+
+
+def consumo_papeles(datos: list) -> int:
+    """M-17: venta de los papeles (consumo, sin propina ni domicilio) leída de DATOS OCR, igual que su fórmula en el Excel (fx_consumo_papeles)."""
+    return sum(x["valor"] - x["propina"] - x["domicilio"] for x in datos if x["bloque"] == PAPELES["bloque"] and x["estado"] != "no cuenta")
+
+
+def fx_consumo_papeles() -> list:
+    return ["-", *(["sum", col, PAPELES] for col in ("valor", "propina", "domicilio"))]
+
+
 def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None) -> dict:
     cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; banco = banco or {}; filas, avisos, pendientes = [], [], []
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
@@ -246,14 +258,13 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     cie = {**datos_cierre(todos), **{k: int(v) for k, v in (cierre or {}).items() if v is not None}}
     # R1 (ajuste al cierre): el cierre del POS manda sobre los papeles. Solo con total vendido leído y fecha del cierre (o cifras escritas a mano).
     # Si el cierre supera la venta de los papeles (consumo, sin propina ni domicilio) la diferencia entra al puente 13809501; si no, solo avisa.
-    ajuste = 0; fecha_cierre = bool(cierre) or any(d.get("tipo") == "cierre" and d.get("fecha") == fecha for d in todos)
+    ajuste = dif = 0; fecha_cierre = bool(cierre) or any(d.get("tipo") == "cierre" and d.get("fecha") == fecha for d in todos)
     if cie.get("total_vendido") and fecha_cierre:
-        en_papeles = sum(d["consumo"] for d in todos if d["tipo"] == "venta" and d.get("contar"))
-        dif = cie["total_vendido"] - en_papeles
-        if dif > 1:
+        dif = cie["total_vendido"] - consumo_papeles(datos)
+        if dif > 1:   # M-17: la fila guarda el total del cierre; el ajuste es fórmula (total − papeles) y se recalcula si corriges una comanda en el Excel
             ajuste = dif; j_aj = len(datos)
-            datos.append(dict(fecha=fecha, archivo="cierre de caja", tipo="cierre", numero="", tercero="Consumidor Final", detalle="Ajuste al cierre (cierre > papeles)", valor=ajuste, medio="",
-                              cuenta=cfg["puente_ingreso"], estado="ok", aviso="total vendido del cierre − consumo de las comandas", propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo=""))
+            datos.append(dict(fecha=fecha, archivo="cierre de caja", tipo="cierre", numero="", tercero="Consumidor Final", detalle="Total vendido según el cierre", valor=cie["total_vendido"], medio="",
+                              cuenta=cfg["puente_ingreso"], estado="ok", aviso="ajuste al cierre = este total − consumo de las comandas", propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo=""))
     # R2 (débito 2815 desde el cierre): lo que el cierre dice que se pagó en propinas y domicilios baja el pasivo. Los vales «pago domicilios»
     # ya debitan 28150501 desde la caja menor: del cierre solo sale la parte que ellos no cubrieron (nunca negativa, nunca dos veces).
     j_pro = j_dom = None; pago_pro = pago_dom = 0
@@ -357,12 +368,12 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
                  fx=S(bloque="venta", cuenta=cfg["puente_ingreso"]))
         fila(RESTAURANTE, "Consumidor Final", "Venta sin medio de pago · " + ords, cre=suma(sin_medio), reporta=cfg["reporta_banco"], grupo="venta", docs=ids(sin_medio), fx=["fila", j])
     if ajuste:
-        j = fila(cfg["puente_ingreso"], "Consumidor Final", "Ajuste al cierre (cierre > papeles)", deb=ajuste, reporta=cfg["reporta_banco"], grupo="venta", fx=["dato", j_aj])
+        j = fila(cfg["puente_ingreso"], "Consumidor Final", "Ajuste al cierre (cierre > papeles)", deb=ajuste, reporta=cfg["reporta_banco"], grupo="venta",
+                 fx=["-", ["dato", j_aj], ["min", ["dato", j_aj], fx_consumo_papeles()]])   # total − MIN(total, papeles): nunca negativo
         fila(RESTAURANTE, "Consumidor Final", "Ajuste al cierre (cierre > papeles)", cre=ajuste, reporta=cfg["reporta_banco"], grupo="venta", fx=["fila", j])
         avisos.append(f"Ajuste al cierre: el cierre del POS vendió {ajuste:,} más que tus comandas; quedó en la cuenta puente {cfg['puente_ingreso']} (falta una comanda o se leyó mal)".replace(",", "."))
-    elif cie.get("total_vendido") and fecha_cierre and sum(d["consumo"] for d in todos if d["tipo"] == "venta" and d.get("contar")) - cie["total_vendido"] > 1:
-        sobra = sum(d["consumo"] for d in todos if d["tipo"] == "venta" and d.get("contar")) - cie["total_vendido"]
-        avisos.append(f"Tus comandas suman {sobra:,} más que el cierre del POS: no se ajustó nada, revisa si hay una comanda repetida o mal leída".replace(",", "."))
+    elif dif < -1:
+        avisos.append(f"Tus comandas suman {-dif:,} más que el cierre del POS: no se ajustó nada, revisa si hay una comanda repetida o mal leída".replace(",", "."))
 
     # 3) caja menor: un renglón por cuenta + un crédito a Efectivo (sin cuenta = puente: una sola fila con los que ya estaban ahí, FIX-3)
     cm = de("caja"); por_cuenta = defaultdict(list)

@@ -323,4 +323,22 @@ chk(color("dud1") and all(c == NARANJA for c in color("dud1")), "Excel: la fila 
 ia, ix = cab.index("Aviso"), cab.index("Estado")
 otras = [f_[0].fill.fgColor.rgb[-6:] for f_ in ws12.iter_rows(min_row=2) if f_[ie].value != "dudoso" and (f_[ia].value or f_[ix].value != "ok")]
 chk(otras and all(c == AMARILLO for c in otras), f"Excel: otra fila con aviso sigue en amarillo ({len(otras)})")
+# M-17: el ajuste R1 (cierre > papeles) es fórmula: corregir una comanda en DATOS OCR lo recalcula; una cortesía no cuenta como papel
+v17 = leer_texto(VENTA)[0]   # efectivo 100.000 + tarjeta 95.800, propina 17.800 → consumo 178.000
+cor = dict(v17, id="cor17", numero="85999", efectivo=0, tarjeta=0, transf=0, credito=0, propina=0, consumo=50000, cortesia=True, avisos=[])
+r17 = construir("2026-09-19", [v17, cor], None, None, {"total_vendido": 250000})
+aj17 = [(f_["codigo"], f_["debito"], f_["credito"]) for f_ in r17["filas"] if f_["descripcion"].startswith("Ajuste al cierre")]
+chk(aj17 == [(PI, 72000, 0), ("41401501", 0, 72000)], f"M-17: cierre 250.000 − consumo 178.000 = ajuste 72.000 (la cortesía de 50.000 no resta): {aj17}")
+w17 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-19": r17["filas"]}, datos={"2026-09-19": r17["datos"]})))
+k17 = [k for k, f_ in enumerate(r17["filas"], 9) if f_["descripcion"].startswith("Ajuste al cierre")]
+_, m17 = movimientos(w17)
+chk([(int(d), int(c)) for _, d, c in m17] == [(f_["debito"], f_["credito"]) for f_ in r17["filas"]], "M-17: evaluadas, las fórmulas dan lo mismo que construir()")
+fe17 = next(k for k, x_ in enumerate(r17["datos"], 2) if x_["id"] == v17["id"] and x_["medio"] == "Efectivo")
+def aj_excel(valor):
+    w17["DATOS OCR"][f"G{fe17}"] = valor; ws_, m = movimientos(w17); m = {q: (int(d), int(c)) for q, d, c in m}
+    return [m[k] for k in k17], evaluar(w17, ws_.title, "F7", {}) == evaluar(w17, ws_.title, "G7", {})
+a1, c1 = aj_excel(130000)
+chk(a1 == [(42000, 0), (0, 42000)] and c1, f"M-17: efectivo 100.000 → 130.000 en DATOS OCR → el ajuste baja a 42.000 y el mes cuadra: {a1}")
+a2, c2 = aj_excel(400000)
+chk(a2 == [(0, 0), (0, 0)] and c2, f"M-17: si la comanda corregida pasa al cierre, el ajuste queda en 0 (nunca negativo): {a2}")
 print("\nTODO BIEN" if ok else "\nHAY FALLOS")
