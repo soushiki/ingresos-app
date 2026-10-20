@@ -1,19 +1,19 @@
 # SDLC state
 
 project: ingresos_app · Indra OCR (M-25)
-goal: —
-size: —
+goal: Indra OCR pasa a ser el segundo lector R3 (en lugar de Tesseract-dígitos) y el enderezador de fotos, local en su propio venv 3.14, para bajar omitidos de 5/103 a ≤ 2/103 sin empeorar totales; sin Indra vuelve a Tesseract (v1.6.0) y avisa; script de instalación (venv + indra-ocr==1.1.2 + modelo una vez, luego offline)
+size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv + instalador; evidencia ya existe (spike e6e46e2)
 exposed: no  # app Flask local en 127.0.0.1
-regulated: —
-next: 0-triage
-current task: —
+regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
+next: 5-implement
+current task: T2
 
 ## Stages
-- [ ] 0-triage
-- [ ] 1-research
-- [ ] 2-requirements
-- [ ] 3-design
-- [ ] 4-plan
+- [x] 0-triage
+- [x] 1-research  (ligera: partir de docs/ocr-indra-comparison.md)
+- [x] 2-requirements
+- [x] 3-design
+- [x] 4-plan
 - [ ] 5-implement
 - [ ] 6-test
 - [ ] 7-release
@@ -32,3 +32,10 @@ current task: —
 (log del ciclo #5 → archive/extracto/STATE.md)
 2026-10-20 | 8-maintain | #5 cerrado (v1.6.0); ciclo → archive/extracto/ (01–04, 06, 07, STATE); 08 al día; M-25 Indra OCR anotado (absorbe M-16); chequeo mensual 2026-11-17; falta elegir el próximo ciclo (M-25 recomendado o M-18)
 2026-10-20 | 8-maintain | usuario elige próximo ciclo: M-25 Indra OCR → next 0-triage
+2026-10-20 | 0-triage | M-25 Indra OCR: meta confirmada (lector R3 + enderezado), M, exposed no, regulated no; respaldo Tesseract; script de instalación → next 1-research (ligera)
+2026-10-20 | 1-research | ligera: onnxruntime sin cp315 → trabajador 3.14 por JSON-líneas (ready, timeout+reinicio, candado); fijar indra-ocr 1.1.2; enganches leer_digitos/giro_automatico; 8 riesgos (meta omitidos sin medir, 3 dudosos falsos, upright no documentado) → next 2-requirements
+2026-10-20 | 2-requirements | aprobado: 8 historias (R1–R4, R6 Must; R5, R7, R8 Should), N1–N6; Q1 regla dudoso igual, Q2 instalador solo avisa sin py 3.14, Q3 ≤2 omitidos es Should → next 3-design
+2026-10-20 | 3-design | borrador: trabajador persistente (ADR-016), fachada motores con respaldo (ADR-017), giro+inclinación aplicados en la app (ADR-018); spike XS de fondo blanco al empezar 5 → esperando aprobación
+2026-10-20 | 3-design | aprobado por el usuario; ADR-016–018 aceptados → next 4-plan
+2026-10-20 | 4-plan | 3 iteraciones, 10 tareas (≈ 11 h): I1 trabajador+cliente+fachada+R3 conectado (ADR-016/017 con trabajador falso), I2 spike fondo blanco+enderezado+aviso+instalador, I3 probar_indra+R5 → next 5-implement (T1)
+2026-10-20 | 5-implement | T1 hecho (Sonnet): ocr_module/indra_worker.py — ready/numeros/upright/quit/EOF/{"error"}; probado a mano en el venv del spike → next T2
