@@ -1,39 +1,40 @@
-# 06 · Test report — extracto bancario, iteración 2 (FIX-1, T6–T10)
+# 06 · Test report — extracto bancario, iteración 3 (FIX-2, FIX-3, T11–T13)
 
 ## Summary
-- **FAIL parcial: 20/20 suites verdes, pero la review halló 2 defectos (FIX-2 Must, FIX-3 Should).** Los dos están en el enlace salida ↔ factura (ADR-015).
-- Cobertura de la iteración: R4 ✓ (casilla vacía = extracto, digitada manda + aviso, ningún recaudo doble, «usar extracto» deja 0 diferencias; T6/T10), R5 ✓ (revisión con fecha/descripción/valor/selector, asignar saca la línea, «recordada» al reclasificar, puente 51959501 mientras no se elige; T7/T9/T10), R7 ✓ (aviso «signo inesperado», idempotente tras FIX-1).
-- Fuera de esta iteración: R3 (T11), R9 (T12), aceptación con el mes real (T13).
-- Diff revisado: `0e76bd1..HEAD` sin el spike Indra (app.py +137, asientos.py +31, extracto.py +77, extracto_reglas.json +1, contable.html +38).
+- **PASS: 20/20 suites verdes, review sin defectos que bloqueen.** Los Must del ciclo (R1, R2, R4, R5, R6, R8) están cubiertos desde las it.1–2 y se confirmaron con septiembre real en T13.
+- Cobertura de la iteración: R3 ✓ (T11: totales por concepto = MOVIMIENTOS salvo las 2 excepciones de T1; total = suma de Valor), R9 ✓ (T12: deshacer → `construir` de cada día igual a antes), R4/R5 ✓ (FIX-2 invariante `sin_asiento` ⇒ revisar; FIX-3 una factura, una línea).
+- Diff revisado: `65bcdc0..HEAD` (app.py +55, extracto.py ±3, contable.html +15, probar_extracto +48 aprox.).
 
 ## Failures
-- Ninguna en las suites (`probar_imagen.py` es CLI, no suite).
+- Ninguna (`probar_imagen.py` es un CLI y no una suite).
 
-## Review findings (los dos confirmados con un script)
-- **FIX-2 (Must):** la memoria pisa una línea `sin_asiento`. Con 2 facturas candidatas `clasificar` pone `sin_asiento` + «¿cuál factura?».
-  Si el tercero está en la memoria, la línea pasa a `cuenta:recordada` y conserva `sin_asiento`. Resultado: `construir` no le da fila
-  y la revisión no la lista (destino ≠ revisar). La salida de Bancos desaparece en silencio.
-  Repro: «TRANSF A ANA PRUEBA» −50.000, memoria → 51050601, F1/F2 de 50.000 el 10 y el 11 → `cuenta:recordada 51050601 sin_asiento=True`.
-- **FIX-3 (Should):** una factura puede quedar enlazada a dos líneas si están en días distintos. `usadas` vive solo dentro de
-  una llamada a `clasificar` (un día) y `_facturas_cerca` no excluye las facturas ya enlazadas desde otros días. Repro: F1 de 50.000 el 10;
-  salidas de −50.000 el 9 y el 11 → las dos quedan `factura F1`, sin asiento. Las dos aparecen «a confirmar», así que el usuario lo puede ver,
-  pero mientras tanto falta una salida en el libro. Lo mismo pasa con un `factura_id` asignado a mano.
-- Menores, sin tarea: «recordar» no reclasifica los otros días del mismo tercero que ya estaban importados (R5 habla del mes siguiente);
-  un `asignada.factura_id` cuya factura se borró sigue sin asiento.
+## Navegador (127.0.0.1:5050, ⑤, ancho 576 px, sobre libro.json real con copia previa)
+- Subir septiembre → 513 nuevas · 94 por revisar. «Totales del mes» 2026-09: 14 conceptos, total (total en 01g), «Diferencia digitado vs extracto: Recaudos con tarjetas $ 1». Sin scroll horizontal.
+- «Importaciones» lista el archivo y «Deshacer» → «Deshecho: 513 líneas quitadas». Las tarjetas quedan vacías y no hay diferencias.
+- Repetido sobre una copia con el cliente Flask: después de deshacer, cada día = el mismo día reconstruido con el código actual (0 diferencias en 1–23).
+- libro.json restaurado (mismo sha256 209581d5…). Se borró el `extracto_memoria.json` que creó la prueba.
 
-## Security review (entrada JSON y rutas nuevas; exposed: no)
-- `fecha` se valida con ISO, `medio` con lista blanca (CASILLA_DESC), `cuenta` ∈ CATALOGO y `factura_id` ∈ documentos cercanos. `clave` solo se compara.
-- Memoria escrita con tmp + replace después del libro y bajo LOCK. La UI arma con `el()` (texto) y sin innerHTML con datos del banco. Sin hallazgos.
+## Hallazgo para 7-release (no es defecto)
+- El libro.json real tiene los días 1–23 de sept. **guardados antes de las reglas de cierre** (v1.3.x; «rige al recalcular», M-17).
+  Importar el extracto los recalcula y aparecen filas que hoy faltan: ajuste al cierre 13809501 y pago de propinas y domicilios 2815xx.
+  Ejemplo: el débito del 01-sep pasa de cambia (cifras en 01g). Lo cambia el recálculo, no el extracto. Anotarlo en el runbook: hay que avisarle al contador
+  y guardar una copia de libro.json antes de la primera importación (esta copia ya existe como `libro.antes-v1.5.0.json`, idéntica).
 
-## Load
-- Asignar < 300 ms (T9) y importar < 3 s (T4). Sin ramp-load: es una app local de un usuario.
+## Review findings (menores, sin tarea)
+- Deshacer libera las facturas enlazadas, pero no reclasifica líneas de otros días que podrían tomarlas. Se corrige al recalcular ese día.
+- Deshacer no vuelve a llenar una casilla que se vació con «usar extracto».
+- Las líneas que trae de nuevo una segunda subida del mismo archivo siguen siendo de la primera importación. Por eso deshacer la segunda quita 0 líneas.
+- «Totales del mes» abre en el mes actual (octubre) y sale vacío. Sería mejor abrir en el último mes con extracto. Es UX y va a 08 si molesta.
+
+## Security review (exposed: no)
+- `mes` se valida con una regex y `imp` solo se busca en un dict (404 si no está). DELETE lleva confirm() en la UI y, por venir de otro origen, pide preflight CORS.
+- Libro antes que memoria, con tmp + replace y bajo LOCK. La UI arma todo con `el()` y textContent. Sin hallazgos.
 
 ## Debt check
-- El proyecto no tiene linter. `clasificar` creció a ~50 líneas con 4 pasos (regla → asignada → factura → memoria): el orden de esos pasos causó FIX-2. Sin DEBT aparte: el arreglo lo ordena.
+- El proyecto no tiene linter. Deshacer reutiliza `_recalcular_dia` y `_dia`, así que no hay lógica duplicada. Sin DEBT.
 
-## Smoke (usuario, ≈5 min, 127.0.0.1:5050 → Contable → ⑤ Extracto, con septiembre ya subido)
-1. «Por revisar»: elige una cuenta para una «TRANSF A …», marca «recordar» y pulsa «Asignar» → la tarjeta desaparece.
-2. Exporta el Excel → esa fila ya no está en 51959501, sino en la cuenta elegida.
-3. Si aparece «Parece el pago de la factura …», pulsa «Sí» o «No». Con «Sí», la línea sale de la lista.
-4. «Diferencias por medio»: pulsa «Usar extracto» en una diferencia → la diferencia desaparece.
-- El agente hizo 1, 2 y 4 en el navegador durante T10 (94 → 93 por revisar; 0 diferencias). Falta la prueba del usuario.
+## Smoke (usuario, ≈5 min, 127.0.0.1:5050 → ⑤ Extracto; antes copiar datos/libro.json)
+1. Subir el extracto de septiembre → «513 nuevas … 94 por revisar».
+2. «Totales del mes» → elegir septiembre 2026 → total (total en 01g).
+3. Asignar una línea en «Por revisar» → la tarjeta desaparece.
+4. «Importaciones» → «Deshacer» (o dejarla si ya se va a usar). Si se deshace, «Por revisar» queda vacío.
