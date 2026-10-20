@@ -208,6 +208,11 @@ chk(len(fl) == len(r["filas"]) and sum(c[5].value or 0 for c in fl) == sum(c[6].
 eq = [c[4] for c in fl if str(c[4].value).startswith("=")]
 chk(eq and all(c.data_type == "s" for c in eq), "T3 S5: una descripción del banco que empieza con «=» sale como texto")
 
+# --- FIX-1: clasificar es idempotente
+_c1 = X.clasificar([lin("IMPTO GOBIERNO 4X1000", 610), lin("COSA RARA", -5)], REGLAS)
+chk(X.clasificar(_c1, REGLAS) == _c1 and _c1[0]["avisos"] == ["signo inesperado"], "FIX-1: clasificar(clasificar(L)) == clasificar(L), sin avisos duplicados")
+_c2 = X.clasificar([dict(_c1[0], valor=-610)], REGLAS)
+chk(_c2[0]["avisos"] == [], "FIX-1: si la regla ahora encaja, el aviso viejo se va")
 
 # --- T4: POST /api/contable/extracto (ADR-012, todo o nada) ---
 import pathlib, time

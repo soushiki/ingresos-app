@@ -89,11 +89,15 @@ def cargar_reglas(ruta=None) -> dict:
     return r
 
 
+_AVISOS_CLASIF = ("signo inesperado", "sin concepto: ninguna regla encaja")
+
+
 def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = []) -> list:
     "Pura: devuelve copias de las lineas con concepto, destino, cuenta, origen y avisos. Sin memoria ni facturas todavia."
     out = []
     for ln in lineas:
-        x = dict(ln, avisos=list(ln.get("avisos") or []))
+        # los avisos de clasificacion se recalculan desde cero (idempotente); otros avisos se conservan
+        x = dict(ln, avisos=[a for a in (ln.get("avisos") or []) if a not in _AVISOS_CLASIF])
         desc, valor = normalizar(x.get("descripcion")), x.get("valor") or 0
         signo = "+" if valor > 0 else "-" if valor < 0 else ""
         misma, hit = False, None
