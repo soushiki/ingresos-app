@@ -5,8 +5,8 @@ goal: Leer el extracto del banco (Excel/CSV descargado) y que cada línea quede 
 size: M      # importador nuevo + reglas de clasificación + asientos con cuentas PUC nuevas + pantalla de revisión; días, no horas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
-next: 6-test
-current task: T11 (totales del extracto)
+next: 5-implement
+current task: FIX-2 (memoria no pisa sin_asiento), luego FIX-3, T11
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -56,3 +56,4 @@ current task: T11 (totales del extracto)
 2026-10-20 | 5-implement | usuario: el abierto de T8 (sin_asiento en asientos.py, facturas= en app.py) entra en T9
 2026-10-20 | 5-implement | T9 rutas revisión (GET) y asignar (POST cuenta|factura_id|ninguna, recordar → memoria tmp+replace); `asignada` sobrevive a reclasificar; sin_asiento sin puente; import pasa facturas=; +16 checks, asignar < 300 ms; 20 suites verdes; «ninguna» deja la línea en revisión con puente (T10) → T10
 2026-10-20 | 5-implement | T10 UI ⑤ revisión (tarjetas con cuenta + recordar, confirmar/rechazar factura) y diferencias con «usar extracto» (GET .../diferencias, POST .../<fecha>/usar/<medio>) +7 checks; navegador con sept. real: asignar saca la línea (94→93, fila a 51050601), «usar extracto» deja 0 diferencias; 375/768 px sin scroll lateral; datos restaurados; 20 suites verdes; iteración 2 completa → next 6-test
+2026-10-20 | 6-test | it.2: 20/20 suites verdes; R4, R5, R7 cubiertos; review: FIX-2 (Must, memoria pisa sin_asiento → salida perdida) y FIX-3 (Should, factura enlazada en 2 días) añadidos al inicio de la it.3; smoke del usuario pendiente → next 5-implement FIX-2
