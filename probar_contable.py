@@ -46,8 +46,10 @@ chk([(x["consumo"], x["tarjeta"], x["transf"], x["credito"], x["medio"]) for x i
     [(40000, 40000, 0, 0, "Tarjeta"), (40000, 0, 40000, 0, "Transferencia"), (40000, 0, 40000, 0, "Nequi"), (40000, 0, 40000, 0, "Rappi"), (40000, 0, 0, 40000, "Crédito personal")],
     "VISA = tarjeta · transferencia sin cifra o cortada = lo pagado · Nequi · Rappi · CRED.PERSONA = fiado (no tarjeta) · el descuento no se resta dos veces")
 r4 = construir("2026-09-16", vv)
-deb = {(x["codigo"], x["medio"]): x["debito"] for x in r4["filas"] if x["debito"]}
-chk(deb == {("11200501", "Tarjeta"): 40000, ("11200501", "Transferencia"): 40000, ("11200501", "Nequi"): 40000, ("13452501", "App"): 40000, ("13050501", "Crédito personal"): 40000}
+deb = {}
+for x in r4["filas"]:
+    if x["debito"]: deb[(x["codigo"], x["medio"])] = deb.get((x["codigo"], x["medio"]), 0) + x["debito"]   # T2: Nequi es medio Transferencia (su descripción aparte)
+chk(deb == {("11200501", "Tarjeta"): 40000, ("11200501", "Transferencia"): 80000, ("13452501", "App"): 40000, ("13050501", "Crédito personal"): 40000}
     and [x["credito"] for x in r4["filas"] if x["codigo"] == "41401501"] == [200000] and r4["diferencia"] == 0,
     "tarjeta/transferencia/Nequi → Banco · Rappi → Ingresos por cobrar · fiado → Cuenta por cobrar · Restaurante 200.000")
 fx = leer_texto("Factura de venta No. FV123\nCLIENTE: Samu\nTomate 20.000\nTotal Factura: $ 124,400\n")[0]

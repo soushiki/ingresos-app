@@ -15,7 +15,7 @@ FINO = Border(bottom=Side(style="hair", color="BFBFBF"))
 
 
 DATOS_HEAD = {"fecha": "Fecha", "archivo": "Archivo de origen", "tipo": "Tipo", "numero": "Número", "tercero": "Tercero", "detalle": "Detalle", "valor": "Valor",
-              "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id", "recibo": "Recibo", "motivo": "Motivo si es dudoso"}
+              "medio": "Medio de pago", "cuenta": "Cuenta", "estado": "Estado", "aviso": "Aviso", "propina": "Propina", "domicilio": "Domicilio", "bloque": "Asiento", "id": "Id", "recibo": "Recibo", "motivo": "Motivo si es dudoso", "medio_detalle": "Medio según el papel"}
 AMARILLO = "FFF2CC"
 NARANJA = "F8CBAD"   # FIX-12: recibo dudoso, distinto del amarillo de cualquier aviso
 

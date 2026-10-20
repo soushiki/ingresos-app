@@ -26,7 +26,7 @@ p = {x["id"]: x for x in D}
 v_ = [x for x in D if x["id"] == v["id"]]
 chk([(x["medio"], x["valor"], x["cuenta"], x["estado"]) for x in v_] == [("Efectivo", 100000, "11050501", "ok"), ("Tarjeta", 95800, "11200501", "en extracto")],
     f"venta mixta → 2 filas (efectivo y tarjeta; la tarjeta la cubre el extracto): {[(x['medio'], x['valor'], x['estado']) for x in v_]}")
-chk(p["sinmedio"]["cuenta"] == PI and p["sinmedio"]["medio"] == "(sin medio)" and p["sinmedio"]["aviso"], f"venta sin medio → fila en {PI} con aviso")
+chk(p["sinmedio"]["cuenta"] == PI and p["sinmedio"]["medio"] == "" and p["sinmedio"]["aviso"], f"venta sin medio → fila en {PI} con aviso")
 g = next(x for x in D if x["numero"] == "300")
 chk(g["cuenta"] == PG and g["estado"] == "ok" and g["aviso"], f"gasto sin cuenta → fila en {PG} con aviso")
 chk(p["ilegible"]["estado"] == "pendiente" and p["ilegible"]["aviso"], "venta sin ninguna cifra leída → fila «pendiente» (no se pierde de vista)")

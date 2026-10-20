@@ -4,16 +4,19 @@ import json, re
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from .documentos import medio_canonico
 AQUI = Path(__file__).parent
 CATALOGO = {c["codigo"]: c for c in json.loads((AQUI / "plan_de_cuentas.json").read_text(encoding="utf8"))}
 EFECTIVO, BANCO, RESTAURANTE, DOMICILIOS, PROPINAS = "11050501", "11200501", "41401501", "28150501", "28150502"
 POR_COBRAR, CXC_CLIENTES = "13452501", "13050501"
 # casillas «Recaudos del banco» (de tu extracto): clave → (descripción, medio). «rappi» va aparte: es el pago de lo que Rappi te debía.
 RECAUDOS_BANCO = [("llave", "Recaudos a través de LLAVE", "Bre-B"), ("tarjetas", "Recaudos con tarjetas", "Tarjeta"), ("qr", "Recaudos a través de QR", "QR"),
-                  ("nequi", "Recaudos a través de Transferencia Nequi", "Nequi"), ("transferencias", "Recaudos por transferencias", "Transferencia"),
+                  ("nequi", "Recaudos a través de Transferencia Nequi", "Transferencia"), ("transferencias", "Recaudos por transferencias", "Transferencia"),
                   ("pse", "Recaudos por PSE", "PSE")]
-RECAUDO_DESC = {m: d for _, d, m in RECAUDOS_BANCO} | {"App": "Ventas por Rappi", "Crédito personal": "Venta a crédito personal",
-                                                       "Daviplata": "Recaudos a través de Daviplata"}
+# medio_detalle (lo que dijo el papel o la casilla) de cada casilla; RECAUDO_DESC se busca por ese detalle, no por el medio canónico (T2, 01c #8)
+RECAUDO_DETALLE = {"llave": "Bre-B", "tarjetas": "Tarjeta", "qr": "QR", "nequi": "Nequi", "transferencias": "Transferencia", "pse": "PSE"}
+RECAUDO_DESC = {RECAUDO_DETALLE[k]: d for k, d, _ in RECAUDOS_BANCO} | {"Rappi": "Ventas por Rappi", "App": "Ventas por Rappi", "Crédito personal": "Venta a crédito personal",
+                                                                       "Daviplata": "Recaudos a través de Daviplata"}
 # puente_*: adonde va lo que no se pudo leer (venta sin medio, gasto sin cuenta), para que nada se descarte en silencio (R10).
 # Códigos PUC 138095 «Deudores varios – otros» y 519595 «Gastos diversos – otros»; cámbialos en contable.json si tu contador usa otros.
 CFG = {"reporta_efectivo": "Yorly", "reporta_banco": "Sergio", "cuenta_recaudo": "", "puente_ingreso": "13809501", "puente_gasto": "51959501", "salto_comanda": 30}
@@ -186,7 +189,7 @@ def marcar_duplicados(docs: list) -> list:
 
 
 FALTA_CUENTA = "falta la cuenta"   # aviso de DATOS OCR que construir() reconoce (DEBT-1)
-COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id", "recibo", "motivo"]   # T12: recibo = validado|dudoso|revisado (estado_de) y motivo = por qué es dudoso (R7)
+COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id", "recibo", "motivo", "medio_detalle"]   # T12: recibo = validado|dudoso|revisado (estado_de) y motivo = por qué es dudoso (R7)
 
 
 def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
@@ -196,13 +199,16 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
     bloque: venta · caja · factura · extracto · rappi, el asiento al que va la fila."""
     datos = []
     def dato(d=None, **k):
-        r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="", recibo="", motivo="")
+        r = dict(fecha=fecha, archivo="", tipo="", numero="", tercero="", detalle="", valor=0, medio="", cuenta="", estado="ok", aviso="", propina=0, domicilio=0, bloque="", id="", recibo="", motivo="", medio_detalle="")
         if d: r.update(recibo=estado_de(d), motivo="; ".join(d.get("motivos") or d.get("avisos") or []) if estado_de(d) == "dudoso" else "",   # FIX-13: solo el dudoso trae motivo
                          archivo=d.get("origen", ""), tipo=d["tipo"], numero=d.get("numero", ""), tercero=d.get("tercero", ""), detalle=d.get("detalle", ""), id=d["id"])
-        r.update(k); datos.append(r)
+        r.update(k)
+        if r["medio"] and not r["medio_detalle"]: r["medio_detalle"] = r["medio"]   # el crudo se conserva; el medio queda canónico (o vacío)
+        r["medio"] = medio_canonico(r["medio"])[0]
+        datos.append(r)
     for k, desc, medio in RECAUDOS_BANCO:
-        if int(banco.get(k) or 0): dato(tipo="extracto", archivo="extracto bancario", detalle=desc, valor=int(banco[k]), medio=medio, cuenta=BANCO, bloque="extracto")
-    if int(banco.get("rappi") or 0): dato(tipo="extracto", archivo="extracto bancario", detalle="Pagos interbancarios Rappi", valor=int(banco["rappi"]), medio="Transferencia", cuenta=BANCO, bloque="rappi")
+        if int(banco.get(k) or 0): dato(tipo="extracto", archivo="extracto bancario", detalle=desc, valor=int(banco[k]), medio=medio, medio_detalle=RECAUDO_DETALLE[k], cuenta=BANCO, bloque="extracto")
+    if int(banco.get("rappi") or 0): dato(tipo="extracto", archivo="extracto bancario", detalle="Pagos interbancarios Rappi", valor=int(banco["rappi"]), medio="Transferencia", medio_detalle="Rappi", cuenta=BANCO, bloque="rappi")
     en_ext = any(int(banco.get(k) or 0) for k, _, _ in RECAUDOS_BANCO)
     for d in todos:
         if d["tipo"] == "faltante": continue   # ADR-008: el marcador no es un papel leído; no tiene fila en DATOS OCR
@@ -217,19 +223,19 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
             if d.get("tarjeta"): partes.append((BANCO, "Consumidor Final", "Tarjeta", d["tarjeta"], en_ext))
             if d.get("transf"):
                 m = d.get("medio_transf") or "Transferencia"
-                partes.append((POR_COBRAR, "Rappi", "App", d["transf"], False) if m == "Rappi" else (BANCO, "Consumidor Final", m, d["transf"], en_ext))
+                partes.append((POR_COBRAR, "Rappi", "Rappi", d["transf"], False) if m == "Rappi" else (BANCO, "Consumidor Final", m, d["transf"], en_ext))
             if d.get("credito"): partes.append((CXC_CLIENTES, d.get("cliente") or "Cliente (crédito personal)", "Crédito personal", d["credito"], False))
             for cod, ter, medio, v, ext in partes:   # la propina y el domicilio no pagados en efectivo se reparten según lo que puso cada medio (como en construir)
                 dato(d, tercero=ter, valor=v, medio=medio, cuenta=cod, estado="en extracto" if ext else "ok", aviso="lo cubre el extracto bancario" if ext else "",
                      propina=round(r["tip_e"] * v / tot), domicilio=round(r["dom_e"] * v / tot), bloque="venta")
             if d.get("consumo") and not d.get("cortesia") and not tot + d["efectivo"]:
-                dato(d, tercero="Consumidor Final", valor=d["consumo"], medio="(sin medio)", cuenta=cfg["puente_ingreso"], aviso="no se leyó con qué se pagó; corrige el medio", bloque="venta")
+                dato(d, tercero="Consumidor Final", valor=d["consumo"], medio="", cuenta=cfg["puente_ingreso"], aviso="no se leyó con qué se pagó; corrige el medio", bloque="venta")
             if len(datos) == n0:   # no se leyó ninguna cifra: no tiene asiento, pero el papel se ve para corregirlo
                 dato(d, estado="no cuenta" if d.get("cortesia") else "pendiente", aviso="cortesía" if d.get("cortesia") else "no se leyó el valor de la venta", bloque="venta")
         elif d["tipo"] in ("gasto_caja", "caja_menor_manuscrito") and d["medio"] in ("", "Efectivo"):
             dato(d, valor=d["valor"], medio="Efectivo", cuenta=d.get("cuenta") or cfg["puente_gasto"], aviso="" if d.get("cuenta") else FALTA_CUENTA, bloque="caja")
         elif d["tipo"] in ("factura", "gasto_caja", "caja_menor_manuscrito"):
-            dato(d, valor=d["valor"], medio=d["medio"], cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
+            dato(d, valor=d["valor"], medio=d["medio"], medio_detalle=d.get("medio_detalle") or d["medio"], cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
                  aviso="; ".join(a for a in ("" if d["valor"] else "sin valor leído", "" if d["cuenta"] else FALTA_CUENTA) if a), bloque="factura")
         else:
             dato(d, valor=d.get("valor") or 0, estado="no cuenta", aviso="tipo de papel sin asiento")
@@ -269,7 +275,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         if dif > 1:   # M-17: la fila guarda el total del cierre; el ajuste es fórmula (total − papeles) y se recalcula si corriges una comanda en el Excel
             ajuste = dif; j_aj = len(datos)
             datos.append(dict(fecha=fecha, archivo="cierre de caja", tipo="cierre", numero="", tercero="Consumidor Final", detalle="Total vendido según el cierre", valor=cie["total_vendido"], medio="",
-                              cuenta=cfg["puente_ingreso"], estado="ok", aviso="ajuste al cierre = este total − consumo de las comandas", propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo=""))
+                              cuenta=cfg["puente_ingreso"], estado="ok", aviso="ajuste al cierre = este total − consumo de las comandas", propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo="", medio_detalle=""))
     # R2 (débito 2815 desde el cierre): lo que el cierre dice que se pagó en propinas y domicilios baja el pasivo. Los vales «pago domicilios»
     # ya debitan 28150501 desde la caja menor: del cierre solo sale la parte que ellos no cubrieron (nunca negativa, nunca dos veces).
     j_pro = j_dom = None; pago_pro = pago_dom = 0
@@ -283,7 +289,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
                 else: j_dom = len(datos)
                 datos.append(dict(fecha=fecha, archivo="cierre de caja", tipo="cierre", numero="", tercero="Consumidor Final", detalle="Pago según cierre", valor=tot, medio="Efectivo",
                                   cuenta=cta, estado="ok", aviso="propinas pagadas según el cierre" if cta == PROPINAS else "domicilios pagados según el cierre (menos los vales)",
-                                  propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo=""))
+                                  propina=0, domicilio=0, bloque="cierre", id="", recibo="", motivo="", medio_detalle=""))
     # DEBT-1: las filas salen de DATOS OCR (una sola clasificación). Solo cuentan las filas «ok», como en los SUMIFS del Excel.
     ok = [(i, x) for i, x in enumerate(datos) if x["estado"] == "ok"]
     de = lambda bloque, **k: [(i, x) for i, x in ok if x["bloque"] == bloque and all(x[a] == b for a, b in k.items())]
@@ -351,12 +357,12 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             avisos.append(f"Recaudos del extracto ({total_b:,}) ≠ comandas pagadas con tarjeta/transferencia ({al_banco:,}); se usó el extracto".replace(",", "."))
     partes = [(i, x) for i, x in de("venta") if x["cuenta"] not in (EFECTIVO, cfg["puente_ingreso"])]
     grupos = defaultdict(list)
-    for p in partes: grupos[(p[1]["cuenta"], p[1]["tercero"], p[1]["medio"])].append(p)
+    for p in partes: grupos[(p[1]["cuenta"], p[1]["tercero"], p[1]["medio"], p[1]["medio_detalle"])].append(p)
     rep = cfg["reporta_banco"]; jg = []
-    for (cod, ter, medio), ps in grupos.items():
+    for (cod, ter, medio, detalle), ps in grupos.items():
         ords = "Ordenes: " + abreviar_recibos(nums(ps))
-        desc = RECAUDO_DESC.get(medio, f"Recaudos por {medio}") + (" · " + ords if ords != "Ordenes: " else "")
-        jg.append(fila(cod, ter, desc, deb=suma(ps), reporta=rep, medio=medio, grupo="venta", docs=ids(ps), fx=S(bloque="venta", cuenta=cod, tercero=ter, medio=medio)))
+        desc = RECAUDO_DESC.get(detalle) or RECAUDO_DESC.get(medio) or f"Recaudos por {detalle or medio}" + (" · " + ords if ords != "Ordenes: " else "")
+        jg.append(fila(cod, ter, desc, deb=suma(ps), reporta=rep, medio=medio, grupo="venta", docs=ids(ps), fx=S(bloque="venta", cuenta=cod, tercero=ter, medio=medio, medio_detalle=detalle)))
     if partes:
         pro_e, dom_e = suma(partes, "propina"), suma(partes, "domicilio")
         jp = jd = None; no_ef = dict(bloque="venta", cuenta="<>" + EFECTIVO)

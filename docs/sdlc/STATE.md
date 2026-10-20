@@ -6,7 +6,7 @@ size: S      # la columna medio ya existe; es normalizar valores (lectura, libro
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # etiqueta interna; no cambia cuentas del PUC ni valores tributarios
 next: 5-implement
-current task: T2
+current task: T3
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-19: Tarjeta y Crédito personal se quedan; el libro viejo se normaliza al leer/recalcular, sin migración)
@@ -37,3 +37,4 @@ current task: T2
 2026-10-19 | 2-requirements | R1–R4 aprobados (Nequi/Daviplata→Transferencia, Mixto→mayor valor, desconocido→vacío+aviso) → 4-plan
 2026-10-19 | 4-plan | 04-plan.md: T1 mapa único medio_canonico, T2 asientos (sin caja→vacío, desc conserva Nequi), T3 Mixto + app, T4 libro viejo/R4 → 5-implement
 2026-10-19 | 5-implement | T1 hecho: medio_canonico + MEDIOS_CANON + mapa en normalizacion.json, probar_medios 53 checks, 19 suites verdes → T2
+2026-10-20 | 5-implement | T2 hecho: medio canónico en DATOS OCR/libro, sin caja→vacío, medio_detalle (+columna «Medio según el papel» en exportar, aprobada), probar_medios 65 checks, 19 suites verdes → T3
