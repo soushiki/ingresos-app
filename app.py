@@ -286,9 +286,10 @@ def _catalogo() -> dict:
 def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", completa=True) -> dict:
     """Una hoja (foto o página escaneada) → documentos (T8: cada venta por C5 leer_recibo, R5 con el nombre de la foto),
     texto con los papeles separados por MARCA, segundos, grados girados y avisos de la hoja («Falta el recibo …»)."""
-    png, grados = orientacion.preparar_pagina(img_bytes, giro)
+    png, grados = orientacion.preparar_pagina(img_bytes, giro, detectar=motores.detectar_giro)
     esperados = relectura.leer_nombre(nombre).numeros if categoria in ("", "comandas") else None   # T8b: cuántos papeles trae la foto
-    trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
+    trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None,
+                                 detectar=motores.detectar_giro)
     h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar,
                          catalogo=_catalogo(), leer_digitos=motores.leer_digitos)
     h = {**h, "grados": grados}

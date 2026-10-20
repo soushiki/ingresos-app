@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 
 CONFIANZA_MIN = 0.8      # con tus escaneos: aciertos ≥ 1.0 y el único caso dudoso (hoja con papeles mezclados) dio 0.03
+INCL_MIN = 0.3           # ADR-018: con giro 0 y menos de esto la hoja no se toca (mismos recortes que v1.6.0)
 
 
 def tesseract_disponible() -> bool:
@@ -29,6 +30,18 @@ def giro_automatico(img: Image.Image) -> tuple:
         return 0, 0.0
 
 
+def _tesseract(img) -> tuple:
+    """`detectar` por defecto: (giro, confianza, inclinación 0.0) con el OSD de Tesseract, como en v1.6.0."""
+    return (*giro_automatico(img), 0.0)
+
+
+def enderezar(img: Image.Image, g: int, incl: float) -> Image.Image:
+    """Gira `g` grados en sentido horario y luego `incl` grados con el signo de PIL.rotate, sobre fondo blanco (ADR-018, T5)."""
+    if g: img = img.rotate(-g, expand=True)          # PIL gira en sentido antihorario: -g = horario
+    if abs(incl) >= INCL_MIN: img = img.rotate(incl, expand=True, fillcolor="white", resample=Image.BICUBIC)
+    return img
+
+
 def recortar(img: Image.Image, margen: float = 0.02) -> Image.Image:
     """Quita el blanco alrededor del contenido (ignora motas y bordes del escáner usando cuantiles de la tinta)."""
     g = np.asarray(img.convert("L").resize((max(1, img.width // 3), max(1, img.height // 3))), dtype=float)
@@ -44,16 +57,18 @@ def recortar(img: Image.Image, margen: float = 0.02) -> Image.Image:
     return img.crop(box) if (box[2] - box[0]) > 80 and (box[3] - box[1]) > 80 else img
 
 
-def preparar_pagina(data: bytes, giro="auto") -> tuple:
+def preparar_pagina(data: bytes, giro="auto", detectar=None) -> tuple:
     """bytes de una imagen → (bytes PNG listos para el OCR, grados aplicados). giro: 'auto' o 0/90/180/270 (horario).
-    La orientación se detecta en la hoja COMPLETA (recortada se equivocaba en hojas con papeles mezclados) y luego se recortan los márgenes."""
+    La orientación se detecta en la hoja COMPLETA (recortada se equivocaba en hojas con papeles mezclados) y luego se recortan los márgenes.
+    `detectar(img) -> (giro, confianza, inclinación)` (M-25: motores.detectar_giro); sin él, Tesseract sin inclinación."""
     img = Image.open(io.BytesIO(data)).convert("RGB")
+    incl = 0.0
     if giro == "auto":
-        g, conf = giro_automatico(img); g = g if conf >= CONFIANZA_MIN else 0
+        g, conf, incl = (detectar or _tesseract)(img)
+        if conf < CONFIANZA_MIN: g, incl = 0, 0.0
     else:
         g = int(giro) % 360
-    if g: img = img.rotate(-g, expand=True)          # PIL gira en sentido antihorario: -g = horario
-    img = recortar(img)
+    img = recortar(enderezar(img, g, incl))
     b = io.BytesIO(); img.save(b, "PNG"); return b.getvalue(), g
 
 
@@ -182,11 +197,12 @@ def _por_columnas(tinta, esperados, masa=0.0, cantos=None):
     return cajas
 
 
-def separar(img: Image.Image, max_papeles: int = 8, esperados: int | None = None) -> list:
+def separar(img: Image.Image, max_papeles: int = 8, esperados: int | None = None, detectar=None) -> list:
     """Parte una hoja con VARIOS papeles (recibos lado a lado) en un recorte por papel, en orden de lectura.
     Si no encuentra separaciones claras devuelve la hoja entera.
     `esperados`: cuántos papeles trae la foto según su nombre («85297 al 85302» → 6). Con él se parte por columnas y los
-    huecos más anchos (T8b: de 2 % a 81 % de fotos de septiembre con la cuenta exacta); sin él, o si no sale, lo de siempre."""
+    huecos más anchos (T8b: de 2 % a 81 % de fotos de septiembre con la cuenta exacta); sin él, o si no sale, lo de siempre.
+    `detectar`: como en preparar_pagina; vota el giro de los papeles de lado."""
     f = 3
     g = np.asarray(img.convert("L").resize((max(1, img.width // f), max(1, img.height // f))), dtype=float)
     tinta = g < 165
@@ -211,7 +227,7 @@ def separar(img: Image.Image, max_papeles: int = 8, esperados: int | None = None
         buenas = [o for o in opciones if o[0] and o[1] >= 0.5 and o[2] >= 0.25]   # la cuenta (o una de más: Rappi), de pie, parejos
         if opciones:
             o = buenas[0] if buenas else max(opciones, key=lambda o: (o[0], o[2]))
-            return _recortes(img, o[3], tinta.shape[0], f, de_lado=o[4])
+            return _recortes(img, o[3], tinta.shape[0], f, de_lado=o[4], detectar=detectar)
     cajas = [c for c in _xy(tinta, 0, 0, tinta.shape[1], tinta.shape[0]) if tinta[c[1]:c[3], c[0]:c[2]].sum() >= max(150, 0.03 * total)]
     if len(cajas) >= 2:                                    # una caja mucho más ancha que las demás = recibos pegados: se corta en los «valles» de tinta
         ref = min(c[2] - c[0] for c in cajas); nuevas = []
@@ -230,14 +246,17 @@ def separar(img: Image.Image, max_papeles: int = 8, esperados: int | None = None
     return _recortes(img, cajas, tinta.shape[0], f)
 
 
-def _recortes(img, cajas, alto, f, de_lado=False) -> list:
+def _recortes(img, cajas, alto, f, de_lado=False, detectar=None) -> list:
     cajas = sorted(cajas, key=lambda c: (round(c[1] / (alto * 0.25)), c[0]))   # filas de arriba abajo, y de izquierda a derecha
     out = []
     for x0, y0, x1, y1 in cajas:
         r = img.crop((max(0, (x0 - 6) * f), max(0, (y0 - 6) * f), min(img.width, (x1 + 6) * f), min(img.height, (y1 + 6) * f)))
         out.append(recortar(r))
     if de_lado:                                          # M-11: papeles de lado que la hoja entera no giró: el giro que más papeles piden
-        votos = [g for g, c in map(giro_automatico, out) if c >= CONFIANZA_MIN and g in (90, 270)]
+        votos = [(g, i) for g, c, i in map(detectar or _tesseract, out) if c >= CONFIANZA_MIN and g in (90, 270)]
         if votos:
-            g = max(set(votos), key=votos.count); out = [r.rotate(-g, expand=True) for r in out]
+            giros = [v for v, _ in votos]; g = max(set(giros), key=giros.count)
+            incls = sorted(i for v, i in votos if v == g); incl = incls[len(incls) // 2]   # la mediana de los que ganaron
+            out = [enderezar(r, g, incl) for r in out]
+            if abs(incl) >= INCL_MIN: out = [recortar(r) for r in out]                       # quita las esquinas blancas del giro
     return out

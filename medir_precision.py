@@ -55,15 +55,18 @@ def catalogo_del_libro(libro: Path) -> dict:
     return catalogo.construir([d for v in lib.values() if isinstance(v, dict) for d in v.get("documentos", [])])
 
 
-def lector_completo(catalogo=None, leer_digitos=None, separar=None, preparar=None, hoja=None):
+def lector_completo(catalogo=None, leer_digitos=None, separar=None, preparar=None, hoja=None, detectar=None):
     """T16 · --completo: lee cada foto como la app (orientar → separar con esperados → relectura.leer_hoja con R3 y R6, sin carpeta
     de recortes). Devuelve (leer_hoja, leer_texto) para `ejecutar`: lo primero guarda los documentos y lo segundo los entrega;
-    un recibo «dudoso» se mide como dudoso (sus motivos pasan a `avisos`). Inyectables para probar sin fotos ni OCR."""
+    un recibo «dudoso» se mide como dudoso (sus motivos pasan a `avisos`). Inyectables para probar sin fotos ni OCR.
+    `detectar`: giro e inclinación de la hoja (M-25: motores.detectar_giro); sin él, Tesseract como en v1.6.0."""
+    from functools import partial
     from PIL import Image
     from ocr_module import orientacion, pdf as pdflib
     from parser_module.contable import relectura, leer_texto as parsear_texto
     from parser_module.contable.validar import numeros_de_nombre
-    separar = separar or orientacion.separar; preparar = preparar or orientacion.preparar_pagina; hoja = hoja or relectura.leer_hoja
+    separar = separar or partial(orientacion.separar, detectar=detectar); preparar = preparar or partial(orientacion.preparar_pagina, detectar=detectar)
+    hoja = hoja or relectura.leer_hoja
     ultimo = {}
 
     def leer(ruta: Path, pagina, motor):
@@ -188,7 +191,8 @@ def main():
     from ocr_module.preprocess import _realesrgan_exe
     if a.completo:
         from ocr_module import motores
-        motor = motor_relectura(get_engine(a.motor)); leer, parsear = lector_completo(catalogo_del_libro(DATOS / "libro.json"), motores.leer_digitos)
+        motor = motor_relectura(get_engine(a.motor)); leer, parsear = lector_completo(catalogo_del_libro(DATOS / "libro.json"), motores.leer_digitos,
+                                       detectar=motores.detectar_giro)
         inf = ejecutar(a.mes, Path(a.fotos), motor, leer, refrescar=a.refrescar, variante="completo", muestra=a.muestra, semilla=a.semilla,
                        peores=a.peores, leer_texto=parsear, reanudar=not a.de_cero)
         print(f"completo {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")

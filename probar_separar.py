@@ -60,6 +60,40 @@ solo = Image.new("RGB", (400, 1400), "white"); recibo(ImageDraw.Draw(solo), 20, 
 check(len(separar(solo)) == 1, "un solo recibo largo sin esperados: una pieza")
 check(len(separar(Image.new("RGB", (300, 300), "white"), esperados=4)) == 1, "hoja en blanco: la hoja entera")
 
+# M-25 T6 (ADR-018): con `detectar` (Indra) la hoja se gira y se endereza; la hoja derecha no se toca.
+import io
+import numpy as np
+
+def png_de(im): b = io.BytesIO(); im.save(b, "PNG"); return b.getvalue()
+
+def inclinacion(im):
+    """Ángulo (signo de PIL.rotate, paso 0,25°) que deja los renglones más horizontales: perfil de proyección."""
+    chica = im.convert("L"); chica.thumbnail((500, 500))
+    def nitidez(a): return np.asarray(chica.rotate(a, expand=True, fillcolor=255)).__lt__(128).sum(1).astype(float).var()
+    return max(np.arange(-3, 3.01, 0.25), key=nitidez)
+
+base = Image.new("RGB", (700, 1000), "white"); d = ImageDraw.Draw(base)
+recibo(d, 20, 20, 660, 960, 40); d.rectangle((40, 40, 200, 120), fill="black")    # marca arriba a la izquierda
+torcida = base.rotate(-8, expand=True, fillcolor="white").rotate(90, expand=True, fillcolor="white")   # de lado y 8° torcida
+pedidos = []
+def falso(im): pedidos.append(im.size); return 90, 1.0, 8.0
+png, g = preparar_pagina(png_de(torcida), detectar=falso)
+derecha = Image.open(io.BytesIO(png)).convert("L")
+check(g == 90 and len(pedidos) == 1, f"detectar se pide una vez sobre la hoja completa y da el giro (g={g})")
+check(derecha.height > derecha.width, f"girada 90° vuelve de pie ({derecha.size})")
+check(abs(inclinacion(derecha)) <= 1, f"inclinada 8° queda derecha (resta {inclinacion(derecha)}°)")
+a = np.asarray(derecha) < 128; h, w = a.shape
+check(a[:h // 4, :w // 3].mean() > 2 * a[3 * h // 4:, 2 * w // 3:].mean(), "la marca queda arriba a la izquierda (no 270 ni 180)")
+
+recta = png_de(base)
+check(preparar_pagina(recta, detectar=lambda im: (0, 1.0, 0.2))[0] == preparar_pagina(recta, detectar=lambda im: (0, 0.0, 0.0))[0],
+      "ADR-018: hoja derecha modificada (giro 0 e |incl| < 0,3° no se toca)")
+check(preparar_pagina(recta, 0, detectar=falso)[1] == 0 and len(pedidos) == 1, "giro a mano: no se pregunta a detectar")
+check(preparar_pagina(recta, detectar=lambda im: (90, 0.1, 0.0))[1] == 0, "confianza baja: no se gira (como con Tesseract)")
+
+p = separar(lado, esperados=6, detectar=lambda im: (90, 1.0, 0.0))
+check(len(p) == 6 and all(im.height > im.width for im in p), "de lado con detectar: los 6 papeles quedan de pie")
+
 # Las fotos reales de septiembre (si la carpeta está): ≥ 80 % con la cuenta exacta del nombre (T8b midió 35/43).
 raiz = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "data" / "SEPTIEMBRE"
 fotos = [(f, n) for f in sorted(raiz.glob("*/comandas/*.jpg")) if (n := numeros_de_nombre(f.stem)) and len(n) >= 2]
