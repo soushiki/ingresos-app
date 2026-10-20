@@ -5,7 +5,7 @@ goal: Que el día del libro cuadre con el cierre de caja: el total del cierre ma
 size: S      # dos reglas en asientos.py sobre datos que ya se leen (cruces, domicilios_pagados, puente 13809501, vales «pago domicilios»); sin pantallas ni datos nuevos
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # cuentas del PUC que ya usa la app; el criterio contable lo confirma el contador, no hay valores tributarios
-next: 7-release
+next: 8-maintain
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-19)
@@ -15,7 +15,7 @@ next: 7-release
 - [x] 4-plan
 - [x] 5-implement
 - [x] 6-test
-- [ ] 7-release
+- [x] 7-release
 - [ ] 8-maintain
 
 (Mark skipped stages `- [~]`.)
@@ -46,3 +46,4 @@ Sirve un mes, pero son 30 ajustes por mes y el pasivo 2815 sigue mal en cada exp
 2026-10-19 | 5-implement | T4 hecho (Sonnet): sept. 2815 baja ≈ 21 % (≈ lo de los 23 días sin cierre + ≈ 3 % de residuo en días con cierre, sobre todo 20 y 30-sep); R1 en 5 días; 0 avisos papeles > cierre; 30/30 cuadran → 6-test
 2026-10-19 | 6-test | PASA: R1–R3 y aceptación a–e cubiertas, 18/18 suites verdes; revisión sin bloqueantes (2 notas bajas → M-17); smoke de 4 pasos pendiente del usuario → 7-release
 2026-10-19 | 7-release | v1.3.0 preparada: VERSION, CHANGELOG, 07-release.md (runbook + rollback con libro.antes-v1.3.0.json); suite 18/18, pre-flight OK; commit local. Falta: decidir cifras reales en docs/commit T4 (repo público), luego tag + push y smoke del usuario
+2026-10-19 | 7-release | v1.3.0 publicada (tag + push main). Cifras reales → 01e-cifras-cierre.md (ignorado), commits T1–T4 reescritos sin cifras antes del push; respaldo local backup/pre-scrub-v1.3.0. Falta smoke del usuario → 8-maintain

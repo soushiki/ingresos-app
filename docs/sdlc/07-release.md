@@ -41,7 +41,7 @@ la pestaña ③ muestra las mismas semanas que antes de actualizar; desde 1.1.0,
 **Repo público**: nada con cifras reales ni datos del negocio (01b/01c, nombre/dirección del local) entra a `main` ni a `origin`.
 
 ## Releases
-2026-10-19 | v1.3.0 | Preparada (commit local, sin tag ni push). Pre-flight: suite 18/18, sin claves en 86e816d..HEAD, debug off, solo 127.0.0.1, sin migración de soporte.db. Bloqueo: los docs del ciclo (04-plan, 06-test-report, STATE, 02) y el commit T4 traen cifras reales de septiembre → decidir antes del push. Smoke (06) pendiente del usuario.
+2026-10-19 | v1.3.0 | **Publicada**: tag v1.3.0, push main + tags. Pre-flight OK: suite 18/18, sin claves en v1.2.0..HEAD, debug off, solo 127.0.0.1, sin migración de soporte.db. Cifras reales del ciclo movidas a `01e-cifras-cierre.md` (ignorado) e historial sin publicar reescrito antes del push. Falta (usuario): smoke de 06 y actualizar los PC (runbook).
 2026-10-19 | v1.2.0 | **Publicada**: tag v1.2.0, push main + tags (88e61a5..94b7173). Pre-flight OK: suite 18/18, sin claves ni nombre/dirección del local en v1.1.0..HEAD, debug off, solo 127.0.0.1, sin migración de soporte.db. Falta (usuario): actualizar los PC (runbook) y abrir ④ → «Faltan».
 2026-10-18 | v1.1.0 | Publicada (ver archive/precision-ocr/07-release.md).
 2026-10-17 | v1.0.1 | Publicada (M-1..M-3).
