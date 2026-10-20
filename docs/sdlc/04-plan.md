@@ -35,12 +35,13 @@ Formato real del papel (OCR de `2/comandas/85319-318-rappi.jpg#1`, hoy entra com
   — done when: prueba con libro temporal: primera escritura crea el respaldo idéntico, la segunda no lo toca; la copia de v1.3.0 sigue igual.
   — files: `app.py` (`_guardar_libro`), `probar_contable.py`
   — hecho: constante `VERSION_RESPALDO = "1.4.0"` en app.py (respaldo `libro.antes-v1.4.0.json`); probar_contable +1 check (copia v1.3.0 intacta); suites verdes
-- [ ] T4 (S) Medir septiembre — aceptación — model: Sonnet
+- [x] T4 (S) Medir septiembre — aceptación — model: Sonnet
   — script de una vez (scratch, no en el repo) sobre una COPIA de `datos/libro.json`: re-leer los papeles de Rappi desde su texto
   guardado, lista papel por papel (fecha, ID, valor, aviso) y suma 13452501 de sept. contra el manual (≈ [01f]); explicar la diferencia.
   Las ventas que no son de Rappi: mismas filas que antes (diff del libro sin los papeles Rappi = vacío).
   — done when: tabla en `docs/sdlc/06-test-report.md` (≤ 40 líneas, cifras sin datos sensibles) + suites verdes.
   — files: ninguno del código; `docs/sdlc/06-test-report.md`
+  — hecho: 21 papeles (18 ID) en 13 días; 13452501 sept = [01f] vs ≈ [01f] manual (faltan papeles de 17 días, no es lectura); no-Rappi igual salvo ajuste al cierre 13809501 (4 días) y 28150502 del 11-sep; suites verdes.
 
 Riesgo vivo: la foto mezcla comandas y papel Rappi en una sola imagen (`85319-318-rappi.jpg`); `orientacion.py:162` ya tolera
 una columna de más. Si el OCR parte mal el papel, T1 lo marca con aviso; no se arregla el corte en este ciclo.
