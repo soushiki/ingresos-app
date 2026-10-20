@@ -29,11 +29,12 @@ Formato real del papel (OCR de `2/comandas/85319-318-rappi.jpg#1`, hoy entra com
   mismo ID dos veces → una sola fila 13452501 y aviso de duplicado. probar_relectura / probar_faltantes / probar_validar verdes.
   — files: `parser_module/contable/asientos.py`, `parser_module/contable/relectura.py`, `probar_contable.py`
   — hecho: `_es_comanda` en asientos (faltantes, fuera_de_secuencia, aviso de secuencia) y relectura (_nums, sin número); mismo ID de Rappi = duplicado (contar=False, «duplicado de»); probar_contable +2 checks; suites verdes
-- [ ] T3 (S) Respaldo antes de recalcular — R3 — model: Sonnet
+- [x] T3 (S) Respaldo antes de recalcular — R3 — model: Sonnet
   — `_guardar_libro` copia a `datos/libro.antes-v1.4.0.json` (no a la de v1.3.0): sacar la versión a una constante (o leer `VERSION`)
   para no tocar el código en cada ciclo. Una sola vez, no se pisa.
   — done when: prueba con libro temporal: primera escritura crea el respaldo idéntico, la segunda no lo toca; la copia de v1.3.0 sigue igual.
   — files: `app.py` (`_guardar_libro`), `probar_contable.py`
+  — hecho: constante `VERSION_RESPALDO = "1.4.0"` en app.py (respaldo `libro.antes-v1.4.0.json`); probar_contable +1 check (copia v1.3.0 intacta); suites verdes
 - [ ] T4 (S) Medir septiembre — aceptación — model: Sonnet
   — script de una vez (scratch, no en el repo) sobre una COPIA de `datos/libro.json`: re-leer los papeles de Rappi desde su texto
   guardado, lista papel por papel (fecha, ID, valor, aviso) y suma 13452501 de sept. contra el manual (≈ [01f]); explicar la diferencia.

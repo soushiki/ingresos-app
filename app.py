@@ -204,8 +204,11 @@ def _leer_libro() -> dict:
     except (FileNotFoundError, json.JSONDecodeError): return {}
 
 
+VERSION_RESPALDO = "1.4.0"   # cambiar en cada ciclo que recalcula el libro: el respaldo es uno por versión
+
+
 def _guardar_libro(d: dict):
-    resp = RUTA_LIBRO.with_name("libro.antes-v1.3.0.json")   # R3: copia única del libro tal como estaba antes de las reglas nuevas; no se pisa
+    resp = RUTA_LIBRO.with_name(f"libro.antes-v{VERSION_RESPALDO}.json")   # R3: copia única del libro tal como estaba antes de las reglas nuevas; no se pisa
     if RUTA_LIBRO.exists() and not resp.exists(): shutil.copy2(RUTA_LIBRO, resp)
     tmp = RUTA_LIBRO.with_suffix(".tmp"); tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_LIBRO)
 

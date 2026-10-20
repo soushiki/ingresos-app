@@ -268,12 +268,14 @@ _orig = {"2026-09-16": dict(fecha="2026-09-16", documentos=[dict(d) for d in vv[
 _sin = construir("2026-09-16", [dict(d) for d in vv[:2]], None, None, None)
 _orig["2026-09-16"].update(debito=_sin["debito"], credito=_sin["credito"])   # confirmado antes de R1: sin ajuste
 appmod.RUTA_LIBRO.write_text(json.dumps(_orig), encoding="utf8"); _txt0 = appmod.RUTA_LIBRO.read_text(encoding="utf8")
-_bk = _t3 / "libro.antes-v1.3.0.json"
+_bk = _t3 / f"libro.antes-v{appmod.VERSION_RESPALDO}.json"
+_bk13 = _t3 / "libro.antes-v1.3.0.json"; _bk13.write_text("v130", encoding="utf8")   # el respaldo de v1.3.0 ya existente no se toca
 _nuevo = dict(_orig); _nuevo["2026-09-17"] = dict(_orig["2026-09-16"], fecha="2026-09-17")
 appmod._guardar_libro(_nuevo)
 chk(_bk.exists() and _bk.read_text(encoding="utf8") == _txt0, "R3: la primera escritura crea el respaldo idéntico al libro original")
 _bk.write_text("marca", encoding="utf8"); appmod._guardar_libro(_orig)
 chk(_bk.read_text(encoding="utf8") == "marca", "R3: la segunda escritura no toca el respaldo")
+chk(appmod.VERSION_RESPALDO == "1.4.0" and _bk13.read_text(encoding="utf8") == "v130", "R3 (v1.4.0): respaldo de la versión nueva; la copia de v1.3.0 sigue igual")
 appmod._guardar_libro(_orig)
 _cam = [a for a in avisos_export() if "cambió" in a]
 chk(len(_cam) == 1 and "2026-09-16" in _cam[0], f"R3: día con cierre > papeles confirmado antes → el Excel lo lista en «cambió desde que se confirmó»: {_cam}")
