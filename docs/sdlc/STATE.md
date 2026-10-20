@@ -5,8 +5,8 @@ goal: Leer el extracto del banco (Excel/CSV descargado) y que cada línea quede 
 size: M      # importador nuevo + reglas de clasificación + asientos con cuentas PUC nuevas + pantalla de revisión; días, no horas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
-next: 5-implement
-current task: T13 (aceptación septiembre real)
+next: 6-test
+current task: — (it.3 completa)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -61,3 +61,4 @@ current task: T13 (aceptación septiembre real)
 2026-10-20 | 5-implement | FIX-3 factura no se enlaza a 2 líneas de días distintos (`usadas` en clasificar, _facturas_usadas en import y recálculo, asignar ya enlazada → 400) +6 checks; 20 suites verdes; 877ce4c → T11
 2026-10-20 | 5-implement | T11 GET /api/contable/extracto/totales?mes= (por concepto, total, dif_por_medio; mes inválido → 400) + tarjeta «Totales del mes» en ⑤; +9 checks; sept. real = MOVIMIENTOS salvo las 2 excepciones de T1, total = suma de Valor; 375 px sin scroll lateral; 20 suites verdes → T12
 2026-10-20 | 5-implement | T12 DELETE /api/contable/extracto/importacion/<imp> (404 si no existe; recalcula; borra solo días creados y vacíos vía `dias_creados`) + GET .../importaciones + tarjeta «Importaciones» con «Deshacer»; +9 checks (construir por día igual a antes); 375 px sin scroll lateral; 20 suites verdes; 335492b → T13
+2026-10-20 | 5-implement | T13 aceptación sept. real sobre copia: 1–23 → 513 nuevas · 94 por revisar; «1–30» = mismo archivo (solo 1–23) → 0 nuevas, idempotente; 3 revisadas → 91; 30 días cuadran, 722 filas = MOVIMIENTOS, 0 recaudos dobles; datos reales intactos (sha256); 20 suites verdes; iteración 3 completa → next 6-test
