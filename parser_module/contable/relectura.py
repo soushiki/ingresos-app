@@ -103,11 +103,6 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
     return doc
 
 
-def _motivos_rappi(d) -> list:
-    """Papel de Rappi (FIX-1): sin hora ni mesa de POS; solo exige el ID y el valor."""
-    return (["Falta el ID de Rappi"] if not d.get("numero") else []) + (["Falta el valor de Rappi"] if not d.get("valor") else [])
-
-
 def _v0(motor, img, reloj):
     t = reloj()
     with MOTOR_LOCK: texto = motor(img)
@@ -187,7 +182,7 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
         ventas = [d for d in docs if d["tipo"] == "venta"]
         nombre_rec = recortes.guardar(img, carpeta) if carpeta is not None and ventas else None
         for d in ventas:
-            d["motivos"] = _motivos_rappi(d) if d.get("rappi") else validar(d, ctx); d["estado"] = "dudoso" if d["motivos"] else "validado"
+            d["motivos"] = validar(d, ctx); d["estado"] = "dudoso" if d["motivos"] else "validado"
             if nombre_rec: d["recorte"] = nombre_rec
         return docs, texto
 

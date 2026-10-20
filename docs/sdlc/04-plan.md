@@ -53,10 +53,11 @@ Formato real del papel (OCR de `2/comandas/85319-318-rappi.jpg#1`, hoy entra com
   medio Rappi, estado «validado». Suites verdes.
   — files: `parser_module/contable/relectura.py`, `probar_relectura.py`
   — hecho: `un_trozo` ya no manda el papel Rappi a `leer_recibo`; lo valida `_motivos_rappi` (solo ID y valor, sin hora/mesa); probar_relectura +2 checks; 18/18 suites verdes.
-- [ ] FIX-2 (S) `validar` marca «dudoso» todo papel de Rappi (Falta la hora / Falta la mesa) — R1 — model: Sonnet
+- [x] FIX-2 (S) `validar` marca «dudoso» todo papel de Rappi (Falta la hora / Falta la mesa) — R1 — model: Sonnet
   — `validar.validar` (l. 165) trata el papel como comanda del POS. Para `rappi=True`: no pedir mesa; hora = la de «Fecha orden»
   (parse_rappi puede llenarla) o no pedirla. Sigue pidiendo ID y valor.
   — done when: probar_validar +1 check: papel Rappi completo → `validar` = []; sin ID → «Falta el número de recibo». Suites verdes.
+  — hecho: `validar` con `rappi=True` solo pide ID y valor (sin hora/mesa/aritmética); `relectura._motivos_rappi` borrado, usa `validar` (una sola regla); probar_validar +3 checks.
   — files: `parser_module/contable/validar.py`, `parser_module/contable/documentos.py` (hora), `probar_validar.py`
 
 Riesgo vivo: la foto mezcla comandas y papel Rappi en una sola imagen (`85319-318-rappi.jpg`); `orientacion.py:162` ya tolera

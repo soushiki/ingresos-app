@@ -36,6 +36,10 @@ chk(validar(doc(subtotal=50050), {"tolerancia": 100}) == [], "la tolerancia de c
 chk(validar(doc(subtotal=50050)) != [], "tolerancia 0 por defecto")
 chk(validar(doc(cortesia=45000, consumo=0, subtotal=45000, pagado=0, cambio=0, efectivo=0)) == [], "cortesía: no se exige aritmética")
 chk(validar(doc(tipo="gasto_caja", numero="", hora="")) == [], "solo valida ventas")
+rp = dict(tipo="venta", rappi=True, numero="1000000001", hora="", detalle="Pedido Rappi", medio="Rappi", consumo=25000, valor=25000, transf=25000)
+chk(validar(rp) == [], "FIX-2: papel Rappi completo (sin hora ni mesa) = sin motivos")
+chk(validar({**rp, "numero": ""}) == ["Falta el número de recibo"], "FIX-2: papel Rappi sin ID → Falta el número de recibo")
+chk(validar({**rp, "valor": 0, "consumo": 0}) == ["Falta el valor de Rappi"], "FIX-2: papel Rappi sin valor → Falta el valor de Rappi")
 
 # T8 · R5: el nombre de la foto dice qué recibos trae; los vecinos no deben tener los mismos montos con otra mesa u hora
 from parser_module.contable.validar import numeros_de_nombre, rango_de_nombre, faltantes, cruces, FALTA

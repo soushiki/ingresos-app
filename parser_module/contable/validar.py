@@ -165,6 +165,8 @@ def validar(doc: dict, ctx: dict | None = None) -> list:
     if doc.get("tipo", "venta") != "venta": return m
     g = lambda k: doc.get(k) or 0
     if not doc.get("numero"): m.append("Falta el número de recibo")
+    if doc.get("rappi"):   # FIX-2: papel de Rappi, sin hora ni mesa de POS ni aritmética de caja; solo ID y valor
+        return m + ([] if doc.get("valor") else ["Falta el valor de Rappi"])
     if not doc.get("hora"): m.append("Falta la hora")
     det = unicodedata.normalize("NFD", (doc.get("detalle") or "").lower()).encode("ascii", "ignore").decode()
     if "mesa" not in det and not g("domicilio") > 0 and "domicilio" not in det and "llevar" not in det: m.append("Falta la mesa")
