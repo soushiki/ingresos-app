@@ -278,4 +278,26 @@ appmod._guardar_libro(_orig)
 _cam = [a for a in avisos_export() if "cambió" in a]
 chk(len(_cam) == 1 and "2026-09-16" in _cam[0], f"R3: día con cierre > papeles confirmado antes → el Excel lo lista en «cambió desde que se confirmó»: {_cam}")
 appmod.RUTA_LIBRO = _ant
+# --- Rappi (01c #6) T1: el papel de Rappi trae ID largo y «Total sugerido a facturar»
+PAPEL_RAPPI = """Rappi
+Juan Perez
+ID 1000000001
+Restaurante: Su Restaurante
+Plataforma: WEB
+Fecha orden: 2026-09-02 21:00
+1 Bandeja paisa | 1 | $25.000
+Subtotal $25.000
+Total sugerido a facturar $25.000
+VERIFICA LOS PRODUCTOS
+Juan Perez
+ID 1000000001"""
+_rp = leer_texto(PAPEL_RAPPI, "comandas")[0]
+chk(_rp["tipo"] == "venta" and _rp.get("rappi") and _rp["numero"] == "1000000001" and _rp["valor"] == 25000 and _rp["consumo"] == 25000 and _rp["medio"] == "Rappi" and _rp["tercero"] == "Rappi" and not _rp["avisos"],
+    f"Rappi: papel real -> ID 1000000001, valor 25.000, medio Rappi: {_rp['numero']} {_rp['valor']} {_rp['medio']} {_rp['avisos']}")
+_rr = construir("2026-09-17", [_rp])
+_f = [f for f in _rr["filas"] if f["codigo"] == "13452501"]
+chk(len(_f) == 1 and _f[0]["debito"] == 25000 and _f[0]["tercero"] == "Rappi" and _f[0]["medio"] == "App" and _rr["debito"] == _rr["credito"],
+    f"Rappi: construir -> 13452501 debito 25.000 tercero Rappi medio App, debito = credito: {[(f['codigo'], f['debito'], f['tercero'], f['medio']) for f in _rr['filas']]}")
+_rs = leer_texto(PAPEL_RAPPI.replace("Total sugerido a facturar $25.000", "").replace("Subtotal $25.000", ""), "comandas")[0]
+chk(_rs["valor"] == 0 and any("total de Rappi" in a for a in _rs["avisos"]), f"Rappi: papel sin total -> valor 0 + aviso: {_rs['valor']} {_rs['avisos']}")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

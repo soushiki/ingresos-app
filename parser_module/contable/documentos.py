@@ -46,7 +46,8 @@ def _valor_linea(lineas, patron, excluir=None, ultimo=False):
 
 
 CATEGORIA = {"cierre": "cierre", "venta": "comandas", "gasto_caja": "gastos", "caja_menor_manuscrito": "gastos", "factura": "gastos"}
-FAMILIA = {"cierre": ("cierre",), "comandas": ("venta",), "gastos": ("gasto_caja", "caja_menor_manuscrito", "factura")}
+FAMILIA = {"cierre": ("cierre",), "comandas": ("venta", "rappi"), "gastos": ("gasto_caja", "caja_menor_manuscrito", "factura")}
+_RAPPI_ID = r"\bid\s*:?\s*\d{8,}"
 
 
 def detectar_tipo(texto: str) -> str:
@@ -54,6 +55,7 @@ def detectar_tipo(texto: str) -> str:
     if "cierre de caja" in n and ("resumido" in n or "valores $" in n or "base de caja" in n or "efectivo en caja" in n or "ventas por" in n): return "cierre"
     if "recibo de caja menor" in n and "gasto de caja" not in n: return "caja_menor_manuscrito"
     if "gasto de caja" in n: return "gasto_caja"
+    if "rappi" in n and ("sugerido a facturar" in n or (re.search(_RAPPI_ID, n) and ("plataforma" in n or "fecha orden" in n))): return "rappi"
     if "total a pagar" in n or re.search(r"recibo\s*#", n) or "paga con efectivo" in n or "mesero" in n: return "venta"
     if "factura" in n or "subtotal" in n or re.search(r"\btotal\b", n): return "factura"
     return "otro"
@@ -148,6 +150,23 @@ def parse_venta(texto):
     pagos, esperado = d["efectivo"] + d["tarjeta"] + d["transf"] + d["credito"], d["consumo"] + d["domicilio"] + d["propina"]
     if not cortesia and d["consumo"] and pagos != esperado:
         d["avisos"].append(f"Los pagos ({pagos:,}) no suman consumo + domicilio + propina ({esperado:,})".replace(",", "."))
+    return d
+
+
+def parse_rappi(texto):
+    """Papel que imprime Rappi (ID largo + «Total sugerido a facturar»): una venta cobrada por la app, que Rappi paga después (13452501).
+    Nunca se inventa el valor: sin «Total sugerido» se usa «Subtotal» con aviso; sin ninguno, 0 + aviso."""
+    d = _base("venta", texto); L = _lineas(texto); n = norm(texto)
+    m = re.search(_RAPPI_ID.replace(r"\d{8,}", r"(\d{8,})"), n); d["numero"] = m.group(1) if m else ""
+    d["fecha"] = extraer_fecha(n)[0] or ""   # la «Fecha orden» impresa no manda: la carpeta la reemplaza (aplicar_fecha_carpeta)
+    v = _valor_linea(L, r"sugerido a facturar")
+    if not v:
+        v = _valor_linea(L, r"^\W*subtotal")
+        d["avisos"].append("Se usó el subtotal de Rappi (no se leyó el total sugerido a facturar)" if v else "No se leyó el total de Rappi")
+    if not d["numero"]: d["avisos"].append("No se leyó el ID de Rappi")
+    d["rappi"] = True; d["consumo"] = d["valor"] = d["transf"] = v
+    d["medio"] = d["medio_transf"] = "Rappi"; d["tercero"] = "Rappi"; d["detalle"] = "Pedido Rappi"
+    d["items"] = _items(L)
     return d
 
 
@@ -267,7 +286,7 @@ def parse_cierre(texto):
     return d
 
 
-PARSERS = {"cierre": parse_cierre, "venta": parse_venta, "gasto_caja": parse_gasto, "caja_menor_manuscrito": parse_manuscrito, "factura": parse_factura}
+PARSERS = {"cierre": parse_cierre, "venta": parse_venta, "rappi": parse_rappi, "gasto_caja": parse_gasto, "caja_menor_manuscrito": parse_manuscrito, "factura": parse_factura}
 
 # M-10: cada escaneo trae papeles de una sola fecha y su carpeta la dice (manda sobre la impresa). «20 SEPT 26» trae la fecha completa;
 # una carpeta de solo el día («SEPTIEMBRE/6/») toma el mes de la carpeta de arriba y el año más común de las fechas impresas (usuario,
@@ -320,7 +339,7 @@ def leer_texto(texto: str, categoria: str = "") -> list:
             # el cierre se imprime en varias hojas y las intermedias no traen el membrete (hablan de meseros, ventas por hora…): lo que dices manda
             forzado = FAMILIA[categoria][0]
             if t in ("gasto_caja", "caja_menor_manuscrito"): aviso = f"Lo subiste como «{categoria}» pero parece {t.replace('_', ' ')}: revisa el tipo"
-            t = forzado
+            if not (categoria == "comandas" and t == "rappi"): t = forzado   # el papel de Rappi es de la familia de comandas: no se fuerza a venta
         elif categoria and t != "otro" and t not in FAMILIA.get(categoria, ()):
             aviso = f"Lo subiste como «{categoria}» pero parece {t.replace('_', ' ')}: se dejó como lo que parece"
         elif categoria and t == "otro": t = FAMILIA["gastos"][-1]

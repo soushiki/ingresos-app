@@ -11,7 +11,7 @@ Formato real del papel (OCR de `2/comandas/85319-318-rappi.jpg#1`, hoy entra com
 `Subtotal $25.000` · `Total sugerido a facturar $25.000` · (se repite nombre + ID al pie, «VERIFICA LOS PRODUCTOS»).
 
 ## Iteración 1 — los papeles de Rappi entran a 13452501 con su ID y su valor
-- [ ] T1 (M) Leer el papel de Rappi — R1, aceptación (fila 17-09) — model: Sonnet
+- [x] T1 (M) Leer el papel de Rappi — R1, aceptación (fila 17-09) — model: Sonnet
   — `detectar_tipo`: nuevo tipo «rappi» si el texto trae «rappi» y («sugerido a facturar» o «ID \d{8,}» junto a «plataforma»/«fecha orden»);
   va antes de la regla «venta». En `leer_texto`, con categoría «comandas» el tipo «rappi» NO se fuerza a venta (es de la misma familia).
   `parse_rappi` → doc `tipo="venta"`, `rappi=True`, `numero` = ID, `consumo`/`valor`/`transf` = «Total sugerido a facturar»
@@ -20,6 +20,7 @@ Formato real del papel (OCR de `2/comandas/85319-318-rappi.jpg#1`, hoy entra com
   — done when: probar_contable +3 checks: texto del papel real → numero 1000000001, valor 25.000, medio Rappi; `construir` de un día
   con ese papel → fila 13452501 débito 25.000 tercero Rappi medio App, débito = crédito; papel sin total → valor 0 + aviso. Suites verdes.
   — files: `parser_module/contable/documentos.py` (detectar_tipo, leer_texto, PARSERS, FAMILIA), `probar_contable.py`
+  — hecho: tipo «rappi» (detectar_tipo, parse_rappi, FAMILIA comandas), no se fuerza a venta en «comandas»; probar_contable +3 checks; suites verdes
 - [ ] T2 (S) ID de Rappi fuera de la numeración + duplicado — R1, R2 — model: Sonnet
   — las comandas con `rappi=True` no entran a los huecos/rangos de comandas (`asientos.py:89,96,426`, `relectura.py:121,200`):
   un helper `_es_comanda(d)` en vez de repetir el filtro. El duplicado por número (`asientos.py:160`) ya cubre «mismo ID = 1 venta»;
