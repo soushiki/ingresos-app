@@ -15,7 +15,7 @@ current task: —
 - [~] 3-design       (S)
 - [x] 4-plan         (T1–T4, 1 iteración ≈ 4–5 h)
 - [x] 5-implement
-- [ ] 6-test
+- [~] 6-test         (1.ª pasada: FIX-1)
 - [ ] 7-release
 - [ ] 8-maintain     (chequeo mensual 2026-11-17)
 
@@ -40,3 +40,5 @@ current task: —
 2026-10-20 | 5-implement | T2 hecho: medio canónico en DATOS OCR/libro, sin caja→vacío, medio_detalle (+columna «Medio según el papel» en exportar, aprobada), probar_medios 65 checks, 19 suites verdes → T3
 2026-10-20 | 5-implement | T3 hecho: factura Mixto → medio del mayor pago (detalle Mixto, aviso); app y contable.html con los 8 medios; Nequi manual → Transferencia; 19 suites verdes → T4
 2026-10-20 | 5-implement | T4 hecho: fixture libro viejo (Nequi/Datáfono/Mixto/sin medio) → solo los 8 o vacío; septiembre en memoria: 6 medios (Efectivo, Transferencia, Tarjeta, QR, Bre-B, Crédito personal) + vacío; 19 suites verdes → 6-test
+2026-10-20 | 6-test | 1.ª pasada: 19/19 suites verdes, R1–R4 cubiertos; revisión: FIX-1 (descripción de recaudos perdió «Ordenes:», asientos.py:368) → 5-implement
+2026-10-20 | 5-implement | FIX-1 hecho: paréntesis en desc de recaudos (asientos.py:368), check nuevo en probar_medios (banco/Rappi con «· Ordenes:»; falla sin el fix), 19 suites verdes → 6-test (2.ª pasada)

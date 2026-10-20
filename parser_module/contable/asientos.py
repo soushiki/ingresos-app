@@ -365,7 +365,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
     rep = cfg["reporta_banco"]; jg = []
     for (cod, ter, medio, detalle), ps in grupos.items():
         ords = "Ordenes: " + abreviar_recibos(nums(ps))
-        desc = RECAUDO_DESC.get(detalle) or RECAUDO_DESC.get(medio) or f"Recaudos por {detalle or medio}" + (" · " + ords if ords != "Ordenes: " else "")
+        desc = (RECAUDO_DESC.get(detalle) or RECAUDO_DESC.get(medio) or f"Recaudos por {detalle or medio}") + (" · " + ords if ords != "Ordenes: " else "")
         jg.append(fila(cod, ter, desc, deb=suma(ps), reporta=rep, medio=medio, grupo="venta", docs=ids(ps), fx=S(bloque="venta", cuenta=cod, tercero=ter, medio=medio, medio_detalle=detalle)))
     if partes:
         pro_e, dom_e = suma(partes, "propina"), suma(partes, "domicilio")

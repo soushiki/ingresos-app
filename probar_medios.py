@@ -66,7 +66,10 @@ d_nq = [f for f in filas if f["codigo"] == "11200501" and f["debito"] and f["med
 chk(len(d_nq) == 2 and {f["descripcion"].split(" · ")[0] for f in d_nq} == {"Recaudos a través de Transferencia Nequi", "Recaudos por transferencias"},
     f"Nequi no se junta con Transferencia: {[f['descripcion'] for f in d_nq]}")
 chk(rr["diferencia"] == 0, "el día cuadra")
-rb = construir("2026-09-16", [], {"nequi": 1000, "transferencias": 2000, "llave": 500})
+rec = [f for f in filas if f["codigo"] in ("11200501", "13452501") and f["debito"] and f["descripcion"].startswith(("Recaudos", "Ventas por"))]
+chk(any(f["codigo"] == "13452501" for f in rec) and all("· Ordenes: 9100" in f["descripcion"] for f in rec),
+    f"recaudos de banco y Rappi llevan «· Ordenes: …»: {[f['descripcion'] for f in rec]}")
+rb =construir("2026-09-16", [], {"nequi": 1000, "transferencias": 2000, "llave": 500})
 eb = {x["medio_detalle"]: (x["medio"], x["detalle"]) for x in rb["datos"] if x["tipo"] == "extracto"}
 chk(eb.get("Nequi") == ("Transferencia", "Recaudos a través de Transferencia Nequi") and eb.get("Bre-B", ("",))[0] == "Bre-B", f"extracto: {eb}")
 
