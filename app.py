@@ -204,7 +204,7 @@ def _leer_libro() -> dict:
     except (FileNotFoundError, json.JSONDecodeError): return {}
 
 
-VERSION_RESPALDO = "1.4.0"   # cambiar en cada ciclo que recalcula el libro: el respaldo es uno por versión
+VERSION_RESPALDO = "1.5.0"   # cambiar en cada ciclo que recalcula el libro: el respaldo es uno por versión
 
 
 def _guardar_libro(d: dict):

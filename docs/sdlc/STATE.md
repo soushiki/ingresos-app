@@ -5,7 +5,7 @@ goal: Que todo asiento del libro y del Excel use un solo vocabulario de medio de
 size: S      # la columna medio ya existe; es normalizar valores (lectura, libro, Excel) + vaciar en asientos sin caja; sin pantallas nuevas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # etiqueta interna; no cambia cuentas del PUC ni valores tributarios
-next: 6-test
+next: 8-maintain
 current task: —
 
 ## Stages
@@ -15,8 +15,8 @@ current task: —
 - [~] 3-design       (S)
 - [x] 4-plan         (T1–T4, 1 iteración ≈ 4–5 h)
 - [x] 5-implement
-- [~] 6-test         (1.ª pasada: FIX-1)
-- [ ] 7-release
+- [x] 6-test         (2.ª pasada: verde; smoke manual 1–3 del usuario pendiente)
+- [x] 7-release      (v1.5.0, tag local; push pendiente)
 - [ ] 8-maintain     (chequeo mensual 2026-11-17)
 
 ## Ciclos anteriores
@@ -25,6 +25,7 @@ current task: —
 
 ## Pendientes
 - (hecho 2026-10-19) push de main + tag v1.4.0.
+- push de main + tag v1.5.0 (pendiente de confirmación).
 - Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC, smoke de v1.3.x.
 - Candidatos a ciclo: #5 extracto bancario (M), M-16 lector por línea (M).
 
@@ -42,3 +43,5 @@ current task: —
 2026-10-20 | 5-implement | T4 hecho: fixture libro viejo (Nequi/Datáfono/Mixto/sin medio) → solo los 8 o vacío; septiembre en memoria: 6 medios (Efectivo, Transferencia, Tarjeta, QR, Bre-B, Crédito personal) + vacío; 19 suites verdes → 6-test
 2026-10-20 | 6-test | 1.ª pasada: 19/19 suites verdes, R1–R4 cubiertos; revisión: FIX-1 (descripción de recaudos perdió «Ordenes:», asientos.py:368) → 5-implement
 2026-10-20 | 5-implement | FIX-1 hecho: paréntesis en desc de recaudos (asientos.py:368), check nuevo en probar_medios (banco/Rappi con «· Ordenes:»; falla sin el fix), 19 suites verdes → 6-test (2.ª pasada)
+2026-10-20 | 6-test | 2.ª pasada: 19/19 verdes, FIX-1 verificado (recaudos banco/Rappi con «· Ordenes:»), R1–R4 cubiertos; smoke manual al usuario → 7-release
+2026-10-20 | 7-release | v1.5.0: VERSION_RESPALDO 1.5.0, CHANGELOG, 07-release (runbook + rollback 1.5.0), suite 19/19, pre-flight OK, tag local; push pendiente → 8-maintain

@@ -2,6 +2,25 @@
 
 ## [Sin publicar]
 
+## [1.5.0] — 2026-10-20
+Medio de pago: el libro y el Excel usan un solo vocabulario de 8 medios (Efectivo, Transferencia, Bre-B, QR, PSE, Tarjeta, Crédito personal, App).
+
+### Lectura
+- Un solo mapa (`medio_canonico`, en `normalizacion.json`): Nequi/Daviplata/transferencia/consignación → Transferencia; Datáfono/Visa/débito/crédito con tarjeta → Tarjeta; Rappi → App; llave → Bre-B. Un medio desconocido o «(sin medio)» queda vacío con aviso, nunca inventado.
+- El texto del papel se guarda aparte (`medio_detalle`): las descripciones de recaudo siguen diciendo «Nequi»/«Daviplata».
+
+### Asientos
+- Las filas que no son de caja (2815 propinas/domicilios, puentes 13809501/51959501, «Total vendido» del cierre, ajustes) quedan con medio vacío, como el manual.
+- Venta mixta sigue repartida por medio; ninguna fila dice «Mixto». Factura de gasto «Mixto» → medio del mayor pago, con aviso «revisa el medio».
+- Los recaudos de banco/Rappi conservan «· Ordenes: …» en la descripción.
+
+### App y Excel
+- Las listas de medio de la app (factura manual, ④ Revisión) muestran los 8; una factura con «Nequi» se guarda como Transferencia.
+- DATOS OCR trae la columna nueva «Medio según el papel» (al final).
+
+### Datos
+- Sin migración: el libro viejo sale con los 8 medios al recalcular. La primera vez que se guarda con esta versión se copia a `datos/libro.antes-v1.5.0.json`.
+
 ## [1.4.0] — 2026-10-19
 Rappi: cada papel de Rappi entra al libro como venta por cobrar a Rappi, con su ID y su valor.
 
