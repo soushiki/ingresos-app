@@ -16,10 +16,11 @@ next: 8-maintain
 - Siguen en su sitio: `01b`, `01c` (insumo de #5/#8), `01d`, `01e`, `01f` (ignorados), `08-maintenance.md`, `adr/`.
 
 ## Pendientes
-- Push de main + tag v1.4.0 (10 commits; antes no había red).
+- (hecho 2026-10-19) push de main + tag v1.4.0.
 - Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC, smoke de v1.3.x.
 - Candidatos a ciclo: #8 vocabulario de medio de pago (S), #5 extracto bancario (M), M-16 lector por línea (M).
 
 ## Log
 <!-- YYYY-MM-DD | stage | one-line result -->
 2026-10-19 | 8-maintain | #6 cerrado (v1.4.0); ciclo Rappi → archive/rappi/ (02, 04, 06, 07, STATE); 08 al día; push pendiente de confirmación
+2026-10-19 | 8-maintain | push main + tag v1.4.0 a origin (ff61c7e..2f70187)
