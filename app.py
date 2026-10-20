@@ -17,7 +17,7 @@ from ocr_module import orientacion
 from ocr_module.digitos import numeros_tesseract
 from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
-from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta
+from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta, MEDIOS_CANON, medio_canonico
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de
 from parser_module.contable import referencia
@@ -421,7 +421,7 @@ def _conservar_revisados(previos: list, nuevos: list) -> list:
 # ── T10 · revisión de recibos dudosos (R8): listar, confirmar/editar → «revisado», recalcular el día, sumar a la referencia ──
 RUTA_REF = DATOS / "referencia"
 REV_ENTEROS = ("consumo", "propina", "domicilio", "descuento", "cortesia", "efectivo", "tarjeta", "transf", "credito", "subtotal", "pagado", "cambio")
-REV_TEXTOS = {"medio": ("Efectivo", "Tarjeta", "Transferencia", "Crédito", "Mixto"), "hora": None, "detalle": None, "numero": None}
+REV_TEXTOS = {"medio": MEDIOS_CANON, "hora": None, "detalle": None, "numero": None}
 REV_TOPE = 500
 
 
@@ -732,7 +732,6 @@ def sop_generar():
         finally: con.close()
 
 
-MEDIOS_COMPRA = ("Efectivo", "Transferencia", "Nequi", "Daviplata", "QR", "Bre-B", "Tarjeta", "PSE", "Crédito personal")
 
 
 @app.post("/api/soporte/compra")
@@ -746,11 +745,12 @@ def sop_compra():
     except (TypeError, ValueError): valor = 0
     try: date.fromisoformat(fecha); fok = bool(ISO.match(fecha))
     except ValueError: fok = False
+    medio_crudo = medio; medio = medio_canonico(medio_crudo)[0]; medio_detalle_ok = bool(medio)   # T3: Nequi, Daviplata… se aceptan y se guardan como Transferencia
     error = ("Fecha inválida" if not fok else "Falta el proveedor" if not tercero or provs.es_encabezado(tercero) else "Proveedor demasiado largo" if len(tercero) > 200
              else "Falta la descripción" if not desc else "Descripción demasiado larga (máx. 200)" if len(desc) > 200
-             else "El valor debe ser un número entre 1 y 10.000.000.000" if not 0 < valor <= 10**10 else "Medio de pago desconocido" if medio not in MEDIOS_COMPRA else "")
+             else "El valor debe ser un número entre 1 y 10.000.000.000" if not 0 < valor <= 10**10 else "Medio de pago desconocido" if not medio_detalle_ok else "")
     if error: return jsonify(error=error), 400
-    d = {**_base_doc("factura", ""), "fecha": fecha, "tercero": tercero, "detalle": desc, "descripcion": desc, "valor": valor, "medio": medio, "origen": "manual"}
+    d = {**_base_doc("factura", ""), "fecha": fecha, "tercero": tercero, "detalle": desc, "descripcion": desc, "valor": valor, "medio": medio, "medio_detalle": medio_crudo, "origen": "manual"}
     r = CLASIF.clasificar(tercero, desc, "")
     d["cuenta"], d["conf"], d["motivo"] = r["cuenta"], r["conf"], r["motivo"]
     with LOCK:

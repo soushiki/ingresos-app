@@ -70,5 +70,18 @@ rb = construir("2026-09-16", [], {"nequi": 1000, "transferencias": 2000, "llave"
 eb = {x["medio_detalle"]: (x["medio"], x["detalle"]) for x in rb["datos"] if x["tipo"] == "extracto"}
 chk(eb.get("Nequi") == ("Transferencia", "Recaudos a través de Transferencia Nequi") and eb.get("Bre-B", ("",))[0] == "Bre-B", f"extracto: {eb}")
 
+# T3: Mixto. Venta mixta sigue repartida (ninguna fila dice «Mixto»); factura de gasto Mixto toma el medio del mayor pago y conserva el aviso.
+vm = leer_texto(cmd(91020, "PAGA CON VISA $15,000"))[0]
+vm = dict(vm, id="mixta", numero="91020", consumo=40000, propina=0, efectivo=25000, tarjeta=15000, transf=0, credito=0, medio="Mixto", avisos=[])
+fm = dict(vm, id="fmixta", tipo="factura", numero="F91", tercero="Proveedor X", detalle="Compra", valor=40000, cuenta="51959501", conf=1.0, motivo="", origen="x", medio="Mixto", efectivo=10000, tarjeta=30000)
+fs = dict(fm, id="fsin", numero="F92", efectivo=0, tarjeta=0)
+rm = construir("2026-09-16", [vm, fm, fs])
+chk(not any("Mixto" == x["medio"] for x in rm["datos"]) and not any(f["medio"] == "Mixto" for f in rm["filas"]), "ninguna fila dice «Mixto»")
+chk({x["medio"] for x in rm["datos"] if x["id"] == "mixta"} == {"Efectivo", "Tarjeta"}, "venta mixta sigue repartida en Efectivo y Tarjeta")
+xf = next(x for x in rm["datos"] if x["id"] == "fmixta")
+chk((xf["medio"], xf["medio_detalle"]) == ("Tarjeta", "Mixto"), f"factura Mixto toma el mayor pago ({xf['medio']}/{xf['medio_detalle']})")
+chk(any("F91" in a and "revisa el medio" in a for a in rm["avisos"]), "factura Mixto mantiene el aviso «revisa el medio»")
+chk(next(x for x in rm["datos"] if x["id"] == "fsin")["medio"] == "", "factura Mixto sin pagos leídos: medio vacío, sin inventar")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)

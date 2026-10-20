@@ -165,7 +165,7 @@ const TIPOS={cierre:"Cierre de caja (POS)",venta:"Comanda (recibo de venta)",gas
 const GRUPOS=[["cierre","📋 Cierre"],["comandas","🧾 Comandas"],["gastos","💸 Gastos"],["otros","❔ Sin clasificar"]];
 const grupoDe=d=>({cierre:"cierre",venta:"comandas",faltante:"comandas",gasto_caja:"gastos",caja_menor_manuscrito:"gastos",factura:"gastos"})[d.tipo]||"otros";
 const BANCO0={llave:0,tarjetas:0,qr:0,nequi:0,transferencias:0,pse:0,rappi:0};
-const MEDIOS=["Efectivo","Transferencia","Nequi","Daviplata","QR","Bre-B","Tarjeta","PSE","Rappi","Crédito personal"],GASTOS=["gasto_caja","caja_menor_manuscrito","factura"];
+const MEDIOS=["Efectivo","Transferencia","Tarjeta","QR","Bre-B","PSE","App","Crédito personal"],GASTOS=["gasto_caja","caja_menor_manuscrito","factura"];
 const CIE=[["venta_efectivo","Venta en efectivo"],["tarjetas_sin_prop","Tarjetas (sin propina)"],["tarjetas_con_prop","Tarjetas (con propina)"],["transferencias","Transferencias / App"],["propinas_total","Total propinas"],["gastos_caja","Gastos de caja"],["base_caja","Base de caja"],["efectivo_esperado","Efectivo esperado"],["efectivo_contado","Efectivo contado"],["faltante_impreso","Faltante / sobrante"]];
 let CUENTAS=[],ctl=null,LIBRO=[],nid=0,tmr=null,sel=null,catSel="";const FOTOS={};
 const nuevoDiaObj=f=>({id:"y"+(++nid),fecha:f||"",fotos:[],docs:[],banco:{...BANCO0},cierre:{},res:null});
@@ -366,7 +366,7 @@ $("p_cl").onclick=()=>{["p_num","p_nombre","p_dir","p_mun","p_correo","p_alias"]
 $("p_ok").onclick=async()=>{const b=$("p_ok");b.disabled=true;try{const r=await jpost("/api/proveedores",{tipo_id:$("p_tipo").value,num_id:$("p_num").value,nombre:$("p_nombre").value,direccion:$("p_dir").value,municipio:$("p_mun").value,correo:$("p_correo").value,alias_ocr:$("p_alias").value});
  if(!r.ok){const m=await errDe(r);$("p_msg").textContent=m;$("p_msg").className="bad";return toast(m,6000)}$("p_msg").textContent="";$("p_cl").onclick();toast("Proveedor guardado");await cargarSoporte()}catch(e){toast("No se pudo guardar el proveedor")}finally{b.disabled=false}};
 /* R4: compra manual → libro.json (factura, origen «manual»); el servidor valida todo */
-$("c_fw").innerHTML=fechaHtml("",'id="c_fecha"');$("c_medio").innerHTML=MEDIOS.filter(m=>m!=="Rappi").map(m=>`<option ${m==="Transferencia"?"selected":""}>${m}</option>`).join("");
+$("c_fw").innerHTML=fechaHtml("",'id="c_fecha"');$("c_medio").innerHTML=MEDIOS.filter(m=>m!=="App").map(m=>`<option ${m==="Transferencia"?"selected":""}>${m}</option>`).join("");
 $("c_ok").onclick=async()=>{const b=$("c_ok"),fecha=parseFecha($("c_fecha").value),valor=+$("c_val").value.replace(/\D/g,"");
  const mal=m=>{$("c_msg").textContent=m;$("c_msg").className="bad";toast(m,5000)};if(!fecha)return mal("Escribe la fecha de la compra (dd/mm/aaaa)");
  b.disabled=true;try{const r=await jpost("/api/soporte/compra",{tercero:$("c_ter").value,fecha,descripcion:$("c_desc").value,valor,medio:$("c_medio").value});
@@ -381,7 +381,7 @@ $("s_gen").onclick=async()=>{const el=[...document.querySelectorAll("#s_tb .sk:c
 async function bajarXl(ids){const r=await fetch("/api/soporte/excel"+(ids?"?ids="+encodeURIComponent(ids):""));if(!r.ok)return toast(await errDe(r));const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"documento_soporte.xlsx";a.click()}
 $("s_xl").onclick=()=>bajarXl("");$("s_res").addEventListener("click",e=>{if(e.target.id==="s_dl")bajarXl(e.target.dataset.ids)});
 // ── ④ Revisión (T11 · R8): todo con textContent/DOM, nada de innerHTML con datos leídos ──
-const RV_ENT=[["consumo","Consumo"],["propina","Propina"],["domicilio","Domicilio"],["descuento","Descuento"],["cortesia","Cortesía"],["subtotal","Subtotal"],["efectivo","Efectivo"],["tarjeta","Tarjeta"],["transf","Transferencia"],["credito","Fiado"],["pagado","Pagado"],["cambio","Cambio"]],RV_MED=["Efectivo","Tarjeta","Transferencia","Crédito","Mixto"];
+const RV_ENT=[["consumo","Consumo"],["propina","Propina"],["domicilio","Domicilio"],["descuento","Descuento"],["cortesia","Cortesía"],["subtotal","Subtotal"],["efectivo","Efectivo"],["tarjeta","Tarjeta"],["transf","Transferencia"],["credito","Fiado"],["pagado","Pagado"],["cambio","Cambio"]],RV_MED=MEDIOS;
 function el(t,p,...k){const e=document.createElement(t);if(p)for(const x in p){if(x==="class")e.className=p[x];else if(x==="onclick")e.onclick=p[x];else e[x]=p[x]}for(const c of k)if(c!=null)e.append(c);return e}
 async function cargarRevision(){const est=$("rv_est").value;let j;try{const r=await fetch("/api/contable/revision?desde=2000-01-01&estado="+est);j=await r.json();if(!r.ok)throw new Error(j.error||r.status)}catch(e){return toast("No se pudo cargar la revisión: "+e.message)}
  if(est in RV_N){RV_N[est]=j.total;pintaInsignia()}$("rv_vacio").textContent={dudoso:"No hay recibos dudosos por revisar.",falta:"No hay recibos faltantes por anotar."}[est]||"Aún no hay recibos revisados.";$("rv_vacio").style.display=j.recibos.length?"none":"";const ls=$("rv_ls");ls.replaceChildren(...j.recibos.map(est==="falta"?tarjetaFalta:tarjetaRev))}

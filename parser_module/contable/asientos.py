@@ -235,7 +235,11 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
         elif d["tipo"] in ("gasto_caja", "caja_menor_manuscrito") and d["medio"] in ("", "Efectivo"):
             dato(d, valor=d["valor"], medio="Efectivo", cuenta=d.get("cuenta") or cfg["puente_gasto"], aviso="" if d.get("cuenta") else FALTA_CUENTA, bloque="caja")
         elif d["tipo"] in ("factura", "gasto_caja", "caja_menor_manuscrito"):
-            dato(d, valor=d["valor"], medio=d["medio"], medio_detalle=d.get("medio_detalle") or d["medio"], cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
+            medio, detalle = d["medio"], d.get("medio_detalle") or d["medio"]
+            if medio == "Mixto":   # T3: una factura de gasto no se reparte; toma el medio del mayor valor pagado y conserva «Mixto» como detalle (aviso «revisa el medio»)
+                pagos = [(d.get(k) or 0, m) for k, m in (("efectivo", "Efectivo"), ("tarjeta", "Tarjeta"), ("transf", d.get("medio_transf") or "Transferencia"), ("credito", "Crédito personal")) if d.get(k)]
+                medio, detalle = (max(pagos)[1] if pagos else ""), "Mixto"
+            dato(d, valor=d["valor"], medio=medio, medio_detalle=detalle, cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
                  aviso="; ".join(a for a in ("" if d["valor"] else "sin valor leído", "" if d["cuenta"] else FALTA_CUENTA) if a), bloque="factura")
         else:
             dato(d, valor=d.get("valor") or 0, estado="no cuenta", aviso="tipo de papel sin asiento")
@@ -416,7 +420,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         if x["estado"] == "pendiente":
             pendientes.append(dict(id=x["id"], tipo=x["tipo"], numero=x["numero"], tercero=x["tercero"], valor=0, motivo="sin valor leído"))
             avisos.append(f"Factura {ref}: sin valor leído, quedó en pendientes (corrige el valor o desmárcala)"); continue
-        if x["medio"] in ("Tarjeta", "Mixto"): avisos.append(f"Factura {ref}: pagada con tarjeta; se registró contra Bancos, revisa el medio")
+        if x["medio"] == "Tarjeta" or x["medio_detalle"] == "Mixto": avisos.append(f"Factura {ref}: pagada con tarjeta; se registró contra Bancos, revisa el medio")
         if x["aviso"] == FALTA_CUENTA: avisos.append(f"Factura {ref}: falta la cuenta; quedó en la cuenta puente {cfg['puente_gasto']}")
         ef = x["medio"] == "Efectivo"; rep = cfg["reporta_efectivo"] if ef else cfg["reporta_banco"]
         desc = x["detalle"] or "Compra"; ter = x["tercero"] or "Proveedor"
