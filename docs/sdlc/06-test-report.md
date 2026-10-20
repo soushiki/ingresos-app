@@ -1,31 +1,33 @@
-# 06 · Informe de pruebas — ciclo Rappi (01c #6), iteración 1
+# 06 · Informe de pruebas — ciclo Rappi (01c #6), iteración 1 · 2.ª pasada
 
 ## Summary
-- **FALLA (vuelve a 5-implement).** Las 18 suites pasan, pero el papel de Rappi pierde ID y valor en el flujo real de subida (FIX-1).
-- Cobertura: R1 (lectura, construir, sin total, ID fuera de numeración) · R2 (mismo ID = 1 venta + aviso) · R3 (respaldo v1.4.0,
-  v1.3.0 intacto): con prueba. Falta: R1 por `leer_hoja` (la ruta de la foto) → se agrega con FIX-1.
-- Septiembre (T4): 13452501 = [01f] vs manual ≈ [01f]; la diferencia son papeles de 17 días que no están en el libro, no lectura.
+- **PASA → 7-release.** 18/18 suites en verde; FIX-1 y FIX-2 cerrados; smoke con la foto real del 02-09 en verde.
+- Cobertura: R1 (lectura, construir, sin total, ID fuera de numeración, ruta `leer_hoja`, `validar` sin hora/mesa) · R2 (mismo ID = 1 venta,
+  `contar=False` + «duplicado de») · R3 (respaldo v1.4.0, v1.3.0 intacto): todas con prueba.
+- Septiembre (T4, 1.ª pasada): 13452501 = [01f] vs manual ≈ [01f]; la diferencia son papeles de 17 días que no están en el libro, no lectura.
 
 ## Failures
-- Ninguna en suites (`probar_*.py` todas en verde; `probar_imagen.py` es herramienta, no suite).
+- Ninguna (`probar_*.py`, 18 suites; `probar_imagen.py` es herramienta, no suite).
 
-## Review findings (diff 9860ae9..HEAD, revisión propia)
-1. **Alta — FIX-1.** `relectura.leer_hoja` → `un_trozo` (l. 175): recorte con un solo doc «venta» va a `leer_recibo`, que re-parsea con
-   `parse_venta`. Prueba con motor falso que devuelve el papel real: `rappi=None, numero='', valor=0, medio=''`, «dudoso».
-   O sea, en la app el papel de Rappi sigue entrando como venta sin número ni valor. T4 midió desde el texto guardado y no lo vio.
-2. **Media — FIX-2.** `validar` pide hora y mesa a todo doc «venta»: cada papel de Rappi queda «dudoso» (Falta la hora / la mesa).
-3. Baja (sin tarea): `validar.faltantes` y `cruces` siguen tomando todo `tipo == venta`; el ID largo nunca está en los números del
-   nombre de la foto, así que no crea faltantes falsos. Queda anotado.
-4. Abierto de T4: 11-sep, 28150502 baja [01f] al re-leer; causa sin investigar. Se revisa en el smoke tras FIX-1.
-- `/security-review`: no aplica (exposed no; no toca auth, BD ni secretos; el input es texto OCR ya existente).
+## Review findings (diff 506cd89..HEAD, FIX-1 + FIX-2)
+- `relectura.un_trozo`: el papel Rappi ya no va a `leer_recibo`; cae a la rama general (recorte guardado + `validar`). Correcto.
+- `validar`: con `rappi=True` devuelve antes de hora/mesa/aritmética y antes del cruce con los números del nombre de la foto
+  (el ID largo nunca está ahí): correcto. Sin hallazgos nuevos.
+- Baja, sin tarea (de la 1.ª pasada): `validar.faltantes`/`cruces` toman todo `tipo == venta`; no crea faltantes falsos.
+- `/security-review`: no aplica (exposed no; sin auth, BD ni secretos).
 
 ## Debt check
-- Sin linter en el proyecto; el diff suma 1 función (`parse_rappi`, 16 líneas) y 1 helper (`_es_comanda`). Sin DEBT nuevo.
+- FIX-1/FIX-2 suman 3 líneas de código; `_motivos_rappi` se borró (una sola regla en `validar`). Sin DEBT nuevo.
 
-## Smoke (para después de FIX-1/FIX-2, ≈ 5 min en la app local)
-1. Subir `2/comandas/85319-318-rappi.jpg` como «comandas» → aparece el papel con ID 1000000001, $25.000, medio Rappi, sin «dudoso».
-2. En ④ del 02-09: fila 13452501 débito 25.000, tercero Rappi, medio App; débito = crédito.
-3. Subir la misma foto otra vez → una sola fila 13452501 y aviso de duplicado.
-4. Comandas 85318 y 85319 sin faltantes ni «fuera de secuencia».
-5. Ver el 11-09: anotar de dónde sale el −[01f] en 28150502.
-Resultado: pendiente (bloqueado por FIX-1).
+## Smoke (OCR local real, `escanear` por cliente de prueba, sin guardar en el libro)
+1. `SEPTIEMBRE/2/comandas/85319-318-rappi.jpg` como «comandas» → 3 docs: 85319, 85318 y el papel Rappi
+   (ID 1000000001, $25.000, medio Rappi, «validado», sin motivos, fecha 2026-09-02 por la carpeta). ✓
+2. `construir("2026-09-02")` → fila 13452501 débito 25.000, tercero Rappi, medio App, «Ordenes: 1000000001»; débito = crédito. ✓
+3. El mismo papel dos veces → una sola fila 13452501 de 25.000. ✓
+4. Comandas 85318–85319: `faltan` = [], sin avisos de secuencia. ✓
+5. 11-09, 28150502: recalcular desde los docs guardados da [01f] = lo guardado. El −[01f] de T4 venía de re-parsear el texto crudo
+   (pierde las correcciones a mano), no de la ruta real de recálculo. Cerrado.
+
+## Nota para 7-release
+- Los docs ya guardados de sept. no tienen `rappi`: recalcular no basta. El runbook debe decir cómo re-leer los papeles de Rappi de sept.
+  (volver a subir las fotos «…rappi…» de cada día, p. ej. 2, 3, 5, 6, 7, 11) y luego recalcular, con el respaldo v1.4.0 ya hecho.
