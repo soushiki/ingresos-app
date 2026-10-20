@@ -332,6 +332,12 @@ _F = fac8("fa", "2026-09-23", 120000)
 _r8 = A.construir("2026-09-25", [_F], {}, extracto=X.clasificar([sal8()], REGLAS, {}, [_F]))
 _cb = [f for f in _r8["filas"] if f["codigo"] == A.BANCO and f["credito"]]
 chk(len(_cb) == 1 and _cb[0]["credito"] == 120000 and _r8["debito"] == _r8["credito"], "ADR-015: gasto pagado contado dos veces")
+_s2 = dict(lin("TRANSF A ANA PRUEBA", -120000), fecha="2026-09-25")
+_f2 = [fac8("fa", "2026-09-23", 120000), fac8("fb", "2026-09-26", 120000)]
+_m2 = X.clasificar([_s2], REGLAS, {"ANA PRUEBA": "51050501"}, _f2)[0]
+chk(_m2["destino"] == "revisar" and _m2.get("sin_asiento") is True and X.AV_CUAL in _m2["avisos"] and _m2["cuenta"] == "", "FIX-2: memoria + 2 facturas candidatas → sigue en revisar con «¿cuál factura?»")
+_inv = X.clasificar([_s2, sal8(), lin("TRANSF A ANA PRUEBA", -5)], REGLAS, {"ANA PRUEBA": "51050501"}, _f2)
+chk(all(x["destino"] == "revisar" for x in _inv if x.get("sin_asiento")) and any(x.get("sin_asiento") for x in _inv), "FIX-2: invariante, toda línea con sin_asiento tiene destino revisar")
 
 # --- T9: revisión y asignación (R5, ADR-014/015) + sin_asiento + facturas= en la importación ---
 _t9 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = _t9 / "libro.json", _t9 / "m.json"

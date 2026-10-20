@@ -176,7 +176,7 @@ def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = 
             elif cs:
                 x["sin_asiento"] = True
                 x["avisos"].append(AV_CUAL)
-        if x["destino"] == "revisar":   # ADR-014: solo lo que iba a revisar; lo opaco nunca se recuerda
+        if x["destino"] == "revisar" and not x.get("sin_asiento"):   # ADR-014 (FIX-2: con sin_asiento la memoria no toca): solo lo que iba a revisar; lo opaco nunca se recuerda
             ter = tercero_de(x.get("descripcion"), reglas)
             if ter:
                 x["tercero"] = ter
