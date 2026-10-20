@@ -82,6 +82,48 @@ copia = copy.deepcopy(entrada); sal = X.clasificar(entrada, REGLAS)
 chk(entrada == copia and sal[0]["avisos"] == ["previo"] and sal is not entrada, "clasificar es pura: no toca la entrada y conserva los avisos previos")
 chk(len(X.clasificar([{"descripcion": "A", "valor": 1}] * 7, REGLAS)) == 7, "una salida por cada línea (nunca descarta)")
 
+# --- T2: leer_xlsx ---
+import datetime as _dt
+import io
+import zipfile
+from openpyxl import Workbook
+
+def xlsx(filas, hoja="Hoja 1", cab=("Fecha", "Descripción", "Referencia", "Valor")):
+    wb = Workbook(); ws = wb.active; ws.title = hoja
+    if cab: ws.append(list(cab))
+    for f in filas: ws.append(list(f))
+    b = io.BytesIO(); wb.save(b); return b.getvalue()
+
+def falla(datos):
+    try: X.leer_xlsx(datos); return None
+    except X.ExtractoInvalido as e: return str(e)
+
+D = _dt.datetime(2026, 9, 23, 5, 0)
+L = X.leer_xlsx(xlsx([(D, "PAGO QR  X", "009", 64000), (D, "IMPTO GOBIERNO 4X1000", None, -2592.4),
+                      (D, "PAGO QR  X", "009", 64000), (D, "PAGO QR  X", "009", 64000), (None, None, None, None)]))
+chk(len(L) == 4, "leer_xlsx salta las filas totalmente vacías")
+chk(len(L) == 4 and L[0]["fecha"] == "2026-09-23" and isinstance(L[0]["valor"], int), "fecha solo con el día (ISO) y valor int")
+chk(L[1]["valor"] == -2592 and L[1]["referencia"] == "", "valor decimal → int con signo; referencia vacía → ''")
+chk([l["ocurrencia"] for l in L] == [1, 1, 2, 3], "líneas idénticas reciben ocurrencias 1, 2, 3 en orden")
+chk(len({l["clave"] for l in L}) == 4 and all(re.fullmatch(r"[0-9a-f]{16}", l["clave"]) for l in L), "claves distintas, sha1[:16]")
+L2 = X.leer_xlsx(xlsx([(D, "pago qr x", "009", 64000)]))
+chk(L2[0]["clave"] == L[0]["clave"], "la clave normaliza la descripción (misma línea, misma clave)")
+chk(X.leer_xlsx(xlsx([(D.replace(hour=9), "PAGO QR  X", "009", 64000)]))[0]["clave"] == L[0]["clave"], "la hora no cambia la clave")
+chk(falla(xlsx([(D, "A", "", 1)], hoja="Otra")) and "Hoja 1" in falla(xlsx([(D, "A", "", 1)], hoja="Otra")), "otra hoja → ExtractoInvalido (dice «Hoja 1»)")
+chk(falla(xlsx([(D, "A", "", 1)], cab=("Fecha", "Texto", "Referencia", "Valor"))) is not None, "otras columnas → ExtractoInvalido")
+chk(falla(xlsx([(D, "A", "", 1)], cab=("Fecha", "Descripción", "Referencia"))) is not None, "faltan columnas → ExtractoInvalido")
+chk(falla(xlsx([("no fecha", "A", "", 1)])) is not None, "fecha ilegible → ExtractoInvalido")
+chk(falla(xlsx([(D, "A", "", "mucho")])) is not None, "valor no numérico → ExtractoInvalido")
+chk(falla(xlsx([(D, "", "", 5)])) is not None, "descripción vacía → ExtractoInvalido")
+chk(falla(b"no soy un zip") is not None, "bytes cualquiera → ExtractoInvalido")
+bz = io.BytesIO()
+with zipfile.ZipFile(bz, "w") as z: z.writestr("a.txt", "hola")
+chk(falla(bz.getvalue()) is not None, "un ZIP que no es xlsx → ExtractoInvalido")
+chk(falla(b"") is not None, "archivo vacío → ExtractoInvalido")
+chk(falla(xlsx([(D, f"L{i}", "", i) for i in range(1, 5002)])) and "5000" in falla(xlsx([(D, f"L{i}", "", i) for i in range(1, 5002)])), "más de 5 000 filas → ExtractoInvalido con el tope")
+chk(len(X.leer_xlsx(xlsx([(D, f"L{i}", "", i) for i in range(1, 5001)]))) == 5000, "5 000 filas exactas: pasa")
+chk(falla(b"x" * (5 * 1024 * 1024 + 1)) and "5 MB" in falla(b"x" * (5 * 1024 * 1024 + 1)), "más de 5 MB → ExtractoInvalido")
+
 # --- ADR-013: ningún código PUC en extracto.py ---
 fuente = (AQUI / "parser_module" / "contable" / "extracto.py").read_text(encoding="utf8")
 chk(not re.findall(r"\b[0-9]{8}\b", fuente), "ADR-013: código PUC fijo en extracto.py (ninguno)")
@@ -126,6 +168,11 @@ else:
     chk(total and ok / total >= 0.98, f"ADR-013: reglas por debajo del 98 % ({ok}/{total} = {ok / max(total, 1):.1%})")
     sin = [ln for ln in res if ln["concepto"] == X.SIN_CONCEPTO]
     chk(len(sin) <= 1 and all(ln["avisos"] for ln in sin), f"septiembre real: solo {len(sin)} línea SIN CONCEPTO, con aviso (va a revisión)")
+    # T2: el archivo real por leer_xlsx
+    LR = X.leer_xlsx(XLSX.read_bytes())
+    chk(len(LR) == 513, f"T2: leer_xlsx del real da 513 líneas ({len(LR)})")
+    chk(sum(l["valor"] for l in LR) == sum(round(float(r[3])) for r in hoja), "T2: suma de valores = suma de Valor de Hoja 1")
+    chk(len({l["clave"] for l in LR}) == 513, "T2: 513 claves distintas")
 
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)
