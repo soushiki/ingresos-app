@@ -174,5 +174,39 @@ else:
     chk(sum(l["valor"] for l in LR) == sum(round(float(r[3])) for r in hoja), "T2: suma de valores = suma de Valor de Hoja 1")
     chk(len({l["clave"] for l in LR}) == 513, "T2: 513 claves distintas")
 
+# --- T3: bloque 5 «Extracto» en construir (R6, R8, S2, S5) ---
+import io
+from openpyxl import load_workbook
+from parser_module.contable import asientos as A, exportar as E
+def lin(desc, valor, n=[0]):
+    n[0] += 1
+    return dict(clave=f"k{n[0]:015d}", fecha="2026-09-25", descripcion=desc, referencia="", valor=valor, ocurrencia=1, imp="i1")
+DIA = X.clasificar([lin("IMPTO GOBIERNO 4X1000", -610), lin("ABONO INTERESES AHORROS", 37), lin("PAGO INTERBANC RAPPI SAS", 250000),
+                    lin("TRANSF A ANA PRUEBA", -120000), lin("PAGO QR CLIENTE", 64000), lin('=HYPERLINK("x")', -5000)], REGLAS)
+DIA.append(dict(lin("PAGO INTERBANC RAPPI SAS", 90000), concepto="PAGO RAPPI", destino="cuenta:por_cobrar_rappi",
+                cuenta=REGLAS["cuentas"]["por_cobrar_rappi"]["codigo"], origen="usuario", avisos=[], tercero="Rappi"))
+r = A.construir("2026-09-25", [], {}, extracto=DIA)
+fx = [f for f in r["filas"] if f["grupo"] == "Extracto"]
+C = {k: c["codigo"] for k, c in REGLAS["cuentas"].items()}
+lados = lambda x: {(f["codigo"], f["debito"], f["credito"]) for f in fx if f["docs"] == [x["clave"]]}
+chk(r["debito"] == r["credito"] > 0 and r["diferencia"] == 0, f"T3: día sin papeles (documentos: []) con extracto cuadra ({r['debito']} = {r['credito']})")
+chk(len(fx) == 2 * 5 and len(r["filas"]) == len(fx), f"T3: 5 líneas cuenta/revisar → 10 filas «Extracto» ({len(fx)})")
+chk(lados(DIA[0]) == {(C["gmf"], 610, 0), (C["banco"], 0, 610)}, "T3 R6: GMF débito 53152001 / crédito Bancos por el valor exacto")
+chk(lados(DIA[1]) == {(C["banco"], 37, 0), (C["rendimientos"], 0, 37)}, "T3 R6: rendimientos débito Bancos / crédito 42100505 por el valor exacto")
+chk(lados(DIA[6]) == {(C["banco"], 90000, 0), (C["por_cobrar_rappi"], 0, 90000)}, "T3 R6: abono Rappi con cuenta → crédito 13452501")
+chk(not lados(DIA[2]) and not lados(DIA[4]), "T3: destino casilla (Rappi, QR) todavía no da filas propias (T6)")
+chk(lados(DIA[3]) == {(C["puente"], 120000, 0), (C["banco"], 0, 120000)}, "T3: salida sin cuenta → puente 51959501 contra Bancos")
+pe = {p["id"]: p for p in r["pendientes"]}
+chk(set(pe) == {DIA[3]["clave"], DIA[5]["clave"]} and pe[DIA[3]["clave"]]["valor"] == 120000 and pe[DIA[3]["clave"]]["tipo"] == "extracto",
+    "T3: cada línea a revisar deja un pendiente en el día")
+chk(all(len(f["docs"]) == 1 and f["reporta"] for f in fx), "T3 S2: cada fila guarda docs=[clave] y grupo «Extracto»")
+chk(any("extracto" in a and C["puente"] in a for a in r["avisos"]), "T3: aviso del día con las líneas que quedaron en el puente")
+chk(A.construir("2026-09-25", [], {}, extracto=[])["filas"] == [] == A.construir("2026-09-25", [], {})["filas"], "T3: sin extracto el día sigue igual")
+ws = load_workbook(io.BytesIO(E.libro_a_excel({"2026-09-25": r["filas"]}, datos={"2026-09-25": r["datos"]})))["MOVIMIENTOS SEPTIEMBRE"]
+fl = [c for c in ws.iter_rows(min_row=9) if c[0].value is not None]
+chk(len(fl) == len(r["filas"]) and sum(c[5].value or 0 for c in fl) == sum(c[6].value or 0 for c in fl) == r["debito"], "T3 R8: el Excel exportado trae las filas y cuadra débito = crédito")
+eq = [c[4] for c in fl if str(c[4].value).startswith("=")]
+chk(eq and all(c.data_type == "s" for c in eq), "T3 S5: una descripción del banco que empieza con «=» sale como texto")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)

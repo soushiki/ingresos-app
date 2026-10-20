@@ -6,7 +6,7 @@ size: M      # importador nuevo + reglas de clasificación + asientos con cuenta
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
 next: 5-implement
-current task: T3
+current task: T4
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -44,3 +44,4 @@ current task: T3
 2026-10-20 | 4-plan | 04-plan.md: 13 tareas (9 M + 4 S) en 3 iteraciones ≈15–16 h; it.1 importar + asientos automáticos → next 5-implement T1
 2026-10-20 | 5-implement | T1 reglas extracto (JSON 14 reglas, clasificar) 511/513 = 99,6 % vs MOVIMIENTOS, 2 excepciones aceptadas; 24–30 sept sin oráculo → T2
 2026-10-20 | 5-implement | T2 leer_xlsx (ExtractoInvalido, topes 5 MB/5 000 filas, ocurrencia+clave sha1) real 513 líneas, suma = Valor; 20 suites verdes → T3 (opus)
+2026-10-20 | 5-implement | T3 bloque 5 «Extracto» en construir (GMF, rendimientos, cuenta Rappi, revisar → puente + pendiente) cuadra en libro y Excel; 20 suites verdes → T4

@@ -265,7 +265,8 @@ def fx_consumo_papeles() -> list:
     return ["-", *(["sum", col, PAPELES] for col in ("valor", "propina", "domicilio"))]
 
 
-def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None) -> dict:
+def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | None = None, cierre: dict | None = None, extracto: list | None = None) -> dict:
+    """extracto: líneas de libro[fecha]["extracto"] ya clasificadas (extracto.clasificar, ADR-012); van al bloque 5."""
     cfg = {**CFG, **{k: v for k, v in (cfg or {}).items() if v not in (None, "")}}; banco = banco or {}; filas, avisos, pendientes = [], [], []
     todos = marcar_duplicados(docs); completar_desde_cierre(todos)
     docs = [d for d in todos if d.get("contar") and d["tipo"] != "cierre"]
@@ -426,6 +427,26 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
         desc = x["detalle"] or "Compra"; ter = x["tercero"] or "Proveedor"
         j = fila(x["cuenta"], ter, desc, deb=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["dato", i])
         fila(EFECTIVO if ef else BANCO, ter, desc, cre=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["fila", j])
+
+    # 5) extracto bancario (R6, ADR-012): cada línea de destino cuenta o revisar → 2 filas contra Bancos por el valor exacto del extracto.
+    #    Entra (+): débito Bancos / crédito la cuenta; sale (−): débito la cuenta / crédito Bancos. La cuenta viene de extracto_reglas.json
+    #    (GMF 4x1000 ET art. 871 → 53152001, rendimientos → 42100505, Rappi → 13452501; por confirmar con el contador, ADR-013).
+    #    Revisar → puente de gasto + pendiente hasta que elijas la cuenta. Casilla (recaudos, Rappi, tarjeta por el neto) y factura no dan filas aquí (T6, T8).
+    al_puente = []
+    for x in extracto or []:
+        destino, v = str(x.get("destino") or "revisar"), int(x.get("valor") or 0)
+        if not v or not (destino == "revisar" or destino.split(":")[0] == "cuenta"): continue
+        revisar = destino == "revisar" or not x.get("cuenta")
+        cod, ter, desc = cfg["puente_gasto"] if revisar else x["cuenta"], x.get("tercero") or "Banco", x.get("descripcion") or x.get("concepto") or "Extracto"
+        rep, lado = cfg["reporta_banco"], dict(grupo="Extracto", docs=[x["clave"]])
+        j = fila(BANCO if v > 0 else cod, ter, desc, deb=abs(v), reporta=rep, **lado)
+        fila(cod if v > 0 else BANCO, ter, desc, cre=abs(v), reporta=rep, **lado)
+        if revisar:
+            al_puente.append(x)
+            pendientes.append(dict(id=x["clave"], tipo="extracto", numero=x.get("referencia", ""), tercero=x.get("tercero", ""), valor=abs(v),
+                                   motivo="; ".join(x.get("avisos") or []) or "elige la cuenta"))
+    if al_puente:
+        avisos.append(f"{len(al_puente)} línea(s) del extracto sin cuenta ({sum(abs(int(x['valor'])) for x in al_puente):,}): quedaron en la cuenta puente {cfg['puente_gasto']}; elige la cuenta".replace(",", "."))
     for d in docs:
         if d["tipo"] in ("venta", "gasto_caja", "factura") and d.get("avisos") and estado_de(d) != "revisado":
             avisos += [f"{d['tipo'].replace('_', ' ').capitalize()} {d['numero'] or ''}: {a}".replace("  ", " ") for a in d["avisos"]]
