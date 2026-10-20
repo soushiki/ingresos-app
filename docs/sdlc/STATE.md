@@ -6,7 +6,7 @@ size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
 next: 5-implement
-current task: T3
+current task: T4
 
 ## Stages
 - [x] 0-triage
@@ -40,3 +40,4 @@ current task: T3
 2026-10-20 | 4-plan | 3 iteraciones, 10 tareas (≈ 11 h): I1 trabajador+cliente+fachada+R3 conectado (ADR-016/017 con trabajador falso), I2 spike fondo blanco+enderezado+aviso+instalador, I3 probar_indra+R5 → next 5-implement (T1)
 2026-10-20 | 5-implement | T1 hecho (Sonnet): ocr_module/indra_worker.py — ready/numeros/upright/quit/EOF/{"error"}; probado a mano en el venv del spike → next T2
 2026-10-20 | 5-implement | T2 hecho (Opus): ocr_module/indra.py cliente + probar_motores.py (30 ✓) + probar_motores_falso.py; humo real pendiente (sin venv) → next T3
+2026-10-20 | 5-implement | T3 hecho (Sonnet): ocr_module/motores.py fachada (leer_digitos, detectar_giro, estado+aviso); +16 en probar_motores.py; todos los probar_*.py OK → next T4
