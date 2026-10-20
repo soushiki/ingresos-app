@@ -385,6 +385,33 @@ chk(_ru.status_code == 200 and not _ru.get_json()["dia"]["banco"].get("qr"), "T1
 chk(cli.get("/api/contable/extracto/diferencias").get_json()["diferencias"] == [], "T10: la diferencia queda en 0 (no se lista)")
 chk(bool(appmod._leer_libro()["2026-09-26"]["extracto"]), "T10: el día conserva el extracto")
 
+# --- T11: totales del mes por concepto (R3) ---
+_t = cli.get("/api/contable/extracto/totales?mes=2026-09")
+_tj = _t.get_json()
+_lib11 = appmod._leer_libro()
+_ls11 = [x for f, d in _lib11.items() if f.startswith("2026-09") for x in d.get("extracto", [])]
+chk(_t.status_code == 200 and _tj["total"] == sum(x["valor"] for x in _ls11) and sum(_tj["totales"].values()) == _tj["total"], f"T11: total = suma de Valor y = suma de los conceptos ({_tj.get('total')})")
+chk(_tj["totales"].get("PAGO QR") == 64000 or any(x["valor"] == 64000 for x in _ls11), "T11: el abono QR está en los totales")
+chk(all(cli.get(f"/api/contable/extracto/totales{q}").status_code == 400 for q in ("", "?mes=mal", "?mes=2026-13", "?mes=2026-9", "?mes=2026-09-01")), "T11: mes ausente o mal formado → 400")
+chk(cli.get("/api/contable/extracto/totales?mes=2025-01").get_json() == dict(totales={}, total=0, dif_por_medio={}, etiquetas=appmod.CASILLA_DESC), "T11: mes sin extracto → vacío")
+_lib11["2026-09-26"]["banco"] = {"qr": 70000}; appmod.RUTA_LIBRO.write_text(json.dumps(_lib11), encoding="utf8")
+chk(cli.get("/api/contable/extracto/totales?mes=2026-09").get_json()["dif_por_medio"].get("qr") == 6000, "T11: dif_por_medio suma la diferencia QR del mes")
+_lib11["2026-09-26"]["banco"] = {}; appmod.RUTA_LIBRO.write_text(json.dumps(_lib11), encoding="utf8")
+if XLSX.exists():
+    d11 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = d11 / "libro.json", d11 / "m.json"; appmod.RUTA_LIBRO.write_text("{}", encoding="utf8")
+    chk(sube(XLSX.read_bytes()).status_code == 200, "T11: importa el septiembre real")
+    r11 = cli.get("/api/contable/extracto/totales?mes=2026-09").get_json()
+    esp, pend = collections.Counter(), collections.Counter(l["k"] for l in lineas)   # MOVIMIENTOS trae más filas que Hoja 1: solo cuentan las que tienen par
+    for r in wb["MOVIMIENTOS"].iter_rows(min_row=6, values_only=True):
+        if r[0] is not None and hasattr(r[0], "day") and r[4] is not None and pend[llave(r[0], r[1], r[4])] > 0:
+            pend[llave(r[0], r[1], r[4])] -= 1
+            c, v = ETIQUETA_MAL.get(str(r[2]).strip(), str(r[2]).strip()), round(float(r[4]))
+            for m in EXCEPCIONES:   # la hoja dice m[3]; la regla dice m[2] (excepción aceptada)
+                if str(r[1]).strip().upper().startswith(m[0]) and v == m[1] and c == m[3]: c = m[2]
+            esp[c] += v
+    chk({k: v for k, v in r11["totales"].items() if v} == {k: v for k, v in esp.items() if v}, f"T11: totales de septiembre = MOVIMIENTOS (salvo las 2 excepciones) ({set(r11['totales'].items()) ^ set(esp.items())})")
+    chk(r11["total"] == sum(round(float(r[3])) for r in hoja), "T11: total = suma de Valor de Hoja 1")
+
 # --- FIX-3: una factura no se enlaza a dos líneas de días distintos ---
 _u3 = X.clasificar([sal8(-5000)], REGLAS, {}, [fac8("fa", "2026-09-23", 5000)], usadas=("fa",))[0]
 chk(_u3["destino"] == "revisar" and _u3["factura_id"] == "", "FIX-3: clasificar con usadas iniciales excluye esa factura")

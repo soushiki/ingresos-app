@@ -441,6 +441,21 @@ def cont_ext_diferencias():
     return jsonify(diferencias=out)
 
 
+@app.get("/api/contable/extracto/totales")
+def cont_ext_totales():
+    "T11/R3: del mes (YYYY-MM) la suma de Valor por concepto, el total y la diferencia digitada-vs-extracto por medio."
+    mes = request.args.get("mes", "")
+    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", mes): return jsonify(error="Mes inválido (AAAA-MM)"), 400
+    totales, dif_medio, total = {}, {}, 0
+    for f, d in sorted(_leer_libro().items()):
+        if not f.startswith(mes + "-") or not d.get("extracto"): continue
+        for x in d["extracto"]:
+            v = int(x.get("valor") or 0); total += v
+            totales[x.get("concepto") or "SIN CONCEPTO"] = totales.get(x.get("concepto") or "SIN CONCEPTO", 0) + v
+        for k, v in casillas_efectivas(d.get("banco", {}), d["extracto"])[1].items(): dif_medio[k] = dif_medio.get(k, 0) + v
+    return jsonify(totales=totales, total=total, dif_por_medio={k: v for k, v in dif_medio.items() if v}, etiquetas=CASILLA_DESC)
+
+
 @app.post("/api/contable/extracto/<fecha>/usar/<medio>")
 def cont_ext_usar(fecha, medio):
     "T10/R4: «usar extracto» = vaciar la casilla digitada de ese medio (casilla vacía = vale el extracto, T6); recalcula y guarda el día."

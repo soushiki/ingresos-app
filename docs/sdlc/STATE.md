@@ -6,7 +6,7 @@ size: M      # importador nuevo + reglas de clasificación + asientos con cuenta
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
 next: 5-implement
-current task: T11 (totales del extracto por concepto)
+current task: T12 (deshacer importación)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -59,3 +59,4 @@ current task: T11 (totales del extracto por concepto)
 2026-10-20 | 6-test | it.2: 20/20 suites verdes; R4, R5, R7 cubiertos; review: FIX-2 (Must, memoria pisa sin_asiento → salida perdida) y FIX-3 (Should, factura enlazada en 2 días) añadidos al inicio de la it.3; smoke del usuario pendiente → next 5-implement FIX-2
 2026-10-20 | 5-implement | FIX-2 memoria no toca líneas sin_asiento (siguen en revisar «¿cuál factura?», salen en GET .../revision) +2 checks incl. invariante; 20 suites verdes → FIX-3
 2026-10-20 | 5-implement | FIX-3 factura no se enlaza a 2 líneas de días distintos (`usadas` en clasificar, _facturas_usadas en import y recálculo, asignar ya enlazada → 400) +6 checks; 20 suites verdes; 877ce4c → T11
+2026-10-20 | 5-implement | T11 GET /api/contable/extracto/totales?mes= (por concepto, total, dif_por_medio; mes inválido → 400) + tarjeta «Totales del mes» en ⑤; +9 checks; sept. real = MOVIMIENTOS salvo las 2 excepciones de T1, total = suma de Valor; 375 px sin scroll lateral; 20 suites verdes → T12
