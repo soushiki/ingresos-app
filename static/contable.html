@@ -65,6 +65,10 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
 @media(max-height:500px) and (orientation:landscape){.rv.falta .rimg{max-height:75vh}.rv.falta .rg{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1000px){.rv{flex-direction:column}.rv .rimg{flex:none;max-width:100%;width:100%;max-height:45vh}.rv .rf{width:100%}}
 @media(max-width:600px){.rv .rg{grid-template-columns:1fr}.rv .ac button{flex:1 1 140px}.rv input[type=text],.rv select{min-height:40px}}
+#m5{display:flex;justify-content:center}#m5>.col{width:100%;max-width:760px}#x_res{overflow-wrap:anywhere}
+@media(max-width:1000px){#m5{align-items:stretch}#m5>.col{max-width:100%}}
+@media(max-width:600px) and (min-height:501px){#m5 .bar>button{flex:1 1 100%;min-height:44px}}
+@media(max-height:500px) and (orientation:landscape){#m5 .card{padding:8px}}
 @media(max-height:500px) and (orientation:landscape){.rv{flex-direction:row}.rv .rimg{flex:0 0 40%;max-height:80vh}}
 </style></head><body>
 <header>
@@ -74,7 +78,7 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
 <select id="motor"><option value="local">IA local (Ollama)</option><option value="tesseract">Tesseract (solo impreso)</option></select><select id="modelo"></select>
 <button id="fs">⛶ Pantalla completa</button>
 </header>
-<div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button><button data-tab="3">③ Documento soporte <span class="badge" id="b3">0</span></button><button data-tab="4">④ Revisión <span class="badge" id="b4">0</span></button></div>
+<div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button><button data-tab="3">③ Documento soporte <span class="badge" id="b3">0</span></button><button data-tab="4">④ Revisión <span class="badge" id="b4">0</span></button><button data-tab="5">⑤ Extracto</button></div>
 
 <main id="m1">
 <section class="col">
@@ -156,6 +160,13 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
  <div class="bar"><b style="font-size:16px">Revisión de recibos</b><select id="rv_est" aria-label="Qué recibos ver"><option value="dudoso">Dudosos</option><option value="revisado">Revisados</option><option value="falta">Faltan</option></select><span class="m">Compara el recorte con lo leído, corrige y confirma: el día se recalcula.</span><span class="sp"></span><button class="g" id="rv_re">↻ Recargar</button></div>
  <div id="rv_vacio" class="card m" style="text-align:center;padding:26px">No hay recibos dudosos por revisar.</div>
  <div id="rv_ls"></div>
+</section></main>
+<main id="m5" hidden><section class="col">
+ <div class="card"><h2>Extracto bancario</h2>
+  <p class="m" style="margin:0 0 8px">Sube el extracto del mes (.xlsx). Las líneas que ya estaban no se duplican; las que el programa no reconoce quedan por revisar.</p>
+  <input id="x_file" type="file" accept=".xlsx" hidden>
+  <div class="bar"><button id="x_btn">⬆ Subir extracto (.xlsx)</button><span class="m" id="x_nom"></span></div>
+  <p id="x_res" class="m" role="status" style="margin:8px 0 0;font-size:15px"></p></div>
 </section></main>
 <div id="toast"></div>
 <script>
@@ -421,7 +432,14 @@ function tarjetaRev(r){const d=r.documento,card=el("div",{class:"card rv"}),img=
   if(!Object.keys(c).length)return toast("No cambiaste nada: usa «Confirmar así»");enviar(c)};
  f.append(r.estado==="revisado"?el("div",{class:"ac"},ed):el("div",{class:"ac"},ok,ed));card.append(img,f);return card}
 $("rv_re").onclick=$("rv_est").onchange=cargarRevision;
-function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;$("m4").hidden=n!=4;if(n==2)cargarLibro();if(n==3)cargarSoporte();if(n==4)cargarRevision()}
+function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;$("m4").hidden=n!=4;$("m5").hidden=n!=5;if(n==2)cargarLibro();if(n==3)cargarSoporte();if(n==4)cargarRevision()}
+$("x_btn").onclick=()=>$("x_file").click();
+$("x_file").onchange=async()=>{const i=$("x_file"),f=i.files[0],r=$("x_res");if(!f)return;$("x_nom").textContent=f.name;r.style.color="";r.textContent="Subiendo…";$("x_btn").disabled=true;
+ try{const fd=new FormData();fd.append("archivo",f);const x=await fetch("/api/contable/extracto",{method:"POST",body:fd}),j=await x.json().catch(()=>({}));
+  if(!x.ok){r.style.color="#b00020";r.textContent=j.error||"El archivo no sirve (error "+x.status+")."}
+  else{r.style.color="";r.textContent=`${j.nuevas} nuevas, ${j.ya_estaban} ya estaban · ${j.por_revisar} por revisar`;cargarLibro()}
+ }catch(e){r.style.color="#b00020";r.textContent="No se pudo conectar con el servidor."}
+ $("x_btn").disabled=false;i.value=""};
 $("tabs").onclick=e=>{const t=e.target.closest("button");if(t)irTab(t.dataset.tab)};
 $("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
 document.addEventListener("fullscreenchange",()=>$("fs").textContent=document.fullscreenElement?"✕ Salir de pantalla completa":"⛶ Pantalla completa");

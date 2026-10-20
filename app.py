@@ -639,7 +639,7 @@ def cont_excel():
     d, h = request.args.get("desde", ""), request.args.get("hasta", "")
     lib = {k: v for k, v in _leer_libro().items() if (not d or k >= d) and (not h or k <= h)}
     c = _cont_cfg()
-    rs = {k: construir_asientos(k, v.get("documentos", []), v.get("banco", {}), c, v.get("cierre")) for k, v in lib.items()}   # R9/ADR-002: filas y DATOS OCR del mismo cálculo
+    rs = {k: construir_asientos(k, v.get("documentos", []), v.get("banco", {}), c, v.get("cierre"), v.get("extracto")) for k, v in lib.items()}   # R9/ADR-002: filas y DATOS OCR del mismo cálculo
     dias, datos = {k: r["filas"] for k, r in rs.items()}, {k: r["datos"] for k, r in rs.items()}
     cambios = [f"{k}: cambió desde que se confirmó ({lib[k].get('guardado', 's/f')}): guardado débito {lib[k].get('debito', 0):,} · crédito {lib[k].get('credito', 0):,}; "
                f"hoy débito {r['debito']:,} · crédito {r['credito']:,}. Revisa el día o vuelve a confirmarlo".replace(",", ".")

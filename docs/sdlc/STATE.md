@@ -5,8 +5,8 @@ goal: Leer el extracto del banco (Excel/CSV descargado) y que cada línea quede 
 size: M      # importador nuevo + reglas de clasificación + asientos con cuentas PUC nuevas + pantalla de revisión; días, no horas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
-next: 5-implement
-current task: T5
+next: 6-test
+current task: — (it.1 T1–T5 hecha; it.2 empieza en T6)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -46,3 +46,4 @@ current task: T5
 2026-10-20 | 5-implement | T2 leer_xlsx (ExtractoInvalido, topes 5 MB/5 000 filas, ocurrencia+clave sha1) real 513 líneas, suma = Valor; 20 suites verdes → T3 (opus)
 2026-10-20 | 5-implement | T3 bloque 5 «Extracto» en construir (GMF, rendimientos, cuenta Rappi, revisar → puente + pendiente) cuadra en libro y Excel; 20 suites verdes → T4
 2026-10-20 | 5-implement | T4 POST /api/contable/extracto (todo o nada, mezcla por clave, memoria tmp+replace) +14 checks, real 513 < 3 s; 20 suites verdes; hallazgo: _dia borra `extracto` al editar un día → añadido a T6 → T5
+2026-10-20 | 5-implement | T5 pestaña ⑤ Extracto: subir septiembre «513 nuevas · 94 por revisar», re-subir no duplica, error claro, 375/768 px ok; hallazgo arreglado: export Excel no pasaba extracto= (app.py); datos reales restaurados; 20 suites verdes; iteración 1 completa → next 6-test
