@@ -290,5 +290,20 @@ if XLSX.exists():
     chk(rx.status_code == 200 and rx.get_json()["nuevas"] == 513 and dt < 3, f"T4: el real (513 líneas) entra en {dt:.1f} s < 3 s")
     chk(sube(XLSX.read_bytes()).get_json()["ya_estaban"] == 513, "T4: el real otra vez: 513 ya estaban")
 
+# --- T7: memoria por tercero (R5, ADR-014) ---
+_M = {"ANA PRUEBA": "51050501"}
+_t7 = X.clasificar([lin("TRANSF A ANA PRUEBA", -50000), lin("TRANSF A  ana   prueba 123", -1000), lin("TRANSFERENCIA CTA SUC VIRTUAL", -7000),
+                    lin("TRANSF A OTRA PERSONA", -900), lin("PAGO PSE ANA PRUEBA", -300)], REGLAS, _M)
+chk(_t7[0]["origen"] == "recordada" and _t7[0]["cuenta"] == "51050501" and _t7[0]["destino"].startswith("cuenta:") and _t7[0]["tercero"] == "ANA PRUEBA",
+    "T7: «TRANSF A ANA PRUEBA» con memoria sale recordada en 51050501")
+chk(_t7[1]["origen"] == "recordada", "T7: el tercero se normaliza (mayúsculas, espacios, número suelto)")
+chk(_t7[2]["destino"] == "revisar" and _t7[2]["tercero"] == "" and _t7[2]["cuenta"] == "", "T7: línea opaca sigue en revisar")
+chk(X.clasificar([lin("TRANSFERENCIA CTA SUC VIRTUAL", -7000)], REGLAS, {"": "51050501", "TRANSFERENCIA CTA SUC VIRTUAL": "51050501"})[0]["destino"] == "revisar", "T7: lo opaco no se recuerda aunque haya memoria")
+chk(_t7[3]["destino"] == "revisar" and _t7[3]["tercero"] == "OTRA PERSONA", "T7: tercero sin memoria sigue en revisar, con el tercero puesto")
+chk(_t7[4]["origen"] == "recordada", "T7: PSE saca el tercero")
+chk(X.clasificar(_t7, REGLAS, _M) == _t7, "T7: idempotente con memoria")
+chk(X.clasificar([lin("TRANSF A ANA PRUEBA", -1)], REGLAS, {"ANA PRUEBA": "mal"})[0]["destino"] == "revisar", "T7: memoria mal formada se ignora")
+chk(X.clasificar([lin("IMPTO GOBIERNO 4X1000", -5)], REGLAS, {"": "51050501"})[0]["origen"] == "regla", "T7: una regla con cuenta no la pisa la memoria")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)

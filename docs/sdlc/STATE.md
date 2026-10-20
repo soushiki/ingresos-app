@@ -6,7 +6,7 @@ size: M      # importador nuevo + reglas de clasificación + asientos con cuenta
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
 next: 5-implement
-current task: T7 (T6 hecho)
+current task: T8 (T7 hecho)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -50,3 +50,4 @@ current task: T7 (T6 hecho)
 2026-10-20 | 6-test | it.1: 20/20 suites verdes; R1, R2, R6, R7, R8 cubiertos; review: FIX-1 clasificar duplica avisos al reclasificar (añadido al inicio de la it.2); smoke del usuario pendiente → next 5-implement FIX-1
 2026-10-20 | 5-implement | FIX-1 clasificar idempotente (recalcula sus 2 avisos, conserva otros) +2 checks; 20 suites verdes → T6 (opus)
 2026-10-20 | 5-implement | T6 casillas efectivas (vacía = extracto, digitada manda + aviso dif) y `extracto` conservado en todos los recálculos de app.py; +13 checks; 20 suites verdes; real simulado 23 días cuadran → T7
+2026-10-20 | 5-implement | T7 memoria por tercero (tercero_de + prefijos_tercero; solo líneas a revisar; sin_tercero nunca se recuerda; origen «recordada») +9 checks; 20 suites verdes → T8

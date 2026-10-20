@@ -2,6 +2,7 @@
   "ayuda": "Reglas del extracto bancario (ADR-013). Gana la primera que encaje: prefijo de la descripcion (sin tildes, mayusculas, anclado al inicio) + signo del valor (+, -, o ±). destino: casilla:<clave> (llave, tarjetas, qr, nequi, transferencias, pse, rappi), cuenta:<clave de 'cuentas'> o revisar. Las cuentas por_confirmar esperan la firma del contador.",
   "ventana_factura_dias": 3,
   "sin_tercero": ["TRANSFERENCIA CTA SUC", "TRANSFERENCIAS A NEQUI", "IMPTO GOBIERNO", "ABONO NETO", "ABONO INTERESES", "PAGO INTERBANC"],
+  "prefijos_tercero": ["TRANSF A ", "PAGO PSE ", "PAGO QR ", "COMPRA "],
   "cuentas": {
     "banco": {"codigo": "11200501", "fuente": "plan de cuentas del manual contable (Cuenta Ahorros Bancolombia)", "por_confirmar": true},
     "gmf": {"codigo": "53152001", "fuente": "manual contable; GMF 4x1000, ET art. 871 y Ley 1111/2006", "por_confirmar": true},

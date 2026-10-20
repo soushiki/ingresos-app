@@ -69,6 +69,9 @@ def cargar_reglas(ruta=None) -> dict:
     st = r.get("sin_tercero")
     if not isinstance(st, list) or any(not isinstance(p, str) or not p.strip() for p in st):
         raise ReglasInvalidas("«sin_tercero» debe ser una lista de prefijos no vacios")
+    pt = r.get("prefijos_tercero")
+    if not isinstance(pt, list) or any(not isinstance(p, str) or not p.strip() for p in pt):
+        raise ReglasInvalidas("«prefijos_tercero» debe ser una lista de prefijos no vacios")
     reglas = r.get("reglas")
     if not isinstance(reglas, list) or not reglas:
         raise ReglasInvalidas("falta la lista «reglas»")
@@ -92,8 +95,28 @@ def cargar_reglas(ruta=None) -> dict:
 _AVISOS_CLASIF = ("signo inesperado", "sin concepto: ninguna regla encaja")
 
 
+def tercero_de(descripcion, reglas: dict) -> str:
+    "Nombre normalizado del tercero (sin prefijo ni numeros sueltos); '' si la descripcion es opaca (sin_tercero) o no trae nombre."
+    d = normalizar(descripcion).strip()
+    if any(d.startswith(normalizar(p).strip()) for p in reglas.get("sin_tercero", [])):
+        return ""
+    for p in reglas.get("prefijos_tercero", []):
+        p = normalizar(p)
+        if d.startswith(p.strip()) and (d == p.strip() or d[len(p.strip()):len(p.strip()) + 1] == " "):
+            resto = d[len(p.strip()):]
+            return " ".join(t for t in resto.split() if not t.isdigit())
+    return ""
+
+
+def _cuenta_recordada(memoria: dict, tercero: str) -> str:
+    "Codigo de 8 digitos recordado para el tercero (valor texto o {cuenta}); '' si no hay o esta mal formado."
+    m = (memoria or {}).get(tercero)
+    c = m.get("cuenta") if isinstance(m, dict) else m
+    return c if isinstance(c, str) and re.fullmatch(r"[0-9]{8}", c) else ""
+
+
 def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = []) -> list:
-    "Pura: devuelve copias de las lineas con concepto, destino, cuenta, origen y avisos. Sin memoria ni facturas todavia."
+    "Pura: devuelve copias de las lineas con concepto, destino, cuenta, origen y avisos. Memoria por tercero (T7); facturas todavia no."
     out = []
     for ln in lineas:
         # los avisos de clasificacion se recalculan desde cero (idempotente); otros avisos se conservan
@@ -116,6 +139,13 @@ def clasificar(lineas: list, reglas: dict, memoria: dict = {}, facturas: list = 
             x.update(concepto=SIN_CONCEPTO, destino="revisar", cuenta="", origen="")
             x["avisos"].append("signo inesperado" if misma else "sin concepto: ninguna regla encaja")
         x.setdefault("tercero", "")
+        if x["destino"] == "revisar":   # ADR-014: solo lo que iba a revisar; lo opaco nunca se recuerda
+            ter = tercero_de(x.get("descripcion"), reglas)
+            if ter:
+                x["tercero"] = ter
+                cod = _cuenta_recordada(memoria, ter)
+                if cod:
+                    x.update(destino="cuenta:recordada", cuenta=cod, origen="recordada")
         out.append(x)
     return out
 
