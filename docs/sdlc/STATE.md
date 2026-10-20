@@ -5,8 +5,8 @@ goal: Indra OCR pasa a ser el segundo lector R3 (en lugar de Tesseract-dígitos)
 size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv + instalador; evidencia ya existe (spike e6e46e2)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
-next: 5-implement
-current task: T4
+next: 6-test
+current task: T5 (I2) tras 6-test de I1
 
 ## Stages
 - [x] 0-triage
@@ -44,3 +44,4 @@ current task: T4
 2026-10-20 | 5-implement | T3 hecho (Sonnet): ocr_module/motores.py fachada (leer_digitos, detectar_giro, estado+aviso); +16 en probar_motores.py; todos los probar_*.py OK → next T4
 2026-10-20 | 5-implement | contexto nuevo: POS Ascomp → Vendty; web de Vendty: POS electrónico DIAN, informes por correo, Siigo y «Api de integración» (corregido: el usuario la mostró); sin documentación pública → T4 en espera de respuestas del usuario
 2026-10-20 | 5-implement | Vendty no está instalado: llega ≈ nov. 2026; fotos actuales = Ascomp → M-25 sigue, T4 sale de espera
+2026-10-20 | 5-implement | T4 hecho (Sonnet): app.py `_leer_hoja` y medir_precision `--completo` usan motores.leer_digitos; capacidades trae motor+aviso (sin venv: tesseract + «Indra no disponible…»); 21 probar_*.py OK; I1 completa → next 6-test (humo real con Indra espera a T8)

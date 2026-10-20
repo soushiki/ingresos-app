@@ -187,8 +187,8 @@ def main():
     from ocr_module import get_engine
     from ocr_module.preprocess import _realesrgan_exe
     if a.completo:
-        from ocr_module.digitos import numeros_tesseract
-        motor = motor_relectura(get_engine(a.motor)); leer, parsear = lector_completo(catalogo_del_libro(DATOS / "libro.json"), numeros_tesseract)
+        from ocr_module import motores
+        motor = motor_relectura(get_engine(a.motor)); leer, parsear = lector_completo(catalogo_del_libro(DATOS / "libro.json"), motores.leer_digitos)
         inf = ejecutar(a.mes, Path(a.fotos), motor, leer, refrescar=a.refrescar, variante="completo", muestra=a.muestra, semilla=a.semilla,
                        peores=a.peores, leer_texto=parsear, reanudar=not a.de_cero)
         print(f"completo {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")

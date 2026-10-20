@@ -14,7 +14,7 @@ from PIL import Image
 from ocr_module import digitize, get_engine
 from ocr_module import pdf as pdflib
 from ocr_module import orientacion
-from ocr_module.digitos import numeros_tesseract
+from ocr_module import motores
 from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta, MEDIOS_CANON, medio_canonico
@@ -251,7 +251,8 @@ def _categoria_por_nombre(ruta: str) -> str:
 
 @app.get("/api/contable/capacidades")
 def cont_capacidades():
-    return jsonify(giro_automatico=orientacion.tesseract_disponible(), pdf=bool(_pdf_ok()))
+    e = motores.estado()
+    return jsonify(giro_automatico=orientacion.tesseract_disponible(), pdf=bool(_pdf_ok()), motor=e["motor"], aviso=e["aviso"])
 
 
 def _pdf_ok() -> bool:
@@ -289,7 +290,7 @@ def _leer_hoja(img_bytes: bytes, eng, giro="auto", categoria="", nombre="", comp
     esperados = relectura.leer_nombre(nombre).numeros if categoria in ("", "comandas") else None   # T8b: cuántos papeles trae la foto
     trozos = orientacion.separar(Image.open(io.BytesIO(png)).convert("RGB"), esperados=len(esperados) if esperados else None)
     h = relectura.leer_hoja(trozos, _motor(eng), categoria, nombre, completa=completa, carpeta=RUTA_RECORTES, separar=orientacion.separar,
-                         catalogo=_catalogo(), leer_digitos=numeros_tesseract)
+                         catalogo=_catalogo(), leer_digitos=motores.leer_digitos)
     h = {**h, "grados": grados}
     if h.get("falta") or not h.get("nombre_entendido", True):   # ADR-009: nombre con número que no se entiende → un marcador sin número
         h["documentos"] = h["documentos"] + _marcadores_de_foto(png, h.get("falta") or [], nombre, h["documentos"], h.get("nombre_entendido", True))
