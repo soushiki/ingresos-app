@@ -315,4 +315,9 @@ _rd = construir("2026-09-17", [_r1, _r2])
 _fd = [f for f in _rd["filas"] if f["codigo"] == "13452501"]
 chk(len(_fd) == 1 and _fd[0]["debito"] == 25000 and _r2["contar"] is False and any("duplicado" in str(x.get("aviso")) for x in _rd["datos"]),
     f"Rappi: mismo ID dos veces -> una fila 13452501 y aviso de duplicado: {[(f['codigo'], f['debito']) for f in _rd['filas']]}")
+# M-25 R4: capacidades informa el motor activo y el aviso (sin indra_venv → tesseract + «Indra no disponible…»)
+_cap = appmod.app.test_client().get("/api/contable/capacidades").get_json()
+_sin_venv = _cap.get("motor") == "tesseract"
+chk(_cap.get("motor") in ("indra", "tesseract") and (not _sin_venv or "Indra no disponible" in (_cap.get("aviso") or "")),
+    f"capacidades trae motor y aviso: {_cap.get('motor')} / {_cap.get('aviso')}")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
