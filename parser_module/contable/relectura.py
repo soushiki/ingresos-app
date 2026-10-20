@@ -103,6 +103,11 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
     return doc
 
 
+def _motivos_rappi(d) -> list:
+    """Papel de Rappi (FIX-1): sin hora ni mesa de POS; solo exige el ID y el valor."""
+    return (["Falta el ID de Rappi"] if not d.get("numero") else []) + (["Falta el valor de Rappi"] if not d.get("valor") else [])
+
+
 def _v0(motor, img, reloj):
     t = reloj()
     with MOTOR_LOCK: texto = motor(img)
@@ -172,7 +177,7 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
 
     def un_trozo(img, texto, seg):
         docs = leer_texto(texto, categoria)
-        if len(docs) == 1 and docs[0]["tipo"] == "venta":
+        if len(docs) == 1 and docs[0]["tipo"] == "venta" and not docs[0].get("rappi"):   # el papel de Rappi no se re-parsea como comanda
             extra = [a for a in docs[0]["avisos"] if a not in parse_venta(texto)["avisos"]]   # p. ej. «lo subiste como comandas…»
             d = leer_recibo(img, _con_v0(motor, texto), ctx, limite_s=max(0.0, tope - reloj()), carpeta=carpeta, umbral=umbral, reloj=reloj,
                            leer_digitos=leer_digitos)
@@ -182,7 +187,7 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
         ventas = [d for d in docs if d["tipo"] == "venta"]
         nombre_rec = recortes.guardar(img, carpeta) if carpeta is not None and ventas else None
         for d in ventas:
-            d["motivos"] = validar(d, ctx); d["estado"] = "dudoso" if d["motivos"] else "validado"
+            d["motivos"] = _motivos_rappi(d) if d.get("rappi") else validar(d, ctx); d["estado"] = "dudoso" if d["motivos"] else "validado"
             if nombre_rec: d["recorte"] = nombre_rec
         return docs, texto
 

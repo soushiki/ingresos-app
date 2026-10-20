@@ -247,6 +247,13 @@ chk(vistos_ctx and all(c and c.get("catalogo") == {"JUGO": 5000} for c in vistos
 vistos_ctx.clear(); leer_hoja([trozo(0)], MotorHoja(t0=rec(85627)), nombre="IMG_1.jpg", **H)
 chk(all(c is None for c in vistos_ctx), "leer_hoja sin catálogo ni esperados: ctx None como antes")
 relectura.validar = _validar
+# FIX-1 · el papel de Rappi pasa por leer_hoja sin re-parsearse como venta
+PAPEL = "\n".join(['Rappi', 'Juan Perez', 'ID 1000000001', 'Restaurante: Su Restaurante', 'Plataforma: WEB', 'Fecha orden: 2026-09-02 21:00', '1 Bandeja paisa | 1 | $25.000', 'Subtotal $25.000', 'Total sugerido a facturar $25.000', 'VERIFICA LOS PRODUCTOS', 'Juan Perez', 'ID 1000000001'])
+h = leer_hoja([trozo(0)], MotorHoja(t0=PAPEL), **H); d = h["documentos"][0]
+chk(len(h["documentos"]) == 1 and d.get("rappi") and d["numero"] == "1000000001" and d["valor"] == 25000 and d["medio"] == "Rappi" and d["estado"] == "validado" and d["motivos"] == [],
+    f"FIX-1: leer_hoja con papel Rappi -> rappi, ID, 25.000, medio Rappi, validado: {d.get('rappi')} {d['numero']} {d['valor']} {d['medio']} {d['estado']} {d['motivos']}")
+h = leer_hoja([trozo(0)], MotorHoja(t0=PAPEL.replace("ID 1000000001", "ID")), **H); d = h["documentos"][0]
+chk(d["estado"] == "dudoso", "FIX-1: papel Rappi sin ID legible -> dudoso")
 
 
 print(f"\n{'FALLAS: ' + str(len(fallos)) if fallos else 'todo bien'}")
