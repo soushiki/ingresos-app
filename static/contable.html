@@ -69,6 +69,10 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
 @media(max-width:1000px){#m5{align-items:stretch}#m5>.col{max-width:100%}}
 @media(max-width:600px) and (min-height:501px){#m5 .bar>button{flex:1 1 100%;min-height:44px}}
 @media(max-height:500px) and (orientation:landscape){#m5 .card{padding:8px}}
+.xl{margin-top:10px}.xl h3{margin:0 0 4px;font-size:15px}.xl .xd{overflow-wrap:anywhere;margin-bottom:6px}.xl .mot{margin:4px 0}.xl .xs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}.xl .xs select{flex:1 1 260px;min-width:0;border:1px solid var(--line);border-radius:6px;padding:6px}.xl .xs label{font-size:13px;display:flex;gap:4px;align-items:center}
+.xf{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:8px 0;overflow-wrap:anywhere}.xf span{flex:1 1 260px;min-width:0}
+@media(max-width:600px) and (min-height:501px){#m5 .xl .xs>*,#m5 .xf>button{flex:1 1 100%;min-height:44px}#m5 .xl .ac button{flex:1 1 100%;min-height:44px}}
+@media(max-height:500px) and (orientation:landscape){.xl{margin-top:6px}.xl .xs{margin-top:4px}}
 @media(max-height:500px) and (orientation:landscape){.rv{flex-direction:row}.rv .rimg{flex:0 0 40%;max-height:80vh}}
 </style></head><body>
 <header>
@@ -167,6 +171,11 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
   <input id="x_file" type="file" accept=".xlsx" hidden>
   <div class="bar"><button id="x_btn">⬆ Subir extracto (.xlsx)</button><span class="m" id="x_nom"></span></div>
   <p id="x_res" class="m" role="status" style="margin:8px 0 0;font-size:15px"></p></div>
+ <div class="card"><div class="bar"><h2 style="margin:0">Por revisar</h2><span class="m" id="xr_n"></span><span class="sp"></span><button class="g" id="xr_re">↻ Recargar</button></div>
+  <p id="xr_vacio" class="m" role="status" style="margin:8px 0 0">No hay líneas del extracto por revisar.</p><div id="xr_ls"></div></div>
+ <div class="card"><h2>Diferencias por medio</h2>
+  <p class="m" style="margin:0 0 8px">Cuando la casilla que digitaste no coincide con el extracto, manda lo digitado. «Usar extracto» borra la casilla y vale el extracto.</p>
+  <p id="xd_vacio" class="m" role="status" style="margin:0">No hay diferencias entre las casillas y el extracto.</p><div id="xd_ls"></div></div>
 </section></main>
 <div id="toast"></div>
 <script>
@@ -432,12 +441,37 @@ function tarjetaRev(r){const d=r.documento,card=el("div",{class:"card rv"}),img=
   if(!Object.keys(c).length)return toast("No cambiaste nada: usa «Confirmar así»");enviar(c)};
  f.append(r.estado==="revisado"?el("div",{class:"ac"},ed):el("div",{class:"ac"},ok,ed));card.append(img,f);return card}
 $("rv_re").onclick=$("rv_est").onchange=cargarRevision;
-function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;$("m4").hidden=n!=4;$("m5").hidden=n!=5;if(n==2)cargarLibro();if(n==3)cargarSoporte();if(n==4)cargarRevision()}
+function irTab(n){document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab==n));$("m1").hidden=n!=1;$("m2").hidden=n!=2;$("m3").hidden=n!=3;$("m4").hidden=n!=4;$("m5").hidden=n!=5;if(n==2)cargarLibro();if(n==3)cargarSoporte();if(n==4)cargarRevision();if(n==5)cargarExtRev()}
 $("x_btn").onclick=()=>$("x_file").click();
+/* T10: revisión del extracto — asignar cuenta/factura (T9) y «usar extracto» por medio (R4) */
+async function refrescaLibroX(){try{LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length}catch(_){}}
+async function postExt(url,cuerpo,btns,msg){btns.forEach(b=>b.disabled=true);try{const x=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cuerpo||{})}),j=await x.json().catch(()=>({}));
+ if(!x.ok){btns.forEach(b=>b.disabled=false);return toast(j.error||"No se pudo guardar",5000)}
+ toast(msg);await refrescaLibroX();await cargarExtRev()}catch(e){btns.forEach(b=>b.disabled=false);toast("Error de red")}}
+function lineaExt(l){const c=el("div",{class:"card xl",id:"xl_"+l.clave}),url=`/api/contable/extracto/${encodeURIComponent(l.fecha)}/${encodeURIComponent(l.clave)}`;
+ c.append(el("h3",null,`${fmtF(l.fecha)} · $ ${fmt(l.valor)}`),el("div",{class:"xd"},(l.descripcion||"")+(l.referencia?" · "+l.referencia:"")));
+ for(const a of (l.avisos||[]))c.append(el("div",{class:"mot"},a));
+ const btns=[];
+ if(l.destino==="factura"){const si=el("button",{type:"button",class:"xl_ok"},"✓ Es de esa factura"),no=el("button",{type:"button",class:"g xl_no"},"✕ No es de esa factura");btns.push(si,no);
+  si.onclick=()=>postExt(url,{factura_id:l.factura_id},btns,"Enlace confirmado: la línea ya no está por revisar");
+  no.onclick=()=>postExt(url,{factura_id:"ninguna"},btns,"Enlace rechazado: sigue por revisar, elige una cuenta");
+  c.append(el("div",{class:"mot ok"},`Parece el pago de la factura ${l.factura_id}. ¿Es correcto?`),el("div",{class:"ac"},si,no))}
+ const sel=el("select",{class:"xl_cta"});sel.setAttribute("aria-label","Cuenta para esta línea");const o0=el("option",null,"— elegir cuenta —");o0.value="";sel.append(o0);
+ for(const k of CUENTAS){const o=el("option",null,`${k.codigo} · ${k.nombre}`);o.value=k.codigo;sel.append(o)}
+ const chk=el("input",{type:"checkbox",class:"xl_rec"}),asig=el("button",{type:"button",class:"xl_asig"},"Asignar cuenta");btns.push(asig);
+ const xs=el("div",{class:"xs"},sel);if(l.tercero)xs.append(el("label",null,chk,`Recordar «${l.tercero}»`));xs.append(asig);
+ asig.onclick=()=>{if(!sel.value)return toast("Elige una cuenta");postExt(url,{cuenta:sel.value,recordar:!!(l.tercero&&chk.checked)},btns,"Asignada: la línea salió de la revisión")};
+ c.append(xs);return c}
+function difExt(d){const b=el("button",{type:"button",class:"g xd_usar",id:`xd_${d.fecha}_${d.medio}`},"Usar extracto"),f=el("div",{class:"xf"},el("span",null,`${fmtF(d.fecha)} · ${d.etiqueta}: digitado $ ${fmt(d.digitada)} ≠ extracto $ ${fmt(d.extracto)} (diferencia $ ${fmt(d.diferencia)})`),b);
+ b.onclick=()=>postExt(`/api/contable/extracto/${encodeURIComponent(d.fecha)}/usar/${encodeURIComponent(d.medio)}`,{},[b],"Casilla borrada: vale el extracto");return f}
+async function cargarExtRev(){let j,d;try{const [a,b]=await Promise.all([fetch("/api/contable/extracto/revision"),fetch("/api/contable/extracto/diferencias")]);j=await a.json();d=await b.json();if(!a.ok||!b.ok)throw new Error(j.error||d.error||"error")}catch(e){return toast("No se pudo cargar el extracto: "+e.message)}
+ $("xr_n").textContent=j.lineas.length?j.lineas.length+" por revisar":"";$("xr_vacio").style.display=j.lineas.length?"none":"";$("xr_ls").replaceChildren(...j.lineas.map(lineaExt));
+ $("xd_vacio").style.display=d.diferencias.length?"none":"";$("xd_ls").replaceChildren(...d.diferencias.map(difExt))}
+$("xr_re").onclick=cargarExtRev;
 $("x_file").onchange=async()=>{const i=$("x_file"),f=i.files[0],r=$("x_res");if(!f)return;$("x_nom").textContent=f.name;r.style.color="";r.textContent="Subiendo…";$("x_btn").disabled=true;
  try{const fd=new FormData();fd.append("archivo",f);const x=await fetch("/api/contable/extracto",{method:"POST",body:fd}),j=await x.json().catch(()=>({}));
   if(!x.ok){r.style.color="#b00020";r.textContent=j.error||"El archivo no sirve (error "+x.status+")."}
-  else{r.style.color="";r.textContent=`${j.nuevas} nuevas, ${j.ya_estaban} ya estaban · ${j.por_revisar} por revisar`;cargarLibro()}
+  else{r.style.color="";r.textContent=`${j.nuevas} nuevas, ${j.ya_estaban} ya estaban · ${j.por_revisar} por revisar`;cargarLibro();cargarExtRev()}
  }catch(e){r.style.color="#b00020";r.textContent="No se pudo conectar con el servidor."}
  $("x_btn").disabled=false;i.value=""};
 $("tabs").onclick=e=>{const t=e.target.closest("button");if(t)irTab(t.dataset.tab)};

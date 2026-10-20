@@ -365,5 +365,19 @@ chk(k_f in _rev(), "T9: el enlace único queda a confirmar en la revisión")
 chk(_u(k_f, factura_id="ninguna").status_code == 200 and k_f in _rev(), "T9: «ninguna» rechaza el enlace: vuelve a revisar")
 chk(_u(k_f, factura_id="fa").status_code == 200 and k_f not in _rev(), "T9: factura_id confirma el enlace y sale de la revisión")
 
+# --- T10: diferencias por medio y «usar extracto» (R4) ---
+_S10 = [(dia_(26), "PAGO QR CLIENTE UNO", "", 64000)]
+chk(sube(xlsx(_S10)).status_code == 200, "T10: importa un abono QR")
+_lib10 = appmod._leer_libro(); _lib10["2026-09-26"]["banco"] = {"qr": 70000}; appmod.RUTA_LIBRO.write_text(json.dumps(_lib10), encoding="utf8")
+_k26 = _lib10["2026-09-26"]["extracto"][0]["clave"]
+_df = cli.get("/api/contable/extracto/diferencias?desde=2026-09-01&hasta=2026-09-30").get_json()["diferencias"]
+chk(len(_df) == 1 and _df[0]["fecha"] == "2026-09-26" and _df[0]["medio"] == "qr" and _df[0]["digitada"] == 70000 and _df[0]["extracto"] == 64000 and _df[0]["diferencia"] == 6000, f"T10: lista la diferencia QR 70.000 vs 64.000 ({_df})")
+chk(cli.get("/api/contable/extracto/diferencias?desde=mal").status_code == 400, "T10: diferencias con fecha mala → 400")
+chk(cli.post("/api/contable/extracto/2026-09-26/usar/zzz").status_code == 400 and cli.post("/api/contable/extracto/2026-09-20/usar/qr").status_code == 404, "T10: usar extracto con medio o día inexistente → 400/404")
+_ru = cli.post("/api/contable/extracto/2026-09-26/usar/qr")
+chk(_ru.status_code == 200 and not _ru.get_json()["dia"]["banco"].get("qr"), "T10: «usar extracto» borra la casilla digitada")
+chk(cli.get("/api/contable/extracto/diferencias").get_json()["diferencias"] == [], "T10: la diferencia queda en 0 (no se lista)")
+chk(bool(appmod._leer_libro()["2026-09-26"]["extracto"]), "T10: el día conserva el extracto")
+
 print(f"\n{len(fallos)} fallos" if fallos else "\nTODO OK")
 raise SystemExit(1 if fallos else 0)

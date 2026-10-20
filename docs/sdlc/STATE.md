@@ -5,8 +5,8 @@ goal: Leer el extracto del banco (Excel/CSV descargado) y que cada línea quede 
 size: M      # importador nuevo + reglas de clasificación + asientos con cuentas PUC nuevas + pantalla de revisión; días, no horas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # asientos de gasto/impuesto con cuentas PUC y tasa 4x1000: confirmar con contabilidad antes de diseñar
-next: 5-implement
-current task: T10 (UI ⑤ revisión + «usar extracto»)
+next: 6-test
+current task: T11 (totales del extracto)
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-20: Excel/CSV sin OCR; v1 = clasificar + asientos; regulado)
@@ -55,3 +55,4 @@ current task: T10 (UI ⑤ revisión + «usar extracto»)
 2026-10-20 | 5-implement | T8 enlace salida↔factura en clasificar (1 candidata → factura + confirmar; 2+ → revisar «¿cuál factura?» sin_asiento; ±3 días) +11 checks incl. fitness ADR-015; 20 suites verdes; abierto: asientos.py aún pone puente a sin_asiento y app.py no pasa facturas → T9
 2026-10-20 | 5-implement | usuario: el abierto de T8 (sin_asiento en asientos.py, facturas= en app.py) entra en T9
 2026-10-20 | 5-implement | T9 rutas revisión (GET) y asignar (POST cuenta|factura_id|ninguna, recordar → memoria tmp+replace); `asignada` sobrevive a reclasificar; sin_asiento sin puente; import pasa facturas=; +16 checks, asignar < 300 ms; 20 suites verdes; «ninguna» deja la línea en revisión con puente (T10) → T10
+2026-10-20 | 5-implement | T10 UI ⑤ revisión (tarjetas con cuenta + recordar, confirmar/rechazar factura) y diferencias con «usar extracto» (GET .../diferencias, POST .../<fecha>/usar/<medio>) +7 checks; navegador con sept. real: asignar saca la línea (94→93, fila a 51050601), «usar extracto» deja 0 diferencias; 375/768 px sin scroll lateral; datos restaurados; 20 suites verdes; iteración 2 completa → next 6-test

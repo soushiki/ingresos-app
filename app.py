@@ -19,7 +19,7 @@ from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta, MEDIOS_CANON, medio_canonico
 from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
-from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de
+from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de, casillas_efectivas, CASILLA_DESC
 from parser_module.contable import referencia, extracto as extr
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura, faltantes
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
@@ -420,6 +420,38 @@ def cont_ext_revision():
             if x.get("destino") == "revisar" or (x.get("destino") == "factura" and x.get("origen") == "factura"):
                 out.append({k: x.get(k) for k in ("fecha", "clave", "descripcion", "referencia", "valor", "avisos", "destino", "factura_id", "tercero")})
     return jsonify(lineas=out)
+
+
+@app.get("/api/contable/extracto/diferencias")
+def cont_ext_diferencias():
+    "T10/R4: por día y medio, la casilla digitada frente a lo que suma el extracto (solo donde hay las dos cifras y no coinciden)."
+    desde, hasta = request.args.get("desde", ""), request.args.get("hasta", "")
+    if (desde and not ISO.match(desde)) or (hasta and not ISO.match(hasta)): return jsonify(error="Fecha inválida"), 400
+    out = []
+    for f, d in sorted(_leer_libro().items()):
+        if (desde and f < desde) or (hasta and f > hasta) or not d.get("extracto"): continue
+        efectivo, dif = casillas_efectivas(d.get("banco", {}), d["extracto"])
+        for k, v in sorted(dif.items()):
+            out.append(dict(fecha=f, medio=k, etiqueta=CASILLA_DESC[k], digitada=int(efectivo[k]), extracto=int(efectivo[k]) - v, diferencia=v))
+    return jsonify(diferencias=out)
+
+
+@app.post("/api/contable/extracto/<fecha>/usar/<medio>")
+def cont_ext_usar(fecha, medio):
+    "T10/R4: «usar extracto» = vaciar la casilla digitada de ese medio (casilla vacía = vale el extracto, T6); recalcula y guarda el día."
+    if not ISO.match(fecha): return jsonify(error="Fecha inválida"), 400
+    if medio not in CASILLA_DESC: return jsonify(error="Medio desconocido"), 400
+    try: reglas = extr.cargar_reglas()
+    except extr.ReglasInvalidas as e: return jsonify(error=str(e)), 400
+    with LOCK:
+        lib, mem, cfg = _leer_libro(), _leer_ext_mem(), _cont_cfg()
+        dia = copy.deepcopy(lib.get(fecha))
+        if not dia or not dia.get("extracto"): return jsonify(error="Ese día no tiene extracto"), 404
+        dia["banco"] = {k: v for k, v in (dia.get("banco") or {}).items() if k != medio}
+        lib[fecha] = dia
+        out = _recalcular_dia(lib, fecha, reglas, mem["memoria"], cfg)
+        _guardar_libro(lib)
+    return jsonify(ok=True, dia=out)
 
 
 @app.post("/api/contable/extracto/<fecha>/<clave>")
