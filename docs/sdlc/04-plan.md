@@ -43,5 +43,20 @@ Formato real del papel (OCR de `2/comandas/85319-318-rappi.jpg#1`, hoy entra com
   — files: ninguno del código; `docs/sdlc/06-test-report.md`
   — hecho: 21 papeles (18 ID) en 13 días; 13452501 sept = [01f] vs ≈ [01f] manual (faltan papeles de 17 días, no es lectura); no-Rappi igual salvo ajuste al cierre 13809501 (4 días) y 28150502 del 11-sep; suites verdes.
 
+## Iteración 1 · defectos de 6-test (2026-10-19)
+- [ ] FIX-1 (S) El papel de Rappi pierde ID y valor al subir la foto — R1 — model: Sonnet
+  — `relectura.leer_hoja` (`un_trozo`, l. 175): un recorte con UNA venta pasa por `leer_recibo`, que re-parsea con `parse_venta`
+  → sale venta sin número, valor 0, medio vacío, «dudoso». Probado con motor falso que devuelve el papel: `rappi=None, numero='', valor=0`.
+  Las pruebas de T1–T4 llamaban a `leer_texto`/`parse_rappi` directo y no pasaban por aquí. Arreglo: si el doc es `rappi`, no ir a
+  `leer_recibo` (o pasarle `parsear=parse_rappi`).
+  — done when: probar_relectura +1 check: `leer_hoja([img], motor→papel Rappi, "comandas")` → rappi, ID 1000000001, valor 25.000,
+  medio Rappi, estado «validado». Suites verdes.
+  — files: `parser_module/contable/relectura.py`, `probar_relectura.py`
+- [ ] FIX-2 (S) `validar` marca «dudoso» todo papel de Rappi (Falta la hora / Falta la mesa) — R1 — model: Sonnet
+  — `validar.validar` (l. 165) trata el papel como comanda del POS. Para `rappi=True`: no pedir mesa; hora = la de «Fecha orden»
+  (parse_rappi puede llenarla) o no pedirla. Sigue pidiendo ID y valor.
+  — done when: probar_validar +1 check: papel Rappi completo → `validar` = []; sin ID → «Falta el número de recibo». Suites verdes.
+  — files: `parser_module/contable/validar.py`, `parser_module/contable/documentos.py` (hora), `probar_validar.py`
+
 Riesgo vivo: la foto mezcla comandas y papel Rappi en una sola imagen (`85319-318-rappi.jpg`); `orientacion.py:162` ya tolera
 una columna de más. Si el OCR parte mal el papel, T1 lo marca con aviso; no se arregla el corte en este ciclo.

@@ -5,7 +5,7 @@ goal: Que cada papel de Rappi se reconozca y entre al libro con su valor de prod
 size: S      # la ruta contable ya existe (POR_COBRAR si medio == "Rappi"; bloque «rappi» del extracto la salda); falta reconocer el papel y leer su ID y total
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # cuentas del PUC que ya usa la app; sin valores tributarios
-next: 6-test
+next: 5-implement
 
 ## Stages
 - [x] 0-triage       (confirmado por el usuario 2026-10-19)
@@ -13,8 +13,8 @@ next: 6-test
 - [x] 2-requirements   (aprobado por el usuario 2026-10-19)
 - [~] 3-design         (S)
 - [x] 4-plan
-- [x] 5-implement      (T1–T4 hechos)
-- [ ] 6-test
+- [ ] 5-implement      (T1–T4 hechos; FIX-1, FIX-2 de 6-test)
+- [ ] 6-test           (1.ª pasada: falla, ver 06)
 - [ ] 7-release
 - [ ] 8-maintain
 
@@ -40,3 +40,4 @@ Lo más barato: anotar a mano el valor de los ≈ 19 papeles/mes en ④ con medi
 2026-10-19 | 2-requirements | Aprobado por el usuario (R1–R3) → 4-plan
 2026-10-19 | 4-plan | 04-plan: 1 iteración ≈ 4 h — T1 leer papel Rappi (ID + total sugerido), T2 ID fuera de numeración + duplicado, T3 respaldo v1.4.0, T4 medir sept. → 5-implement
 2026-10-19 | 5-implement | run: T1–T4 commiteados; sept. 13452501 = [01f] (antes 0) vs manual ≈ [01f] — faltan papeles de 17 días, no lectura; 11-sep 28150502 −[01f] sin explicar → 6-test
+2026-10-19 | 6-test | FALLA: suites verdes, pero en leer_hoja el papel Rappi se re-parsea como venta (sin ID ni valor) → FIX-1; validar lo marca dudoso (hora/mesa) → FIX-2 → 5-implement

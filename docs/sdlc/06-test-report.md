@@ -1,38 +1,31 @@
-# 06 · Informe de pruebas — ciclo Rappi (01c #6), T4 medir septiembre
+# 06 · Informe de pruebas — ciclo Rappi (01c #6), iteración 1
 
-Método: script de una vez (fuera del repo) sobre una COPIA de `datos/libro.json` (el original quedó intacto, mismo hash antes y después).
-Cada papel de Rappi se re-leyó desde su texto guardado con `parse_rappi` (T1), fecha de la carpeta, y se reconstruyó el día con `construir` (T2).
-## Papeles de Rappi (septiembre)
-- Encontrados: 21 papeles = 18 ID distintos (el 26-sep tiene 3 papeles repetidos en 6 fotos; cuentan una vez, R2).
-- Sin aviso: 15 · con aviso «se usó el subtotal» (no se leyó el total sugerido): 3 (7, 24 y 30 sep).
-- Ninguno quedó sin ID ni sin valor.
-| Día | Papeles | Valor 13452501 |
-|---|---|---|
-| 02 | 1 | 25.000 |
-| 03 | 1 | 194.400 |
-| 05 | 1 | 34.800 |
-| 06 | 3 | 137.500 |
-| 07 | 1 | 34.800 (subtotal) |
-| 11 | 1 | 84.600 |
-| 17 | 1 | 30.000 |
-| 24 | 1 | 24.000 (subtotal) |
-| 25 | 1 | 25.000 |
-| 26 | 3 ID (6 fotos) | 163.200 |
-| 28 | 1 | 24.000 |
-| 29 | 2 | 90.000 |
-| 30 | 1 | 32.400 (subtotal) |
-## Suma 13452501 de septiembre vs manual
-- Antes: 0 (los papeles entraban como venta sin número ni valor, o sin cuenta Rappi).
-- Ahora: **[01f]**. Manual ≈ 2.400.000 → faltan ≈ 1.46 M (≈ 61 %).
-- Explicación: el libro solo tiene papeles de Rappi en 13 de 30 días; 17 días no traen ninguno (8–10, 12–16, 18–23, 27, 1, 4).
-  No hay papeles de Rappi sin detectar en el texto guardado (solo una nota de un vale y una referencia al nombre de la foto).
-  La diferencia es de papeles no fotografiados o no cargados, no de lectura. Se cierra al cargar esos papeles (el bloque
-  «rappi» del extracto ya salda 13452501 con los pagos semanales).
-## Ventas que no son de Rappi
-- Mismo código, papeles viejos vs re-leídos: en los 13 días con Rappi y en los 17 sin Rappi solo cambian las filas de abajo.
-- Cambios por la lectura nueva, solo en días con Rappi: ingresos 41401501 sube lo que antes no se leía; el ajuste al cierre
-  13809501 baja en 4 días (6, 7, 29, 30 sep) porque el papel de Rappi ya trae su valor (el total del cierre no cambia);
-  11-sep: 28150502 baja [01f] (causa no investigada, a revisar). Débito = crédito en todos.
-- El libro guardado difiere del código actual en 9 días por reglas posteriores a su guardado (no por Rappi): se arregla al recalcular (T3 ya respalda).
-## Suites
-Todas las `probar_*.py` verdes (probar_imagen.py es una herramienta con argumentos, no una suite).
+## Summary
+- **FALLA (vuelve a 5-implement).** Las 18 suites pasan, pero el papel de Rappi pierde ID y valor en el flujo real de subida (FIX-1).
+- Cobertura: R1 (lectura, construir, sin total, ID fuera de numeración) · R2 (mismo ID = 1 venta + aviso) · R3 (respaldo v1.4.0,
+  v1.3.0 intacto): con prueba. Falta: R1 por `leer_hoja` (la ruta de la foto) → se agrega con FIX-1.
+- Septiembre (T4): 13452501 = [01f] vs manual ≈ [01f]; la diferencia son papeles de 17 días que no están en el libro, no lectura.
+
+## Failures
+- Ninguna en suites (`probar_*.py` todas en verde; `probar_imagen.py` es herramienta, no suite).
+
+## Review findings (diff 9860ae9..HEAD, revisión propia)
+1. **Alta — FIX-1.** `relectura.leer_hoja` → `un_trozo` (l. 175): recorte con un solo doc «venta» va a `leer_recibo`, que re-parsea con
+   `parse_venta`. Prueba con motor falso que devuelve el papel real: `rappi=None, numero='', valor=0, medio=''`, «dudoso».
+   O sea, en la app el papel de Rappi sigue entrando como venta sin número ni valor. T4 midió desde el texto guardado y no lo vio.
+2. **Media — FIX-2.** `validar` pide hora y mesa a todo doc «venta»: cada papel de Rappi queda «dudoso» (Falta la hora / la mesa).
+3. Baja (sin tarea): `validar.faltantes` y `cruces` siguen tomando todo `tipo == venta`; el ID largo nunca está en los números del
+   nombre de la foto, así que no crea faltantes falsos. Queda anotado.
+4. Abierto de T4: 11-sep, 28150502 baja [01f] al re-leer; causa sin investigar. Se revisa en el smoke tras FIX-1.
+- `/security-review`: no aplica (exposed no; no toca auth, BD ni secretos; el input es texto OCR ya existente).
+
+## Debt check
+- Sin linter en el proyecto; el diff suma 1 función (`parse_rappi`, 16 líneas) y 1 helper (`_es_comanda`). Sin DEBT nuevo.
+
+## Smoke (para después de FIX-1/FIX-2, ≈ 5 min en la app local)
+1. Subir `2/comandas/85319-318-rappi.jpg` como «comandas» → aparece el papel con ID 1000000001, $25.000, medio Rappi, sin «dudoso».
+2. En ④ del 02-09: fila 13452501 débito 25.000, tercero Rappi, medio App; débito = crédito.
+3. Subir la misma foto otra vez → una sola fila 13452501 y aviso de duplicado.
+4. Comandas 85318 y 85319 sin faltantes ni «fuera de secuencia».
+5. Ver el 11-09: anotar de dónde sale el −[01f] en 28150502.
+Resultado: pendiente (bloqueado por FIX-1).
