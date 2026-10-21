@@ -5,8 +5,8 @@ goal: Indra OCR pasa a ser el segundo lector R3 (en lugar de Tesseract-dígitos)
 size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv + instalador; evidencia ya existe (spike e6e46e2)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
-next: 5-implement
-current task: T8 (I2)
+next: 6-test
+current task: T8 hecho y commiteado; I2 completa
 
 ## Stages
 - [x] 0-triage
@@ -49,3 +49,4 @@ current task: T8 (I2)
 2026-10-20 | 5-implement | T5 hecho (Sonnet): spikes/indra_ocr/fondo.py; fondo blanco = replicar (residual 0,00° en 3 hojas × 8/25/45°, mismos recortes; medido por perfil de proyección, sin Indra) → línea en ADR-018 → next T6
 2026-10-20 | 5-implement | T6 hecho (Opus): orientacion.enderezar + detectar en preparar_pagina/separar/_recortes; app.py y medir_precision --completo pasan motores.detectar_giro; 0° igual a v1.6.0 (fotos reales 42/43); +9 en probar_separar.py → next T7
 2026-10-20 | 5-implement | T7 hecho (Sonnet): banda #aviso en contable.html (capacidades.aviso con textContent, cada 60 s; @media ancho+alto); verificado en el navegador: sin indra_venv se ve «Indra no disponible: se usa Tesseract», con aviso null se oculta; teléfono OK → next T8
+2026-10-20 | 5-implement | T8 hecho (Sonnet): instalar_indra.bat + indra_requisitos.txt (freeze de venv nuevo py 3.14.8, indra-ocr 1.1.2) + .gitignore; dos corridas → «Indra listo»; motores.estado() = indra; fuera de lista: probar_documento_soporte.py salta carpetas *venv; 22 probar_* OK; I2 completa → next 6-test

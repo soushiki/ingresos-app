@@ -49,7 +49,7 @@ chk(repetido, "ADR-001: UNIQUE(prefijo,numero) ausente" if not repetido else "AD
 try: doc(3, "borrador"); raro = False
 except sqlite3.IntegrityError: raro = True
 chk(raro, "estado fuera de {generado, transmitido, anulado} → IntegrityError")
-otros = [p for p in Path(".").rglob("*.py") if p.name != "soporte_db.py" and "venv" not in p.parts and p.name != Path(__file__).name
+otros = [p for p in Path(".").rglob("*.py") if p.name != "soporte_db.py" and not any(x.endswith("venv") for x in p.parts) and p.name != Path(__file__).name
          and "sqlite3.connect" in p.read_text(encoding="utf8", errors="ignore")]
 chk(not otros, "ADR-001: solo soporte_db.py abre soporte.db" + (f" (también: {otros})" if otros else ""))
 
