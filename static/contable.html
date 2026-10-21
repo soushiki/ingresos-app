@@ -74,6 +74,10 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
 @media(max-width:600px) and (min-height:501px){#m5 .xl .xs>*,#m5 .xf>button{flex:1 1 100%;min-height:44px}#m5 .xl .ac button{flex:1 1 100%;min-height:44px}}
 @media(max-height:500px) and (orientation:landscape){.xl{margin-top:6px}.xl .xs{margin-top:4px}}
 @media(max-height:500px) and (orientation:landscape){.rv{flex-direction:row}.rv .rimg{flex:0 0 40%;max-height:80vh}}
+#aviso{background:#fff3cd;color:#664d03;border-bottom:1px solid #e0c36a;padding:6px 14px;font-size:14px}#aviso[hidden]{display:none}
+@media(max-width:600px){#aviso{padding:6px 10px;font-size:13px}}
+@media(min-width:601px) and (max-width:1000px) and (min-height:501px){#aviso{font-size:14px;padding:8px 12px}}
+@media(max-height:500px) and (orientation:landscape){#aviso{padding:2px 10px;font-size:12px}}
 </style></head><body>
 <header>
 <h1>📒 Libro contable<small>Papeles del día → asientos verificados → tabla → Excel</small></h1>
@@ -82,6 +86,7 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
 <select id="motor"><option value="local">IA local (Ollama)</option><option value="tesseract">Tesseract (solo impreso)</option></select><select id="modelo"></select>
 <button id="fs">⛶ Pantalla completa</button>
 </header>
+<div id="aviso" role="status" hidden></div>
 <div id="tabs"><button data-tab="1" class="on">① Papeles del día <span class="badge" id="b1">0</span></button><button data-tab="2">② Libro contable <span class="badge" id="b2">0</span></button><button data-tab="3">③ Documento soporte <span class="badge" id="b3">0</span></button><button data-tab="4">④ Revisión <span class="badge" id="b4">0</span></button><button data-tab="5">⑤ Extracto</button></div>
 
 <main id="m1">
@@ -496,6 +501,7 @@ function modoOCR(){const f=!!(SINOCR&&SINOCR.forzado),s=!!SINOCR&&(f||$("motor")
  $("motor").style.display=f?"none":"";$("modelo").style.display=!f&&$("motor").value==="local"?"":"none";$("sinocr_t").textContent=f?"(modo sin OCR)":"(Ollama sin conexión: enciéndelo para leer aquí, o importa)"}
 $("motor").onchange=modoOCR;$("impo").onclick=()=>{irTab(2);$("impf").click()};
 window.addEventListener("beforeunload",e=>{if(dias.some(d=>d.docs.length)){e.preventDefault();e.returnValue=""}});
+async function avisoMotor(){try{const j=await (await fetch("/api/contable/capacidades")).json(),a=$("aviso"),t=(j&&j.aviso)||"";a.textContent=t;a.hidden=!t}catch(e){}}
 async function estado(){try{const j=await (await fetch("/api/estado")).json(),c=$("chip");c.className="chip "+(j.ollama?"ok":"bad");c.textContent=j.forzado?"● Sin OCR · importa datos":j.ollama?"● Ollama conectado":"● Ollama sin conexión";SINOCR=j.sin_ocr?j:null;modoOCR();const m=$("modelo"),cur=m.value||j.modelo;let ms=j.modelos.length?j.modelos:[j.modelo];if(j.modelos.length&&!ms.includes(j.modelo))ms=[j.modelo,...ms];m.innerHTML=ms.map(x=>`<option ${x===cur?"selected":""}>${esc(x)}</option>`).join("")}catch(e){$("chip").textContent="● Servidor sin respuesta"}}
-(async()=>{CUENTAS=(await (await fetch("/api/contable/catalogo")).json()).cuentas.filter(c=>c.clase!=="PATRIMONIO");syncUI();await cargarLibro();insigniaRev();estado();setInterval(estado,20000)})();
+(async()=>{CUENTAS=(await (await fetch("/api/contable/catalogo")).json()).cuentas.filter(c=>c.clase!=="PATRIMONIO");syncUI();await cargarLibro();insigniaRev();estado();avisoMotor();setInterval(estado,20000);setInterval(avisoMotor,60000)})();
 </script></body></html>
