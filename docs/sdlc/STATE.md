@@ -1,23 +1,23 @@
 # SDLC state
 
-project: ingresos_app · Indra OCR (M-25)
-goal: Indra OCR pasa a ser el segundo lector R3 (en lugar de Tesseract-dígitos) y el enderezador de fotos, local en su propio venv 3.14, para bajar omitidos de 5/103 a ≤ 2/103 sin empeorar totales; sin Indra vuelve a Tesseract (v1.6.0) y avisa; script de instalación (venv + indra-ocr==1.1.2 + modelo una vez, luego offline)
-size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv + instalador; evidencia ya existe (spike e6e46e2)
+project: ingresos_app · Cuenta PUC por origen e ítem (M-27)
+goal: la app decide la cuenta PUC de cada papel por su origen (comanda, cierre, gasto, extracto) y por el contenido de cada ítem (palabras, proveedor), repartiendo una factura con ítems de varias cuentas, aprendiendo de lo ya digitado en el Excel manual (cuadro `data/cuadro_clasificacion_puc.*`) y con el PUC como referencia (`puc.py`); lo que no se pueda decidir va a la cuenta puente y a revisión
+size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas por origen, mapa a subcuentas PUC, recálculo de días guardados; evidencia ya existe (cuadro + inconsistencias)
 exposed: no  # app Flask local en 127.0.0.1
-regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
-next: 8-maintain
-current task: — (ciclo M-25 cerrado; falta elegir el próximo)
+regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
+next: 1-research
+current task: — (triage confirmado; decisiones: repartir por ítem, regla de mayoría «por confirmar» hasta que conteste el contador)
 
 ## Stages
 - [x] 0-triage
-- [x] 1-research  (ligera: partir de docs/ocr-indra-comparison.md)
-- [x] 2-requirements
-- [x] 3-design
-- [x] 4-plan
-- [x] 5-implement
-- [x] 6-test
-- [x] 7-release
-- [ ] 8-maintain
+- [ ] 1-research  (ligera: partir del cuadro, del informe de inconsistencias y de clasificar.py)
+- [ ] 2-requirements
+- [ ] 3-design
+- [ ] 4-plan
+- [ ] 5-implement
+- [ ] 6-test
+- [ ] 7-release
+- [~] 8-maintain
 
 ## Ciclos anteriores
 - Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0, medio de pago v1.5.0, extracto bancario v1.6.0, Indra OCR v1.7.0 → `archive/<ciclo>/`.
@@ -33,3 +33,6 @@ current task: — (ciclo M-25 cerrado; falta elegir el próximo)
 (log del ciclo #6 Indra OCR → archive/indra-ocr/STATE.md)
 2026-10-24 | 8-maintain | M-25 cerrado (v1.7.0); ciclo → archive/indra-ocr/ (01–04, 06, 07, STATE; 01–03 no estaban en git); 08 al día; M-26 candidato; chequeo mensual 2026-11-17; falta elegir el próximo ciclo (M-26 recomendado o M-18)
 2026-10-24 | 8-maintain | pedido del usuario (fuera de ciclo): export con «BALANCE x CTA <MES>» (fórmulas por fila, saldo inicial del mes anterior), códigos revisados contra el PUC (puc_cuentas.json, aviso si no existe), extracto lee todas las hojas con sus columnas (sept.: Hoja 1 1–23 + MOVIMIENTOS 1–30 → 643 líneas, claves de Hoja 1 iguales; reabre R1 del ciclo extracto); revisión del manual → data/revision_manual_septiembre_2026.xlsx
+2026-10-24 | 8-maintain | M-27 anotado: cuenta PUC por origen + ítem (pedido del usuario); cuadro de clasificación con 1.537 filas del manual → data/cuadro_clasificacion_puc.{xlsx,pdf}; informe del manual: sección PUC sin sugerencias de subcuenta, remite al cuadro
+2026-10-24 | 0-triage | M-27 borrador: meta (cuenta PUC por origen + ítem, aprende del manual, PUC de referencia), M, exposed no, regulated yes (decisiones del contador); alternativa barata: solo ampliar LEXICO (25 palabras) y arreglar 5 choques, una cuenta por papel; informe `data/inconsistencias_clasificacion_puc.pdf` → esperando confirmación
+2026-10-25 | 0-triage | confirmado por el usuario: meta y tamaño M; factura con ítems de varias cuentas se reparte por ítem; los 8 puntos del contador van por regla de mayoría del manual, marcados «por confirmar» → next 1-research (ligera)
