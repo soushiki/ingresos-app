@@ -229,3 +229,14 @@ chk(m2["items"][0]["cuenta"] == "51350501" and m2["cuenta"] == "51350501", "FIX-
 
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
 sys.exit(0 if ok else 1)
+
+# DEBT-2 · el MOTOR se recarga si cambia el mtime de por_confirmar.json (sin reiniciar); sin cambio no se recarga
+import os, app as _app2
+_pcf = _app2._CONT_DIR / "por_confirmar.json"; _st = _pcf.stat()
+_m0 = _app2._motor_vigente(); chk(_app2._motor_vigente() is _m0, "DEBT-2: sin cambio de archivos el MOTOR no se recarga")
+try:
+    os.utime(_pcf, ns=(_st.st_atime_ns, _st.st_mtime_ns + 5_000_000_000))
+    _app2._clasificar([dict(tipo="gasto_caja", tercero="X", detalle="hielo", valor=1000, texto="")])
+    chk(_app2.MOTOR is not _m0 and _app2._motor_vigente() is _app2.MOTOR, "DEBT-2: cambia el mtime de por_confirmar.json → la siguiente clasificación usa un MOTOR nuevo")
+finally:
+    os.utime(_pcf, ns=(_st.st_atime_ns, _st.st_mtime_ns)); _app2._motor_vigente()

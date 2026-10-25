@@ -214,10 +214,34 @@ def _guardar_libro(d: dict):
     tmp = RUTA_LIBRO.with_suffix(".tmp"); tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_LIBRO)
 
 
+_CONT_DIR = Path(__file__).parent / "parser_module" / "contable"
+_ARCH_MOTOR = ("modelo_manual.json", "por_confirmar.json", "terceros_cuentas.json", "terceros_cuentas.example.json")
+
+
+def _mtimes_motor() -> tuple:
+    r = []
+    for n in _ARCH_MOTOR:
+        try: r.append((_CONT_DIR / n).stat().st_mtime_ns)
+        except OSError: r.append(0)
+    return tuple(r)
+
+
+_MT_MOTOR = _mtimes_motor()
+
+
+def _motor_vigente() -> Motor:
+    """DEBT-2: recarga el MOTOR si cambió el mtime de modelo_manual / por_confirmar / terceros_cuentas (4 stat por llamada)."""
+    global MOTOR, _MT_MOTOR
+    mt = _mtimes_motor()
+    if mt != _MT_MOTOR:
+        MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json")); _MT_MOTOR = mt
+    return MOTOR
+
+
 def _clasificar(docs: list) -> list:
     completar_desde_cierre(docs)
     for d in docs:
-        MOTOR.clasificar_doc(d)   # T8: ítems[].cuenta/capa/motivo; venta, Rappi y cierre por origen
+        _motor_vigente().clasificar_doc(d)   # T8: ítems[].cuenta/capa/motivo; venta, Rappi y cierre por origen
     return docs
 
 
@@ -962,7 +986,7 @@ def sop_compra():
              else "El valor debe ser un número entre 1 y 10.000.000.000" if not 0 < valor <= 10**10 else "Medio de pago desconocido" if not medio_detalle_ok else "")
     if error: return jsonify(error=error), 400
     d = {**_base_doc("factura", ""), "fecha": fecha, "tercero": tercero, "detalle": desc, "descripcion": desc, "valor": valor, "medio": medio, "medio_detalle": medio_crudo, "origen": "manual"}
-    MOTOR.clasificar_doc(d)
+    _motor_vigente().clasificar_doc(d)
     with LOCK:
         lib = _leer_libro(); dia = lib.get(fecha) or dict(fecha=fecha, banco={}, cierre={})
         r = construir_asientos(fecha, dia.get("documentos", []) + [d], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"), dia.get("extracto"))
