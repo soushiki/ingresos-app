@@ -254,7 +254,7 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
             partes = por_cuenta(d) if d["valor"] else []
             if len(partes) > 1:   # R3/ADR-019: una fila por (papel, cuenta) con la suma de sus ítems; lo que no cuadra con el total va a la puente
                 for cod, v, nom in partes:
-                    dato(d, detalle=nom or d.get("detalle", ""), valor=v, medio=medio, medio_detalle=detalle, cuenta=cod or cfg["puente_gasto"], aviso="" if cod else FALTA_CUENTA, bloque="factura")
+                    dato(d, detalle=nom or d.get("detalle", ""), valor=v, medio=medio, medio_detalle=detalle, cuenta=cod or cfg["puente_gasto"], aviso="" if cod and cod != cfg["puente_gasto"] else FALTA_CUENTA, bloque="factura")   # ítem que el motor mandó a la puente: misma revisión que un papel sin cuenta
                 dif = d["valor"] - sum(v for _, v, _ in partes)
                 if abs(dif) > 1: dato(d, valor=abs(dif), medio=medio, medio_detalle=detalle, cuenta=cfg["puente_gasto"], aviso=DIF_ITEMS if dif > 0 else DIF_ITEMS_MAS, bloque="factura")
             else:   # un papel de una sola cuenta: la misma fila de siempre, por el total (fitness R8)
@@ -469,7 +469,7 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
             pendientes.append(dict(id=x["id"], tipo=x["tipo"], numero=x["numero"], tercero=x["tercero"], valor=0, motivo="sin valor leído"))
             avisos.append(f"Factura {ref}: sin valor leído, quedó en pendientes (corrige el valor o desmárcala)"); continue
         if x["medio"] == "Tarjeta" or x["medio_detalle"] == "Mixto": avisos.append(f"Factura {ref}: pagada con tarjeta; se registró contra Bancos, revisa el medio")
-        if any(y["aviso"] == FALTA_CUENTA for _, y in xs): avisos.append(f"Factura {ref}: falta la cuenta; quedó en la cuenta puente {cfg['puente_gasto']}")
+        if any(y["aviso"] == FALTA_CUENTA for _, y in xs): avisos.append(f"Factura {ref}: falta la cuenta" + (f" de «{'; '.join(y['detalle'] for _, y in xs if y['aviso'] == FALTA_CUENTA and y['detalle'])}»" if len(xs) > 1 else "") + f"; quedó en la cuenta puente {cfg['puente_gasto']}")
         if any(y["aviso"] in (DIF_ITEMS, DIF_ITEMS_MAS) for _, y in xs): avisos.append(f"Factura {ref}: {DIF_ITEMS}; la diferencia quedó en la cuenta puente {cfg['puente_gasto']}")
         ef = x["medio"] == "Efectivo"; rep = cfg["reporta_efectivo"] if ef else cfg["reporta_banco"]
         desc = x["detalle"] or "Compra"; ter = x["tercero"] or "Proveedor"

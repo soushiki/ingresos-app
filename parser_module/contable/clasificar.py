@@ -6,6 +6,7 @@ from pathlib import Path
 from ..numeros import norm
 from .puc import puc_valida
 from .asientos import CFG as _CFG_ASIENTOS
+from .documentos import items_de
 
 AQUI = Path(__file__).parent
 _PESO_DUDOSO = 0.6
@@ -199,3 +200,28 @@ class Motor:
                     return self._sale(self.puente, 0.0, "puente", f"empate: {vs[i1]['cuenta']} («{vs[i1]['texto']}») y {vs[otro[1]]['cuenta']} («{vs[otro[1]]['texto']}»)")
                 return self._sale(vs[i1]["cuenta"], r1, "vecino", f"parecido a {vs[i1]['fuente']} («{vs[i1]['texto']}»)")
         return self._sale(self.puente, 0.0, "puente", "sin palabras conocidas")
+
+    # T8 (R1, R5): el papel entero. Ventas, Rappi y cierre: la comanda fija el ingreso (origen), sus `items` son líneas de plato y no se tocan.
+    # Compras (factura, gasto de caja, caja menor): cada ítem de items_de(doc) pasa por clasificar_item; doc.cuenta = la del ítem de mayor valor.
+    def clasificar_doc(self, doc: dict) -> dict:
+        """Llena items[].cuenta/conf/capa/motivo y fija doc.cuenta/conf/motivo. Idempotente: un ítem ya decidido (con capa) o heredado de un papel
+        viejo (cuenta sin capa) no se vuelve a clasificar (reclasificar es T10); el `manual` se respeta siempre. doc.cuenta queda "" si el
+        ítem mayor fue a la puente, para que siga el aviso «falta cuenta» (los ítems sí llevan el código de la puente)."""
+        tipo = doc.get("tipo")
+        if tipo in ("venta", "cierre"):
+            if doc.get("cuenta"): return doc                  # ya clasificado, o lo puso el usuario
+            r = self.clasificar_item("rappi" if doc.get("rappi") else tipo, "")
+            doc["cuenta"], doc["conf"], doc["motivo"] = r["cuenta"], r["conf"], r["motivo"]
+            return doc
+        if tipo not in ("factura", "gasto_caja", "caja_menor_manuscrito"): return doc
+        its = items_de(doc); origen = "factura" if tipo == "factura" else "gasto"
+        for it in its:
+            if it.get("manual"): r = self.clasificar_item(origen, it.get("nombre", ""), manual=it["manual"])
+            elif it.get("capa") or it.get("cuenta"): continue
+            else: r = self.clasificar_item(origen, it.get("nombre", ""), doc.get("tercero", ""), doc.get("texto", "") if len(its) == 1 else "")
+            it.update(cuenta=r["cuenta"], conf=r["conf"], capa=r["capa"], motivo=r["motivo"])
+        doc["items"] = its
+        top = max(its, key=lambda i: int(i.get("valor") or 0))
+        doc["cuenta"] = "" if top.get("capa") == "puente" else top["cuenta"]
+        doc["conf"], doc["motivo"] = top.get("conf", 0.0), top.get("motivo", "")
+        return doc

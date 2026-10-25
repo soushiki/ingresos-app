@@ -18,7 +18,7 @@ from ocr_module import motores
 from parser_module import Config, Esquema, parsear
 from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta, MEDIOS_CANON, medio_canonico
-from parser_module.contable import Clasificador, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
+from parser_module.contable import Clasificador, Motor, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de, casillas_efectivas, CASILLA_DESC
 from parser_module.contable import referencia, extracto as extr
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura, faltantes
@@ -190,7 +190,8 @@ def excel_historial():
 
 # ═════════════ LIBRO CONTABLE: papeles → documentos → asientos (débito/crédito) → tabla ═════════════
 RUTA_LIBRO, RUTA_CONT = DATOS / "libro.json", DATOS / "contable.json"
-CLASIF = Clasificador(str(DATOS / "clasificacion.json"))
+CLASIF = Clasificador(str(DATOS / "clasificacion.json"))   # solo guarda lo enseñado; quien clasifica es el Motor (T8)
+MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json"))
 
 
 def _cont_cfg() -> dict:
@@ -216,9 +217,7 @@ def _guardar_libro(d: dict):
 def _clasificar(docs: list) -> list:
     completar_desde_cierre(docs)
     for d in docs:
-        if d["tipo"] in ("gasto_caja", "factura", "caja_menor_manuscrito") and not d.get("cuenta"):
-            r = CLASIF.clasificar(d["tercero"] if d["tipo"] == "factura" else "", d["detalle"], d["texto"])
-            d["cuenta"], d["conf"], d["motivo"] = r["cuenta"], r["conf"], r["motivo"]
+        MOTOR.clasificar_doc(d)   # T8: ítems[].cuenta/capa/motivo; venta, Rappi y cierre por origen
     return docs
 
 
@@ -364,6 +363,7 @@ def cont_aprender():
     j = request.get_json(silent=True) or {}
     if str(j.get("cuenta", "")) not in CATALOGO: return jsonify(error="Cuenta desconocida"), 400
     CLASIF.aprender(str(j["cuenta"]), str(j.get("tercero", "")), str(j.get("detalle", "")))
+    global MOTOR; MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json"))   # lo enseñado vale desde ya
     return jsonify(ok=True)
 
 
@@ -962,8 +962,7 @@ def sop_compra():
              else "El valor debe ser un número entre 1 y 10.000.000.000" if not 0 < valor <= 10**10 else "Medio de pago desconocido" if not medio_detalle_ok else "")
     if error: return jsonify(error=error), 400
     d = {**_base_doc("factura", ""), "fecha": fecha, "tercero": tercero, "detalle": desc, "descripcion": desc, "valor": valor, "medio": medio, "medio_detalle": medio_crudo, "origen": "manual"}
-    r = CLASIF.clasificar(tercero, desc, "")
-    d["cuenta"], d["conf"], d["motivo"] = r["cuenta"], r["conf"], r["motivo"]
+    MOTOR.clasificar_doc(d)
     with LOCK:
         lib = _leer_libro(); dia = lib.get(fecha) or dict(fecha=fecha, banco={}, cierre={})
         r = construir_asientos(fecha, dia.get("documentos", []) + [d], dia.get("banco", {}), _cont_cfg(), dia.get("cierre"), dia.get("extracto"))

@@ -48,7 +48,7 @@ chk(m.clasificar_item("gasto", "transporte", "")["conf"] >= 0.75 and m.clasifica
 # ADR-020 fitness: solo stdlib y el paquete
 fuente = (Path(__file__).parent / "parser_module" / "contable" / "clasificar.py").read_text(encoding="utf8")
 mods = {(n.module or "") if isinstance(n, ast.ImportFrom) else a.name for n in ast.walk(ast.parse(fuente)) if isinstance(n, (ast.Import, ast.ImportFrom)) for a in n.names}
-chk(all(x.split(".")[0] in sys.stdlib_module_names or x in ("", "numeros", "puc", "asientos") or x.startswith(".") or x.startswith("parser_module") for x in mods - {"__future__"}),
+chk(all(x.split(".")[0] in sys.stdlib_module_names or x in ("", "numeros", "puc", "asientos", "documentos") or x.startswith(".") or x.startswith("parser_module") for x in mods - {"__future__"}),
     f"ADR-020: dependencia nueva en el motor ({sorted(mods)})")
 
 # N3 / ADR-020: 1.000 ítems < 5 s con el modelo de producción
@@ -133,6 +133,64 @@ _c = Path(__file__).parent / "parser_module" / "contable"
 tp = json.loads((_c / ("terceros_cuentas.json" if (_c / "terceros_cuentas.json").is_file() else "terceros_cuentas.example.json")).read_text(encoding="utf8"))
 nombre = next(iter(tp)); r = prod.clasificar_item("gasto", "cosa rara", nombre)
 chk(r["capa"] == "proveedor" and r["cuenta"], f"Motor.desde_archivos lee terceros_cuentas: «{nombre}» → {r['cuenta']} ({r['capa']})")
+
+# ---------- T8 · clasificar_doc (R1, R5): el papel entero ----------
+import copy, json, shutil, tempfile
+mt = Motor(MODELO, {"origen": {"venta": "41401501", "rappi": "41401501", "cierre": "41401501"}}, APRENDIDO)
+def item(n, v, **k): return dict(nombre=n, cant=1, valor=v, cuenta="", conf=0.0, capa="", motivo="", manual="") | k
+fa = dict(tipo="factura", tercero="Proveedor Prueba", detalle="", valor=30000, texto="", items=[item("pollo", 20000), item("jabon", 10000)])
+mt.clasificar_doc(fa)
+chk([(i["cuenta"], i["capa"]) for i in fa["items"]] == [("14050501", "lexico"), ("51952501", "lexico")] and all(i["motivo"] for i in fa["items"]), "factura de 2 ítems: cada uno con cuenta, capa y motivo")
+chk(fa["cuenta"] == "14050501" and fa["motivo"].startswith("palabras"), "doc.cuenta = la del ítem de mayor valor")
+antes = copy.deepcopy(fa); mt.clasificar_doc(fa)
+chk(fa == antes, "idempotente: una segunda pasada no cambia nada")
+fm = dict(tipo="factura", tercero="Proveedor Prueba", valor=100, texto="", items=[item("pollo", 100, manual="51959501")])
+mt.clasificar_doc(fm)
+chk(fm["items"][0]["cuenta"] == "51959501" and fm["items"][0]["capa"] == "manual" and fm["cuenta"] == "51959501", "un ítem manual se respeta")
+g = dict(tipo="gasto_caja", tercero="Cuantías menores", detalle="xqzw", valor=5000, texto="")
+mt.clasificar_doc(g)
+chk(g["items"][0]["capa"] == "puente" and g["items"][0]["cuenta"] == PUENTE_GASTO and g["cuenta"] == "", "gasto sin palabras: ítem a la puente y doc.cuenta vacía (sigue el aviso «falta cuenta»)")
+g2 = dict(tipo="gasto_caja", tercero="", detalle="Recibo 206 compra de hielo", valor=8000, texto="")
+mt.clasificar_doc(g2)
+chk(g2["cuenta"] == "14050502" and len(g2["items"]) == 1, "gasto de caja: ítem único por el motor")
+v = dict(tipo="venta", cuenta="", conf=0.0, motivo="", items=[dict(cant=1, nombre="Pollo", valor=25000)], consumo=25000)
+r = dict(tipo="venta", rappi=True, cuenta="", items=[])
+c = dict(tipo="cierre", cuenta="")
+for d in (v, r, c): mt.clasificar_doc(d)
+chk(all(d["cuenta"] == "41401501" and d["motivo"] == "origen: comanda" for d in (v, r, c)), "venta, Rappi y cierre: 41401501, «origen: comanda»")
+chk(v["items"] == [dict(cant=1, nombre="Pollo", valor=25000)], "las líneas de plato de la comanda no se tocan")
+
+# un día de septiembre sobre una COPIA del libro (nunca se escribe datos/libro.json), por la ruta real de la app (_clasificar)
+COMPRAS = ("factura", "gasto_caja", "caja_menor_manuscrito")
+tmp = Path(tempfile.mkdtemp(prefix="probar_motor_")); copia = tmp / "libro.json"
+fuente = Path(__file__).parent / "datos" / "libro.json"
+if fuente.is_file():
+    shutil.copy2(fuente, copia); lib = json.loads(copia.read_text(encoding="utf8"))
+    dia = max((k for k in lib if k.startswith("2026-09")), key=lambda k: len(lib[k].get("documentos", [])), default=None)
+    if dia:
+        import app as _app
+        docs = copy.deepcopy(lib[dia]["documentos"])
+        for d in docs:
+            if d["tipo"] in COMPRAS: d.pop("items", None); d["cuenta"] = ""
+        t0 = time.perf_counter(); _app._clasificar(docs); seg = time.perf_counter() - t0
+        compras = [d for d in docs if d["tipo"] in COMPRAS]
+        chk(compras and all(d["items"] and all(i["capa"] and i["motivo"] and i["cuenta"] for i in d["items"]) for d in compras),
+            f"{dia}: {len(compras)} compras de {len(docs)} papeles con items[].cuenta/capa/motivo")
+        chk(seg < 1, f"N3: clasificar el día {dia} ({len(docs)} papeles) en {seg:.3f} s < 1 s")
+        otra = copy.deepcopy(docs); _app._clasificar(otra)
+        chk(otra == docs, "el día entero es idempotente")
+    else: print("(sin días de septiembre en la copia del libro: se omite)")
+else: print("(sin datos/libro.json: se omite la prueba del día)")
+shutil.rmtree(tmp, ignore_errors=True)
+
+# multicuenta con un ítem a la puente: DATOS OCR y aviso del libro lo marcan (nombra papel e ítem)
+from parser_module.contable.asientos import construir, FALTA_CUENTA
+mp = dict(tipo="factura", id="p1", numero="F1", tercero="Proveedor Prueba", detalle="", valor=30000, medio="Efectivo", contar=True, texto="", fecha="2026-09-10", avisos=[],
+          items=[item("pollo", 20000), item("xqzw", 10000)])
+mt.clasificar_doc(mp)
+rr = construir("2026-09-10", [mp], {}, None, None, None)
+fp = [d for d in rr["datos_ocr"] if d["id"] == "p1"] if "datos_ocr" in rr else []
+chk(any("falta la cuenta" in a and "F1" in a and "xqzw" in a for a in rr["avisos"]) and all((f.get("debito") or 0) >= 0 and (f.get("credito") or 0) >= 0 for f in rr["filas"]), f"ítem a la puente en papel multicuenta → aviso con papel e ítem ({[a for a in rr['avisos'] if 'cuenta' in a]})")
 
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
 sys.exit(0 if ok else 1)
