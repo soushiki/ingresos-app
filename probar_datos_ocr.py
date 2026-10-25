@@ -89,7 +89,7 @@ def evaluar(wb, hoja, celda, memo):
                     tot = 0
                     for k, (h, c) in enumerate(args[0]):
                         if k == 0: continue   # encabezado
-                        if all(igual(wb[args[n][k][0]][args[n][k][1]].value, args[n + 1]) for n in range(1, len(args), 2)): tot += wb[h][c].value or 0
+                        if all(igual(wb[args[n][k][0]][args[n][k][1]].value, args[n + 1]) for n in range(1, len(args), 2)): tot += evaluar(wb, h, c, memo) or 0   # la celda sumada puede ser fórmula (saldo final del balance)
                     return tot
                 raise ValueError(fn)
             h, _, c = t["ref"].rpartition("!")
@@ -341,4 +341,30 @@ a1, c1 = aj_excel(130000)
 chk(a1 == [(42000, 0), (0, 42000)] and c1, f"M-17: efectivo 100.000 → 130.000 en DATOS OCR → el ajuste baja a 42.000 y el mes cuadra: {a1}")
 a2, c2 = aj_excel(400000)
 chk(a2 == [(0, 0), (0, 0)] and c2, f"M-17: si la comanda corregida pasa al cierre, el ajuste queda en 0 (nunca negativo): {a2}")
+# BALANCE x CTA <MES>: antes de cada MOVIMIENTOS, débito/crédito por cuenta = suma de MOVIMIENTOS, saldo inicial = saldo final del mes anterior
+from collections import defaultdict as _dd
+oct_ = [dict(f_, fecha="2026-10-01") for f_ in r12["filas"]]
+wb_b = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": r12["filas"], "2026-10-01": oct_}, "Mi restaurante", "900.000.000-1")))
+chk(wb_b.sheetnames[:4] == ["BALANCE x CTA SEPTIEMBRE", "MOVIMIENTOS SEPTIEMBRE", "BALANCE x CTA OCTUBRE", "MOVIMIENTOS OCTUBRE"], f"balance antes de cada MOVIMIENTOS: {wb_b.sheetnames}")
+memo_b = {}
+def bal(hoja):
+    w = wb_b[hoja]; out = {}
+    for q in range(9, w.max_row + 1):
+        if isinstance(w[f"C{q}"].value, int): out[str(w[f"C{q}"].value)] = tuple(round(evaluar(wb_b, hoja, f"{c}{q}", memo_b) or 0) for c in "EFGH")
+    return out, w
+esp = _dd(lambda: [0, 0])
+for f_ in r12["filas"]: esp[str(f_["codigo"])][0] += f_["debito"] or 0; esp[str(f_["codigo"])][1] += f_["credito"] or 0
+b9, w9 = bal("BALANCE x CTA SEPTIEMBRE"); b10, w10 = bal("BALANCE x CTA OCTUBRE")
+chk(all(b9[c][1:3] == tuple(v) for c, v in esp.items()), "balance: débito y crédito de cada cuenta = suma de sus filas en MOVIMIENTOS")
+chk(set(esp) <= set(b9) and len(b9) >= 70, f"balance: trae todas las cuentas del plan y las del mes ({len(b9)} cuentas)")
+chk(all(b9[c][0] == 0 for c in b9) and "primer mes" in str(w9["A6"].value), "balance: primer mes del archivo con saldo inicial 0 y nota")
+chk(all(b10[c][0] == b9[c][3] for c in b10) and all(b10[c][3] == 2 * b9[c][3] for c in b10), "balance: el saldo inicial de octubre es el saldo final de septiembre")
+t9 = next(q for q in range(9, w9.max_row + 1) if w9[f"A{q}"].value == "Total general")
+chk([round(evaluar(wb_b, w9.title, f"{c}{t9 + 1}", memo_b)) for c in "FG"] == [0, 0], "balance: diferencia con MOVIMIENTOS en 0")
+chk(round(sum(evaluar(wb_b, w9.title, f"L{k}", memo_b) for k in range(1, 7))) == 0 and round(evaluar(wb_b, w9.title, f"H{t9}", memo_b)) == 0, "balance: el resumen por clase suma 0 (débito = crédito)")
+chk(all("C:C" not in str(w9[f"F{q}"].value) for q in range(9, t9)), "balance: SUMIFS por la celda de la fila, no por la columna entera (C:C)")
+from parser_module.contable import puc
+chk(puc.revisar("41401501")[0] == "ok" and puc.revisar("14050501")[0] == "propia" and puc.revisar("23357501")[0] == "no existe", "PUC: subcuenta oficial, propia y que no existe")
+av_p = [str(c.value) for c in load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": [dict(r12["filas"][0], codigo="23357501")]})))["AVISOS"]["A"]]
+chk(any("PUC" in a_ and "233575" in a_ for a_ in av_p), "PUC: una subcuenta que no existe sale en AVISOS")
 print("\nTODO BIEN" if ok else "\nHAY FALLOS")

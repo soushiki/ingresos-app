@@ -1,11 +1,13 @@
-"""Excel con tu estructura: una hoja «MOVIMIENTOS <MES>» por mes (mismas columnas y colores) y una hoja «RESULTADO»."""
+"""Excel con tu estructura: por mes una hoja «BALANCE x CTA <MES>» y una «MOVIMIENTOS <MES>» (mismas columnas y colores), y una hoja «RESULTADO»."""
 from __future__ import annotations
 import hashlib, io, json
+from pathlib import Path
 from collections import defaultdict
 from datetime import date, datetime
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter as L
+from . import puc
 
 MESES = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
 HEAD = ["Fecha", "Código cuenta contable", "Nombre cuenta contable", "Tercero", "Descripción", "Movimiento débito", "Movimiento crédito", "", "Reporta", "Medio de Pago"]
@@ -80,6 +82,50 @@ def hoja_datos(wb, datos: dict) -> dict:
     return inicio
 
 
+PLAN = json.loads((Path(__file__).with_name("plan_de_cuentas.json")).read_text(encoding="utf8"))
+CLASES = ["ACTIVO", "PASIVO", "PATRIMONIO", "INGRESOS", "GASTOS", "COSTOS"]
+PESOS = '#,##0;[Red]-#,##0;"-"'
+
+
+def hoja_balance(wb, nom_mov: str, y: int, m: int, filas: list, negocio: str, nit: str, previa: str | None) -> str:
+    """Balance de prueba por cuenta del mes, con la misma forma que «BALANCE x CTA <MES>» del Excel manual: todas las cuentas del plan
+    más las que use el mes; débito/crédito = SUMIFS sobre MOVIMIENTOS (por la celda de la fila, no la columna entera); saldo inicial = saldo
+    final del mes anterior si está en el mismo archivo, si no 0. Devuelve el nombre de la hoja."""
+    nom = f"BALANCE x CTA {MESES[m - 1]}"
+    ws = wb.create_sheet(nom, wb.sheetnames.index(nom_mov))
+    q, p = f"'{nom_mov}'!", f"'{previa}'!" if previa else None
+    nombres = {c["codigo"]: c["nombre"] for c in PLAN if not c["nombre"].startswith("(")}
+    for c in PLAN: nombres.setdefault(c["codigo"], c.get("nombre_diario") or c["codigo"])
+    for f in filas: nombres.setdefault(str(f["codigo"]), f.get("nombre") or puc.nombre(f["codigo"]) or str(f["codigo"]))
+    cods = sorted(k for k in nombres if k.isdigit())
+    ult = max(f["fecha"] for f in filas)
+    ws["A2"] = "Balance de prueba por tercero"; ws["A3"] = negocio or "(nombre del negocio)"; ws["A4"] = f"NIT {nit}" if nit else "(NIT)"
+    ws["A5"] = f"A {MESES[m - 1].capitalize()} {int(ult[8:]):d} de {y}"
+    for r in (2, 3): ws[f"A{r}"].font = Font(bold=True)
+    if not p:
+        ws["A6"] = "Saldo inicial en 0: es el primer mes del archivo. Copia en la columna E los saldos finales del mes anterior."; ws["A6"].font = Font(italic=True, color="9C5700")
+    for i, h in enumerate(["Clase", "Mayor", "Código cuenta contable", "Nombre cuenta contable", "Saldo inicial", "Movimiento débito", "Movimiento crédito", "Saldo final"], 1):
+        c = ws.cell(8, i, h); c.font = Font(bold=True); c.fill = _f(AZUL); c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[8].height = 32
+    for k, cod in enumerate(cods, 9):
+        ws.cell(k, 1, cod[0]); ws.cell(k, 2, cod[:4]); ws.cell(k, 3, int(cod)); texto(ws.cell(k, 4, nombres[cod]))
+        ws.cell(k, 5, f"=SUMIFS({p}H:H,{p}C:C,$C{k})" if p else 0)
+        ws.cell(k, 6, f"=SUMIFS({q}F:F,{q}B:B,$C{k})"); ws.cell(k, 7, f"=SUMIFS({q}G:G,{q}B:B,$C{k})"); ws.cell(k, 8, f"=E{k}+F{k}-G{k}")
+        for i in range(5, 9): ws.cell(k, i).number_format = PESOS
+        for i in range(1, 9): ws.cell(k, i).border = FINO
+    t = 9 + len(cods)
+    ws.cell(t, 1, "Total general").font = Font(bold=True)
+    for i in range(5, 9): c = ws.cell(t, i, f"=SUM({L(i)}9:{L(i)}{t - 1})"); c.number_format = PESOS; c.font = Font(bold=True)
+    ws.cell(t + 1, 4, "Diferencia con MOVIMIENTOS (debe dar 0)").alignment = Alignment(horizontal="right")
+    ws.cell(t + 1, 6, f"=F{t}-{q}F7").number_format = PESOS; ws.cell(t + 1, 7, f"=G{t}-{q}G7").number_format = PESOS
+    for k, cl in enumerate(CLASES, 1):   # resumen por clase, como J1:M7 del manual
+        ws.cell(k, 10, str(k)); ws.cell(k, 11, cl); ws.cell(k, 12, f'=SUMIFS(H:H,A:A,"{k}")').number_format = PESOS
+    ws.cell(7, 11, "RESULTADO").font = Font(bold=True); ws.cell(7, 12, "=L4+L5+L6").number_format = PESOS
+    for i, w in enumerate([7, 8, 14, 42, 16, 16, 16, 16, 3, 5, 14, 16], 1): ws.column_dimensions[L(i)].width = w
+    ws.freeze_panes = "A9"
+    return nom
+
+
 def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | None = None, avisos: list | None = None) -> bytes:
     """dias: {'2026-09-12': [fila, …]} con filas de asientos.construir(); datos: {'2026-09-12': construir()['datos']} para la hoja DATOS OCR.
     Con datos, cada importe es una fórmula sobre DATOS OCR (ADR-002); filas y datos de un día deben salir del mismo construir().
@@ -91,6 +137,10 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
         for j, x in enumerate(dias[f]):   # R10: una fila sin código de cuenta no entra a MOVIMIENTOS; se avisa
             if str(x.get("codigo") or "").strip(): por_mes[f[:7]].append(dict(x, _j=j))
             else: avisos.append(f"{f}: fila sin código de cuenta ({x.get('descripcion') or x.get('nombre') or 's/d'}, débito {x.get('debito') or 0:,}, crédito {x.get('credito') or 0:,}); no se exportó".replace(",", "."))
+    usados = sorted({str(x["codigo"]) for fs in por_mes.values() for x in fs})
+    for c in usados:   # códigos según el PUC (puc.com.co): una cuenta o subcuenta que no existe se avisa, no se bloquea
+        estado, txt = puc.revisar(c)
+        if estado == "no existe": avisos.append(f"PUC: {txt}")
     hojas = []
     for ym in sorted(por_mes):
         y, m = int(ym[:4]), int(ym[5:7]); nom = f"MOVIMIENTOS {MESES[m - 1]}"; hojas.append((nom, y, m))
@@ -126,6 +176,9 @@ def libro_a_excel(dias: dict, negocio: str = "", nit: str = "", datos: dict | No
             for i in (6, 7): ws.cell(k, i).number_format = '$ #,##0;-$ #,##0;"$ -"'
         for i, w in enumerate([12, 14, 34, 28, 42, 17, 17, 3, 11, 18], 1): ws.column_dimensions[L(i)].width = w
         ws.freeze_panes = "A9"; ws.auto_filter.ref = f"A8:J{ult_fila}"
+    previa = None
+    for nom, y, m in hojas:   # «BALANCE x CTA <MES>» justo antes de su MOVIMIENTOS, como en el Excel manual
+        previa =hoja_balance(wb, nom, y, m, por_mes[f"{y:04d}-{m:02d}"], negocio, nit, previa)
     rs = wb.create_sheet("RESULTADO")
     rs.append(["Mes", "Ingresos (4…)", "Gastos (5…)", "Ganancia (+) / Pérdida (−)"])
     for c in rs[1]: c.font = Font(bold=True); c.fill = _f(AZUL); c.alignment = Alignment(horizontal="center", wrap_text=True)

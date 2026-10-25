@@ -32,3 +32,4 @@ current task: — (ciclo M-25 cerrado; falta elegir el próximo)
 ## Log
 (log del ciclo #6 Indra OCR → archive/indra-ocr/STATE.md)
 2026-10-24 | 8-maintain | M-25 cerrado (v1.7.0); ciclo → archive/indra-ocr/ (01–04, 06, 07, STATE; 01–03 no estaban en git); 08 al día; M-26 candidato; chequeo mensual 2026-11-17; falta elegir el próximo ciclo (M-26 recomendado o M-18)
+2026-10-24 | 8-maintain | pedido del usuario (fuera de ciclo): export con «BALANCE x CTA <MES>» (fórmulas por fila, saldo inicial del mes anterior), códigos revisados contra el PUC (puc_cuentas.json, aviso si no existe), extracto lee todas las hojas con sus columnas (sept.: Hoja 1 1–23 + MOVIMIENTOS 1–30 → 643 líneas, claves de Hoja 1 iguales; reabre R1 del ciclo extracto); revisión del manual → data/revision_manual_septiembre_2026.xlsx

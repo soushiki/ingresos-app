@@ -2,6 +2,13 @@
 
 ## [Sin publicar]
 
+### Excel
+- Cada mes trae ahora la hoja «BALANCE x CTA <MES>» antes de su «MOVIMIENTOS», con la forma del Excel manual: todas las cuentas del plan, saldo inicial, débito, crédito y saldo final, y el resumen por clase. Son fórmulas sobre MOVIMIENTOS (por la celda de cada fila, no por la columna entera). El saldo inicial sale del mes anterior si está en el mismo archivo; el primer mes va en 0, con una nota. Una fila de control muestra la diferencia con MOVIMIENTOS, que debe dar 0.
+- Los códigos de cuenta se revisan contra el PUC (puc.com.co; copia local en `parser_module/contable/puc_cuentas.json`). Una cuenta o subcuenta que no existe sale en AVISOS. Los nombres del PUC se usan cuando un código no está en el plan.
+
+### Extracto
+- El extracto se lee de todas las hojas del archivo que tengan Fecha, Descripción, Referencia y Valor, y no solo de «Hoja 1»: la hoja «MOVIMIENTOS» trae el mes completo y la «Hoja 1» de septiembre llega solo al 23. Una línea que está en las dos hojas entra una sola vez, con la clave de «Hoja 1», así que un extracto importado antes sigue reconocido («ya estaban»).
+
 ## [1.7.0] — 2026-10-24
 Indra OCR: un lector local nuevo lee los números de los recibos y endereza las fotos torcidas o de lado. Si Indra no está, todo funciona con Tesseract como en 1.6.0, y la pantalla lo avisa.
 

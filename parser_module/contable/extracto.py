@@ -7,6 +7,7 @@ import io
 import json
 import re
 import unicodedata
+from collections import Counter
 from pathlib import Path
 
 from .asientos import PUENTES, RECAUDOS_BANCO
@@ -201,8 +202,25 @@ def _valor(v, n):
     return int(round(v))
 
 
+def _hojas_extracto(wb) -> list:
+    """Hojas con las columnas del extracto: «Hoja 1» primero (cabecera en la fila 1, solo esas 4 columnas, como la descarga del banco)
+    y luego cualquier otra cuya cabecera (en las 10 primeras filas) tenga Fecha, Descripción, Referencia y Valor, aunque traiga más columnas
+    (p. ej. la hoja «MOVIMIENTOS» que se arma a mano con el mes completo). Devuelve [(nombre, fila_cabecera, {campo: índice})]."""
+    out = []
+    for nom in sorted(wb.sheetnames, key=lambda n: n != HOJA):
+        for k, cab in enumerate(wb[nom].iter_rows(max_row=10, values_only=True), 1):
+            norm = [normalizar(c).strip() for c in cab]
+            if all(c in norm for c in COLUMNAS):
+                if nom == HOJA and (k != 1 or tuple(norm[:4]) != COLUMNAS or any(c not in (None, "") for c in cab[4:])):
+                    raise ExtractoInvalido("las columnas deben ser Fecha, Descripción, Referencia y Valor")
+                out.append((nom, k, {c: norm.index(c) for c in COLUMNAS})); break
+    return out
+
+
 def leer_xlsx(datos: bytes) -> list:
-    "Lee el extracto (hoja «Hoja 1», 4 columnas) y devuelve lineas con ocurrencia y clave; ExtractoInvalido(motivo) si algo falla."
+    """Lee el extracto y devuelve lineas con ocurrencia y clave; ExtractoInvalido(motivo) si algo falla.
+    Lee todas las hojas con las columnas del extracto (ver _hojas_extracto): una linea que esta en varias hojas (misma fecha, descripcion
+    y valor) cuenta una vez, con la referencia y la clave de la primera hoja, asi una importacion vieja de «Hoja 1» sigue reconocida."""
     from openpyxl import load_workbook
     if not isinstance(datos, (bytes, bytearray)) or not datos:
         raise ExtractoInvalido("el archivo esta vacio")
@@ -213,28 +231,34 @@ def leer_xlsx(datos: bytes) -> list:
     except Exception as e:
         raise ExtractoInvalido("no es un Excel (.xlsx) valido") from e
     try:
-        if HOJA not in wb.sheetnames:
-            raise ExtractoInvalido(f"falta la hoja «{HOJA}»")
-        filas = wb[HOJA].iter_rows(values_only=True)
-        cab = next(filas, None)
-        if cab is None or tuple(normalizar(c).strip() for c in cab[:4]) != COLUMNAS or any(c not in (None, "") for c in cab[4:]):
-            raise ExtractoInvalido("las columnas deben ser Fecha, Descripción, Referencia y Valor")
-        out, vistas = [], {}
-        for n, f in enumerate(filas, 2):
-            f = tuple(f[:4]) + (None,) * (4 - len(f))
-            if all(c is None or str(c).strip() == "" for c in f):
-                continue
-            if len(out) >= MAX_FILAS:
-                raise ExtractoInvalido(f"el archivo tiene mas de {MAX_FILAS} filas")
-            fecha, valor = _fecha(f[0], n), _valor(f[3], n)
-            desc = re.sub(r"\s+", " ", str(f[1] or "")).strip()
-            if not desc:
-                raise ExtractoInvalido(f"fila {n}: la descripcion esta vacia")
-            ref = str(f[2] if f[2] is not None else "").strip()
-            base = f"{fecha}|{normalizar(desc).strip()}|{ref}|{valor}"
-            oc = vistas[base] = vistas.get(base, 0) + 1
-            out.append({"clave": hashlib.sha1(f"{base}|{oc}".encode()).hexdigest()[:16], "fecha": fecha,
-                        "descripcion": desc, "referencia": ref, "valor": valor, "ocurrencia": oc})
+        hojas = _hojas_extracto(wb)
+        if not hojas:
+            raise ExtractoInvalido(f"no hay una hoja con las columnas Fecha, Descripción, Referencia y Valor (p. ej. «{HOJA}»)")
+        out, vistas, previas = [], {}, Counter()
+        for nom, k, col in hojas:
+            esta = Counter()
+            for n, f in enumerate(wb[nom].iter_rows(min_row=k + 1, values_only=True), k + 1):
+                f = tuple(f[col[c]] if col[c] < len(f) else None for c in COLUMNAS)
+                if all(c is None or str(c).strip() == "" for c in f):
+                    continue
+                if nom != HOJA and not isinstance(f[0], (datetime.date, datetime.datetime)):
+                    continue   # totales o notas de una hoja armada a mano
+                donde = f"{nom}, fila {n}" if nom != HOJA else n
+                fecha, valor = _fecha(f[0], donde), _valor(f[3], donde)
+                desc = re.sub(r"\s+", " ", str(f[1] or "")).strip()
+                if not desc:
+                    raise ExtractoInvalido(f"fila {donde}: la descripcion esta vacia")
+                llave = (fecha, normalizar(desc).strip(), valor); esta[llave] += 1
+                if esta[llave] <= previas[llave]:
+                    continue   # ya vino de una hoja anterior
+                if len(out) >= MAX_FILAS:
+                    raise ExtractoInvalido(f"el archivo tiene mas de {MAX_FILAS} filas")
+                ref = re.sub(r"\s+", " ", str(f[2] if f[2] is not None else "").replace("null", "")).strip() if nom != HOJA else str(f[2] if f[2] is not None else "").strip()
+                base = f"{fecha}|{normalizar(desc).strip()}|{ref}|{valor}"
+                oc = vistas[base] = vistas.get(base, 0) + 1
+                out.append({"clave": hashlib.sha1(f"{base}|{oc}".encode()).hexdigest()[:16], "fecha": fecha,
+                            "descripcion": desc, "referencia": ref, "valor": valor, "ocurrencia": oc})
+            previas = previas | esta   # por llave, el máximo entre hojas
         return out
     except ExtractoInvalido:
         raise

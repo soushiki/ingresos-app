@@ -109,7 +109,19 @@ chk(len({l["clave"] for l in L}) == 4 and all(re.fullmatch(r"[0-9a-f]{16}", l["c
 L2 = X.leer_xlsx(xlsx([(D, "pago qr x", "009", 64000)]))
 chk(L2[0]["clave"] == L[0]["clave"], "la clave normaliza la descripción (misma línea, misma clave)")
 chk(X.leer_xlsx(xlsx([(D.replace(hour=9), "PAGO QR  X", "009", 64000)]))[0]["clave"] == L[0]["clave"], "la hora no cambia la clave")
-chk(falla(xlsx([(D, "A", "", 1)], hoja="Otra")) and "Hoja 1" in falla(xlsx([(D, "A", "", 1)], hoja="Otra")), "otra hoja → ExtractoInvalido (dice «Hoja 1»)")
+chk(falla(xlsx([(D, "A", 1)], hoja="Otra", cab=("Fecha", "Descripción", "Valor"))) and "Hoja 1" in falla(xlsx([(D, "A", 1)], hoja="Otra", cab=("Fecha", "Descripción", "Valor"))), "hoja sin las columnas del extracto → ExtractoInvalido (dice «Hoja 1»)")
+chk(len(X.leer_xlsx(xlsx([(D, "A", "", 1)], hoja="Otra"))) == 1, "otra hoja con las 4 columnas también se lee")
+# dos hojas: «Hoja 1» (descarga del banco) + una armada a mano con título, más columnas y el mes completo → cada línea una vez, claves de Hoja 1
+from openpyxl import Workbook as _WB
+_wb = _WB(); _h1 = _wb.active; _h1.title = "Hoja 1"; _h1.append(["Fecha", "Descripción", "Referencia", "Valor"])
+for f_ in [(D, "PAGO QR  X", "009", 64000), (D, "IMPTO GOBIERNO 4X1000", None, -2592.4)]: _h1.append(list(f_))
+_mv = _wb.create_sheet("MOVIMIENTOS"); _mv.append(["NEGOCIO"]); _mv.append(["MOVIMIENTOS DEL MES", None, None, None, None, 1, 2])
+_mv.append(["Fecha", "Descripción", "Concepto", "Referencia", "Valor", None, "Débito"])
+for f_ in [(D, "PAGO QR X", "RECAUDO QR", "009  null", 64000), (D, "IMPTO GOBIERNO 4X1000", "GMF", None, -2592.4), (D.replace(day=24), "PAGO LLAVE Y", "PAGO LLAVE", "null", 5000), (None, "Total", None, None, 66407)]: _mv.append(list(f_))
+_b = io.BytesIO(); _wb.save(_b); _L2 = X.leer_xlsx(_b.getvalue())
+_solo = X.leer_xlsx(xlsx([(D, "PAGO QR  X", "009", 64000), (D, "IMPTO GOBIERNO 4X1000", None, -2592.4)]))
+chk(len(_L2) == 3 and [l["clave"] for l in _L2[:2]] == [l["clave"] for l in _solo] and _L2[2]["referencia"] == "" and _L2[2]["fecha"].endswith("-24"),
+    f"dos hojas: 3 líneas sin repetir, las de Hoja 1 con la misma clave de antes, «null» fuera de la referencia ({[(l['descripcion'], l['referencia']) for l in _L2]})")
 chk(falla(xlsx([(D, "A", "", 1)], cab=("Fecha", "Texto", "Referencia", "Valor"))) is not None, "otras columnas → ExtractoInvalido")
 chk(falla(xlsx([(D, "A", "", 1)], cab=("Fecha", "Descripción", "Referencia"))) is not None, "faltan columnas → ExtractoInvalido")
 chk(falla(xlsx([("no fecha", "A", "", 1)])) is not None, "fecha ilegible → ExtractoInvalido")
@@ -170,9 +182,14 @@ else:
     chk(len(sin) <= 1 and all(ln["avisos"] for ln in sin), f"septiembre real: solo {len(sin)} línea SIN CONCEPTO, con aviso (va a revisión)")
     # T2: el archivo real por leer_xlsx
     LR = X.leer_xlsx(XLSX.read_bytes())
-    chk(len(LR) == 513, f"T2: leer_xlsx del real da 513 líneas ({len(LR)})")
-    chk(sum(l["valor"] for l in LR) == sum(round(float(r[3])) for r in hoja), "T2: suma de valores = suma de Valor de Hoja 1")
-    chk(len({l["clave"] for l in LR}) == 513, "T2: 513 claves distintas")
+    movs = [r for r in wb["MOVIMIENTOS"].iter_rows(min_row=6, values_only=True) if r[0] is not None and hasattr(r[0], "day") and r[4] is not None]
+    chk(len(LR) == len(movs) == 643, f"T2: leer_xlsx del real lee las dos hojas: 643 líneas, el mes completo ({len(LR)})")
+    chk(sum(l["valor"] for l in LR) == sum(round(float(r[4])) for r in movs), "T2: suma de valores = suma de Valor de MOVIMIENTOS")
+    chk(len({l["clave"] for l in LR}) == 643, "T2: 643 claves distintas")
+    _wh = Workbook(); _wh.active.title = "Hoja 1"; _wh.active.append(["Fecha", "Descripción", "Referencia", "Valor"])
+    for r in hoja: _wh.active.append(list(r[:4]))
+    _bh = io.BytesIO(); _wh.save(_bh)
+    chk({l["clave"] for l in X.leer_xlsx(_bh.getvalue())} <= {l["clave"] for l in LR}, "T2: las 513 líneas de Hoja 1 conservan su clave (una importación vieja sigue reconocida)")
 
 # --- T3: bloque 5 «Extracto» en construir (R6, R8, S2, S5) ---
 import io
@@ -262,7 +279,7 @@ r3 = sube(xlsx(S2)); chk(r3.get_json()["nuevas"] == 0 and r3.get_json()["ya_esta
 mem = json.loads(appmod.RUTA_EXT_MEM.read_text(encoding="utf8"))
 chk(len(mem["importaciones"]) == 3 and j1["imp"] in mem["importaciones"] and mem["importaciones"][j1["imp"]]["nuevas"] == 25 and not list(_t.glob("*.tmp")), "T4: importaciones[imp] en extracto_memoria.json (sin .tmp sobrantes)")
 antes, mem_antes = appmod.RUTA_LIBRO.read_bytes(), appmod.RUTA_EXT_MEM.read_bytes()
-malos = [b"no soy xlsx", xlsx(S1, hoja="Otra"), xlsx([(dia_(1), "A", "", 1), ("mala", "B", "", 2)])]
+malos = [b"no soy xlsx", xlsx([(dia_(1), "A", 1)], hoja="Otra", cab=("Fecha", "Descripción", "Valor")), xlsx([(dia_(1), "A", "", 1), ("mala", "B", "", 2)])]
 res = [sube(b) for b in malos]
 chk(all(x.status_code == 400 and x.get_json()["error"] for x in res), "T4: archivo malo → 400 {error}")
 chk(appmod.RUTA_LIBRO.read_bytes() == antes and appmod.RUTA_EXT_MEM.read_bytes() == mem_antes, "T4: archivo malo deja libro.json y la memoria byte a byte iguales")
@@ -287,8 +304,8 @@ chk(rs.status_code == 200 and d7["extracto"] and qr_de(d7) == [7000] and d7["deb
 if XLSX.exists():
     _t2 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = _t2 / "libro.json", _t2 / "m.json"
     t0 = time.time(); rx = sube(XLSX.read_bytes()); dt = time.time() - t0
-    chk(rx.status_code == 200 and rx.get_json()["nuevas"] == 513 and dt < 3, f"T4: el real (513 líneas) entra en {dt:.1f} s < 3 s")
-    chk(sube(XLSX.read_bytes()).get_json()["ya_estaban"] == 513, "T4: el real otra vez: 513 ya estaban")
+    chk(rx.status_code == 200 and rx.get_json()["nuevas"] == 643 and dt < 3, f"T4: el real (643 líneas, dos hojas) entra en {dt:.1f} s < 3 s")
+    chk(sube(XLSX.read_bytes()).get_json()["ya_estaban"] == 643, "T4: el real otra vez: 643 ya estaban")
 
 # --- T7: memoria por tercero (R5, ADR-014) ---
 _M = {"ANA PRUEBA": "51050501"}
@@ -401,16 +418,16 @@ if XLSX.exists():
     d11 = pathlib.Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_EXT_MEM = d11 / "libro.json", d11 / "m.json"; appmod.RUTA_LIBRO.write_text("{}", encoding="utf8")
     chk(sube(XLSX.read_bytes()).status_code == 200, "T11: importa el septiembre real")
     r11 = cli.get("/api/contable/extracto/totales?mes=2026-09").get_json()
-    esp, pend = collections.Counter(), collections.Counter(l["k"] for l in lineas)   # MOVIMIENTOS trae más filas que Hoja 1: solo cuentan las que tienen par
+    esp = collections.Counter()   # la importación ya trae las dos hojas: cuenta todo MOVIMIENTOS
     for r in wb["MOVIMIENTOS"].iter_rows(min_row=6, values_only=True):
-        if r[0] is not None and hasattr(r[0], "day") and r[4] is not None and pend[llave(r[0], r[1], r[4])] > 0:
-            pend[llave(r[0], r[1], r[4])] -= 1
+        if r[0] is not None and hasattr(r[0], "day") and r[4] is not None:
             c, v = ETIQUETA_MAL.get(str(r[2]).strip(), str(r[2]).strip()), round(float(r[4]))
+            if str(r[1]).strip().upper().startswith("TRANSF A ") and c == "TRANSFER NEQUI CR": c = "TRANSFER CR"   # la hoja marca «TRANSF A» NEQUI o CR sin criterio fijo (del 24 al 30, siempre NEQUI); la regla dice CR
             for m in EXCEPCIONES:   # la hoja dice m[3]; la regla dice m[2] (excepción aceptada)
                 if str(r[1]).strip().upper().startswith(m[0]) and v == m[1] and c == m[3]: c = m[2]
             esp[c] += v
     chk({k: v for k, v in r11["totales"].items() if v} == {k: v for k, v in esp.items() if v}, f"T11: totales de septiembre = MOVIMIENTOS (salvo las 2 excepciones) ({set(r11['totales'].items()) ^ set(esp.items())})")
-    chk(r11["total"] == sum(round(float(r[3])) for r in hoja), "T11: total = suma de Valor de Hoja 1")
+    chk(r11["total"] == sum(round(float(r[4])) for r in movs), "T11: total = suma de Valor de MOVIMIENTOS (mes completo)")
 
 # --- FIX-3: una factura no se enlaza a dos líneas de días distintos ---
 _u3 = X.clasificar([sal8(-5000)], REGLAS, {}, [fac8("fa", "2026-09-23", 5000)], usadas=("fa",))[0]
