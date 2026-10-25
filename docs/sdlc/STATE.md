@@ -6,14 +6,14 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: GATE N1 FALLA en T5 (57 % por ítem) → parar; falta ADR plan B antes de It. 2 (decisión del usuario)
+current task: T5a (plan B ADR-023: ampliar cobertura); gate N1 se re-mide en T5c
 
 ## Stages
 - [x] 0-triage
 - [x] 1-research  (ligera → 01-research.md)
 - [x] 2-requirements
 - [x] 3-design
-- [x] 4-plan
+- [x] 4-plan  (+ plan B ADR-023: T5a–T5c)
 - [ ] 5-implement
 - [ ] 6-test
 - [ ] 7-release
@@ -47,3 +47,4 @@ current task: GATE N1 FALLA en T5 (57 % por ítem) → parar; falta ADR plan B a
 2026-10-25 | 5-implement | T3 Motor por capas en clasificar.py (origen→enseñado→léxico→minado/proveedor→vecino→puente); probar_motor 18 checks, 1.000 ítems 0,16 s; 35 % a puente en ítems sintéticos (T5 da la cifra real)
 2026-10-25 | 5-implement | T4 por_confirmar.json (alias, 8 decisiones, origen) + puc_valida al final del motor; 1er intento Sonnet falló revisión (capas minadas solo avisaban, sin alias) → reintento Opus OK; fitness ADR-022 en probar_motor (35 checks); 51104002 a puente hasta decisión 7
 2026-10-25 | 5-implement | T5 medir_clasificacion (jun–ago → sept–oct, 317 ítems de gasto): 57,4 % por ítem (con alias); decide 61 % y acierta 94 % de lo que decide; 124 a puente («sin palabras conocidas»); 5 cuentas ≥ 10 ítems < 60 % → GATE N1 FALLA, parado; informe logs/medir_clasificacion_2026-10-25.txt
+2026-10-25 | 5-implement | ADR-023 plan B (pedido del usuario): ampliar cobertura — proveedores jun–oct (personas a terceros_cuentas.json local), bigramas/FRASES, barrido umbral vecino, cruce «Recibo N» con el libro; gate N1 igual (jun–ago → sept–oct) + walk-forward; tasks T5a–T5c
