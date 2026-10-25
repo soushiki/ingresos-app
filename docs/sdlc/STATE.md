@@ -6,7 +6,7 @@ size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
 next: 5-implement
-current task: T9 (I3)
+current task: T10 (I3)
 
 ## Stages
 - [x] 0-triage
@@ -52,3 +52,4 @@ current task: T9 (I3)
 2026-10-20 | 5-implement | T8 hecho (Sonnet): instalar_indra.bat + indra_requisitos.txt (freeze de venv nuevo py 3.14.8, indra-ocr 1.1.2) + .gitignore; dos corridas → «Indra listo»; motores.estado() = indra; fuera de lista: probar_documento_soporte.py salta carpetas *venv; 22 probar_* OK; I2 completa → next 6-test
 2026-10-20 | 6-test | I2 pasa: 21 probar_* OK; R2 real por la app (20 hojas × 7 ángulos): 18 derechas + 2 de lado, incl ≤ 0,9°, ≤ 0,37 s/hoja, totales 101/107 en todo ángulo; 4 menores aceptados; R1/R3 con --completo en curso (≈ 4 h) → next 5-implement (T9)
 2026-10-24 | 6-test | corrida completa con Indra (informe 20261020-225729): omitidos 5 → 5 (mismos), dudosos 27 → 26, validados con error 7 → 7 → R3 Must pasa; meta ≤ 2/103 (Should) no: R3 solo confirma → M-26 en 08
+2026-10-24 | 5-implement | T9 hecho (Sonnet): probar_indra.py 6 ✓ con indra_venv (ready 1.1.2, numeros, upright 0/90, N5 repetibles); omitido limpio con INDRA_VENV inexistente; pista ADR-018 solo en fallos; probar_* OK → next T10
