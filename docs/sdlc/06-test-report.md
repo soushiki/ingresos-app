@@ -2,7 +2,8 @@
 
 ## Summary
 - **PASA** R2, R4 (interfaz) y R6. Diff: `4086972..HEAD` (13 archivos, +239/−25). Con `indra_venv` instalado, `motores.estado()` = `indra`, sin aviso.
-- **R1/R3 (números con el bucle completo) en curso:** `medir_precision --completo --peores 20 --de-cero` en segundo plano (≈ 4 h, se puede reanudar), log en `datos/referencia/m25_completo.log`. Se compara con el informe `20261019-135040` (omitidos 5, dudosos 27, validados con error 7, 103 recibos).
+- **R3 (Must) PASA, meta Q3 (Should) NO:** `--completo --peores 20` con Indra (informe `20261020-225729`, ≈ 1 h, 2,9 min/foto) vs. v1.6.0 (`20261019-135040`), mismo libro (huella igual): omitidos 5 → 5 (los mismos: 85334, 85375, 85389, 85390, 85411, todos «número»), dudosos 27 → 26 (sale 85343), validados con error 7 → 7, acierto por campo idéntico. Nada empeora; ≤ 2/103 no se alcanza: R3 solo **confirma** lo que qwen leyó, no recupera un recibo cuyo número qwen no vio → M-26 en 08.
+- **R1:** la regla está cubierta (`probar_motores.py`); el informe no guarda las notas de R3, así que «≥ 75 números confirmados» queda con la medida del spike (81/103, mismo lector y `_enteros`) y la caída de dudosos 27 → 26.
 
 ## R2 por el camino de la app (20 hojas, 107 recibos; `preparar_pagina` + `separar` con `detectar=motores.detectar_giro`, lector `motores.leer_digitos`)
 | ángulo | hojas derechas | incl. restante máx | números | totales | s/hoja |
