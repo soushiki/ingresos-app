@@ -6,7 +6,7 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: T5a (plan B ADR-023: ampliar cobertura); gate N1 se re-mide en T5c
+current task: T5b (T5a hecho); gate N1 se re-mide en T5c
 
 ## Stages
 - [x] 0-triage
@@ -48,3 +48,5 @@ current task: T5a (plan B ADR-023: ampliar cobertura); gate N1 se re-mide en T5c
 2026-10-25 | 5-implement | T4 por_confirmar.json (alias, 8 decisiones, origen) + puc_valida al final del motor; 1er intento Sonnet falló revisión (capas minadas solo avisaban, sin alias) → reintento Opus OK; fitness ADR-022 en probar_motor (35 checks); 51104002 a puente hasta decisión 7
 2026-10-25 | 5-implement | T5 medir_clasificacion (jun–ago → sept–oct, 317 ítems de gasto): 57,4 % por ítem (con alias); decide 61 % y acierta 94 % de lo que decide; 124 a puente («sin palabras conocidas»); 5 cuentas ≥ 10 ítems < 60 % → GATE N1 FALLA, parado; informe logs/medir_clasificacion_2026-10-25.txt
 2026-10-25 | 5-implement | ADR-023 plan B (pedido del usuario): ampliar cobertura — proveedores jun–oct (personas a terceros_cuentas.json local), bigramas/FRASES, barrido umbral vecino, cruce «Recibo N» con el libro; gate N1 igual (jun–ago → sept–oct) + walk-forward; tasks T5a–T5c
+2026-10-25 | 5-implement | T5a (run parado por el usuario): minar_manual.py con bigramas (94), modelo jun–oct, terceros persona → terceros_cuentas.json (gitignored); probar_minado TODO OK; diff dentro de los files de T5a; SIN COMMIT. Suite: 16/26 OK hasta probar_motores; probar_motores_falso.py se colgó 2 h (0 CPU, matado; no es de T5a → anotar en 08); faltan probar_parser…probar_variantes (10). Reanudar: correr esos 10 + motores_falso, commit T5a, /sdlc run → T5b
+2026-10-25 | 5-implement | T5a reanudado: suite completa verde (25 tests; probar_motores_falso es el trabajador falso, no test → M-28 cerrado); commit T5a
