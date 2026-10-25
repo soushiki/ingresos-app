@@ -6,7 +6,7 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: T5d (plan B 2 ADR-024: spike sklearn; pide permiso antes de instalar la dependencia)
+current task: T6 (It. 2; gate N1 cerrado por ADR-025: ≥ 67 % por ítem + ≥ 85 % precisión decidida)
 
 ## Stages
 - [x] 0-triage
@@ -53,3 +53,5 @@ current task: T5d (plan B 2 ADR-024: spike sklearn; pide permiso antes de instal
 2026-10-25 | 5-implement | T5b capa proveedor lee terceros_cuentas.json (o .example), bigramas minados, FRASES «pago de compras» → 14050501, capa «confirmar» (domiciliario 28150501, por_confirmar motor:true); probar_motor +8 checks; suite 24/24 verde; «día laborado» sin frase (sin cifra de mayoría)
 2026-10-25 | 5-implement | T5c re-medir: N1 67,2 % por ítem (antes 57,4 %), cobertura 77 %, precisión decidida 87,3 %; walk-forward →sept 66,2 %, →oct 77,5 %; umbral 0,75/0,05 sin cambio (ningún par ≥ 90 %); aporte: Recibo N +6,9, choque +2,2, bigramas +0,3, frases +0,3, terceros 0; libro solo tiene sept.; 4 cuentas ≥ 10 ítems < 60 % → GATE FALLA, parado; informe logs/medir_clasificacion_2026-10-25.txt
 2026-10-25 | 5-implement | ADR-024 plan B 2 (pedido del usuario, N1 sigue 85 %): capa «ml» TF-IDF char_wb + LR, entrena con sklearn (requirements-entrenar.txt), predice con numpy desde modelo_ml.json local (N5); tasks T5d (spike, mini-gate) – T5f (gate)
+2026-10-25 | 5-implement | T5d spike sklearn 1.9.1 (wheel cp315): N1 68,8 % (+1,6 sobre T5c), cobertura 81,7 %, precisión 84,2 %, ml decide 15 / acierta 5; ml solo 67,2 %; mismas 4 cuentas débiles → MINI-GATE FALLA. Instalado en site-packages de usuario con auditoría OSV, NO pip-audit (no estaba) → no se cumplió la condición; sin commit; informe logs/spike_ml_2026-10-25.txt
+2026-10-25 | 5-implement | ADR-025 (pedido del usuario): N1 → ≥ 67 % por ítem + ≥ 85 % precisión decidida (T5c 67,2 / 87,3 → pasa); regla por cuenta → informe R9 + T12; sklearn/scipy/joblib/threadpoolctl desinstalados; T5e/T5f descartadas; spike guardado como registro → sigue T6
