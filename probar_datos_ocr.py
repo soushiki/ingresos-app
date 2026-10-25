@@ -399,6 +399,11 @@ chk([(x["cuenta"], x["valor"], x["aviso"]) for x in _d7e][-1] == (PG, 800, DIF_I
     f"ADR-019/M-1: ítems > total → el sobrante es un CRÉDITO positivo a la puente, nada negativo: {[(x['codigo'], x['debito'], x['credito']) for x in _f7e]}")
 _x7e = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": _r7e["filas"]}, datos={"2026-09-12": _r7e["datos"]}))); _s7e, _m7e = movimientos(_x7e)
 chk([(int(d), int(c)) for _, d, c in _m7e] == [(x["debito"], x["credito"]) for x in _r7e["filas"]], "ADR-019/M-1: evaluadas, las fórmulas de ítems > total dan lo mismo que construir()")
+# FIX-3 (06 #6): diferencia de 0,24 % (≤ 1 %) → se suma al ítem mayor, sin fila puente ni aviso
+_r7f = construir("2026-09-12", [dict(_fr, valor=10000, items=[_it("Aseo", 6000, "51350501"), _it("Acueducto", 3976, "51352501")])])
+_d7f = [(x["cuenta"], x["valor"]) for x in _r7f["datos"] if x["id"] == "repartida"]
+chk(_d7f == [("51350501", 6024), ("51352501", 3976)] and not any(DIF_ITEMS in a_ for a_ in _r7f["avisos"]) and _r7f["debito"] == _r7f["credito"],
+    f"FIX-3: diferencia 0,24 % → al ítem mayor, sin puente ni aviso, débitos = créditos: {_d7f}")
 xl7 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": _r7["filas"]}, datos={"2026-09-12": _r7["datos"]})))
 chk(sum(1 for q in xl7["DATOS OCR"].iter_rows(min_row=2, values_only=True) if "repartida" in q) == 3, "R8: DATOS OCR del Excel trae una fila por cuenta del papel (más la diferencia)")
 _s7, _m7 = movimientos(xl7)

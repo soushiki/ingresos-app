@@ -50,6 +50,9 @@ sin = dict(viejo); sin.pop("cuenta_manual")
 chk(items_de(sin)[0]["manual"] == "" and items_de(sin)[0]["cuenta"] == "51959501", "papel viejo sin cuenta_manual → manual vacío")
 guardado = dict(viejo, items=[dict(nombre="a", cant=1, valor=60, cuenta="14050501", conf=.9, capa="lexico", motivo="m", manual=""), dict(nombre="b", cant=1, valor=40, cuenta="51959501", conf=.5, capa="puente", motivo="", manual="")])
 chk(items_de(guardado) == guardado["items"], "si ya trae items[].cuenta se devuelven tal cual (idempotente)")
+# FIX-3 (06 #5): palabra completa, no subcadena
+d = doc("Factura 9\n1 Olivas negras 4000\n1 Granito 3000\n1 Activa fit 3000\nTOTAL 10000", tipo="factura", valor=10000)
+chk([i["nombre"] for i in items_de(d)] == ["Olivas negras", "Granito", "Activa fit"], f"«olivas», «granito», «activa» son ítems: {[i['nombre'] for i in items_de(d)]}")
 # no muta el papel
 d = doc(T_NV); antes = repr(d); items_de(d)
 chk(repr(d) == antes, "items_de no modifica el papel")

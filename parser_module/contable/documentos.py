@@ -256,7 +256,7 @@ def parse_factura(texto):
     return d
 
 
-_NO_ITEM = re.compile(r"descripci|desciprci|total|\bcant\b|vr\.? ?unit|subtotal|iva|domicilio|propina|dcto|descuento|efectivo|cambio|nit|cufe|fecha|telefono")
+_NO_ITEM = re.compile(r"\b(?:descripci\w*|desciprci\w*|total\w*|cant|vr\.? ?unit\w*|subtotal|iva|domicilios?|propinas?|dcto|descuentos?|efectivo|cambio|nit|cufe|fecha|telefono)\b")   # palabra completa: «olivas», «granito», «activa» son ítems (06 #5)
 _NUM = r"\$?\s*\d[\d.,]*"
 _TOPE_ITEM = 5_000_000   # un «ítem» mayor es un NIT, CUFE o resolución, no un valor
 _MIN_ITEM = 100          # un «Reci: | 1 | 1» no es un ítem

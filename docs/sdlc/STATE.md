@@ -6,7 +6,7 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: FIX-3 (FIX-1, FIX-2 hechos) →, DEBT-2 → re-smoke → It. 3 (T9–T12)
+current task: DEBT-2 (FIX-1…3 hechos) →, DEBT-2 → re-smoke → It. 3 (T9–T12)
 
 ## Stages
 - [x] 0-triage
@@ -61,3 +61,4 @@ current task: FIX-3 (FIX-1, FIX-2 hechos) →, DEBT-2 → re-smoke → It. 3 (T9
 2026-10-25 | 6-test | It. 2: suite 25/25 verde, R1/R2/R3/R5/R8 cubiertos (+1 check R2 cierre→vale), N3 0,013 s; /code-review high 8 hallazgos, 3 reproducidos que ponen cuenta equivocada (cuenta a mano pisada; cuenta_manual booleano → «True»; puente nunca se reclasifica) → FALLA; FIX-1…3 + DEBT-2 en 04; smoke tras los FIX → next 5-implement
 2026-10-25 | 5-implement | FIX-1 cuenta a mano: clasificar_doc respeta doc.cuenta con cuenta_manual y la pasa a los ítems como manual; items_de con cuenta_manual=True → su cuenta, nunca «True»; +5 checks (motor 3, items 2); suite 25/25 verde; queda: con varios ítems la cuenta elegida va a todos
 2026-10-25 | 5-implement | FIX-2 ítems vigentes: items_huella (tipo, tercero, detalle, valor) → si cambia y no hay ítem manual se rehacen con items_de; ítems en puente se reclasifican cada pasada; +6 checks probar_motor; suite 25/25 verde; papeles viejos sin huella la graban en su 1.ª pasada; si hay algún ítem manual no se rehace nada (conservador)
+2026-10-25 | 5-implement | FIX-3 _NO_ITEM por palabra completa (olivas/granito/activa quedan); diferencia ≤ 1 % se suma al ítem mayor, > 1 % sigue a puente; +2 checks (items, datos_ocr 0,24 % D = C); suite 25/25 verde

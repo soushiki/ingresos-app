@@ -253,9 +253,11 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
                 medio, detalle = (max(pagos)[1] if pagos else ""), "Mixto"
             partes = por_cuenta(d) if d["valor"] else []
             if len(partes) > 1:   # R3/ADR-019: una fila por (papel, cuenta) con la suma de sus ítems; lo que no cuadra con el total va a la puente
+                dif = d["valor"] - sum(v for _, v, _ in partes)
+                if dif and abs(dif) <= 0.01 * d["valor"]:   # mismo ±1 % de items_de (06 #6): la diferencia se suma al ítem mayor, sin fila puente
+                    partes = [(partes[0][0], partes[0][1] + dif, partes[0][2])] + partes[1:]; dif = 0
                 for cod, v, nom in partes:
                     dato(d, detalle=nom or d.get("detalle", ""), valor=v, medio=medio, medio_detalle=detalle, cuenta=cod or cfg["puente_gasto"], aviso="" if cod and cod != cfg["puente_gasto"] else FALTA_CUENTA, bloque="factura")   # ítem que el motor mandó a la puente: misma revisión que un papel sin cuenta
-                dif = d["valor"] - sum(v for _, v, _ in partes)
                 if abs(dif) > 1: dato(d, valor=abs(dif), medio=medio, medio_detalle=detalle, cuenta=cfg["puente_gasto"], aviso=DIF_ITEMS if dif > 0 else DIF_ITEMS_MAS, bloque="factura")
             else:   # un papel de una sola cuenta: la misma fila de siempre, por el total (fitness R8)
                 dato(d, valor=d["valor"], medio=medio, medio_detalle=detalle, cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
