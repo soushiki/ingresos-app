@@ -48,7 +48,7 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 .est{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}.est.en_plazo{background:var(--verde);color:#1b6b46}.est.vence_pronto{background:var(--warn);color:#8a5d00}.est.vencida{background:#fdeceb;color:var(--bad)}.est.hecho{background:var(--head);color:#17466f}
 #tws td{padding:6px}#tws tr.hecho td{opacity:.7}.sc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .ib{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:6px 0;overflow-wrap:anywhere}.ib span{flex:1 1 180px;min-width:0}.ib select{flex:1 1 200px;min-width:0;max-width:100%}
-#rc .wrap{margin-top:8px}#rc_out .bar{margin-top:8px}#rc_out td,#rc_out th{overflow-wrap:anywhere}#rc_out .num{white-space:nowrap;overflow-wrap:normal}#rc_out .puente{background:#fff4d6}
+#rc .wrap{margin-top:8px}#rc_out .bar{margin-top:8px}#rc_out td,#rc_out th{overflow-wrap:anywhere}#rc_out .num,#rc_out .f{white-space:nowrap;overflow-wrap:normal}#rc_out .puente{background:#fff4d6}
 @media(max-width:1000px){main{flex-direction:column}#panel{width:auto}}
 @media(max-width:600px) and (min-height:501px){#rc .bar>*{flex:1 1 100%;min-height:44px}#rc_out .bar>button{flex:1 1 100%}.ib select{flex:1 1 100%}}
 @media(min-width:601px) and (max-width:1000px) and (min-height:501px){#rc .wrap{max-height:50vh}}
@@ -435,6 +435,10 @@ function rcTabla(v){const out=$("rc_out");out.replaceChildren();out.hidden=false
  tb.append(body);out.append(el("p",null,`${N} ítem(s) cambian de cuenta en ${new Set(cu0.map(c=>c.fecha)).size} día(s).${nd?` También se ajustan ${nd} copia(s) duplicada(s), que no van a los libros.`:""}`),el("div",{class:"wrap"},tb));
  const aPuente=cu0.filter(c=>c.despues===v.puente);
  if(aPuente.length){const ul=el("ul",{class:"av"});for(const c of aPuente.slice(0,30))ul.append(el("li",null,`${fmtF(c.fecha)} · ${c.tercero||c.numero||"?"} · ${c.item} · $ ${fmt(c.valor)}: ${c.antes} → puente (queda «falta cuenta»)`));out.append(el("p",{class:"bad"},`${aPuente.length} ítem(s) pasan a la cuenta puente; corrígelos en la tarjeta del papel.`),ul)}
+ if((v.dias||[]).length){const ab=(a,b)=>a===b?fmt(a):`${fmt(a)} → ${fmt(b)}`,t=el("table"),tbd=el("tbody");
+  t.append(el("thead",null,el("tr",null,el("th",null,"Día"),el("th",{class:"num"},"Débito"),el("th",{class:"num"},"Ingresos"),el("th",{class:"num"},"Gastos"))));
+  for(const d of v.dias)tbd.append(el("tr",{class:"puente"},el("td",{class:"f"},fmtF(d.fecha)),el("td",{class:"num"},ab(d.antes.debito,d.despues.debito)),el("td",{class:"num"},ab(d.antes.ingresos,d.despues.ingresos)),el("td",{class:"num"},ab(d.antes.gastos,d.despues.gastos))));
+  t.append(tbd);out.append(el("p",{class:"bad"},`⚠ Al rehacer ${v.dias.length} día(s) cambian también el débito o los ingresos (reglas nuevas de otros ciclos, no solo la cuenta). Revísalos antes de Aplicar:`),el("div",{class:"wrap"},t))}
  const ap=el("button",{type:"button"},"Aplicar"),ca=el("button",{type:"button",class:"g"},"Cancelar");
  ca.onclick=()=>{RC=null;out.hidden=true;out.replaceChildren();rcMsg("")};
  ap.onclick=async()=>{ap.disabled=ca.disabled=true;try{const{r,j}=await rcPedir({mes:v.mes,huella:v.huella});

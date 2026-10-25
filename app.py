@@ -428,7 +428,7 @@ def cont_reclasificar():
             else: libre[k] = dia
         motor = _motor_vigente()
         if huella is None:
-            v = reclas.plan(libre, mes, motor)
+            v = reclas.plan(libre, mes, motor, _cont_cfg())
             return jsonify(**v, bloqueados=bloqueados, puente=motor.puente)
         try: nuevo = reclas.aplicar(libre, dict(mes=mes, huella=huella), motor, _cont_cfg())
         except reclas.HuellaDistinta as e: return jsonify(error=str(e)), 409

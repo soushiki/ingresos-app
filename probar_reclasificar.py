@@ -65,8 +65,17 @@ chk(dia["debito"] == dia["credito"] and dia["filas"], f"día rehecho por constru
 r = dia.get("reclasificaciones", [])
 chk(len(r) == 1 and r[0]["version"] == VERSION and len(r[0]["cambios"]) == 2 and r[0]["fecha_hora"] == "2026-10-25T12:00:00", "rastro reclasificaciones[] en el día (S3)")
 chk(nuevo["2026-08-31"] is LIB["2026-08-31"], "agosto no se toca")
+chk(p["dias"] == [], "sin cfg no se rehacen días (dias = [])")
+pc = plan(LIB, "2026-09", m, cfg)
+chk([d["fecha"] for d in pc["dias"]] == ["2026-09-05"] and pc["dias"][0]["antes"]["debito"] == 0 and pc["dias"][0]["despues"]["debito"] == dia["debito"],
+    f"día cuyo débito cambia sale con antes → después igual al de aplicar: {pc['dias']}")
+chk(pc["dias"][0]["despues"]["ingresos"] == 40000, f"ingresos del día (cuentas 4: venta 40.000): {pc['dias'][0]['despues']}")
+chk(pc["huella"] == p["huella"], "la huella no depende de cfg (aplicar sigue aceptando la vista)")
+solo_gasto = copy.deepcopy(nuevo); next(i for d in solo_gasto["2026-09-05"]["documentos"] if d["id"] == "f1" for i in d["items"] if i["nombre"] == "Cerveza")["cuenta"] = "51952501"
+ps = plan(solo_gasto, "2026-09", m, cfg)
+chk(len(ps["cambios"]) == 1 and ps["dias"] == [], f"solo cambia la cuenta de gasto (débito e ingresos iguales) → el día no se lista: {ps['dias']}")
 p2 = plan(nuevo, "2026-09", m)
-chk(p2["cambios"] == [], "ADR-021: reclasificar no es idempotente" if p2["cambios"] else "plan tras aplicar → 0 cambios (idempotente)")
+chk(p2["cambios"] == [],"ADR-021: reclasificar no es idempotente" if p2["cambios"] else "plan tras aplicar → 0 cambios (idempotente)")
 chk(aplicar(nuevo, p2, m, cfg) == nuevo, "aplicar un plan vacío no cambia nada")
 
 # guardar: una escritura, respaldo único

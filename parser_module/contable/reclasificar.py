@@ -53,17 +53,35 @@ def _huella(lib: dict, mes: str, cambios: list) -> str:
     return hashlib.sha256(json.dumps(dict(mes=mes, cambios=cambios, guardado=guardado), ensure_ascii=False, sort_keys=True).encode("utf8")).hexdigest()
 
 
-def plan(lib: dict, mes: str, motor) -> dict:
+def _rehacer(dia: dict, fecha: str, docs: list, cfg: dict) -> dict:
+    return construir(fecha, docs, dia.get("banco") or {}, cfg, dia.get("cierre"), dia.get("extracto"))
+
+
+def _totales(filas: list) -> dict:
+    """Como la cabecera del libro (contable.html): ingresos = Σ (crédito − débito) de cuentas 4, gastos = Σ (débito − crédito) de cuentas 5."""
+    c = lambda f: str(f.get("codigo") or "")[:1]
+    return dict(debito=sum(f.get("debito", 0) for f in filas),
+                ingresos=sum(f.get("credito", 0) - f.get("debito", 0) for f in filas if c(f) == "4"),
+                gastos=sum(f.get("debito", 0) - f.get("credito", 0) for f in filas if c(f) == "5"))
+
+
+def plan(lib: dict, mes: str, motor, cfg: dict | None = None) -> dict:
     """mes «2026-09». No toca `lib`. → {mes, cambios:[{fecha, doc_id, numero, tipo, tercero, item, valor, antes, despues, capa, motivo}],
     resumen: {cuenta: {antes, despues}} (Σ valor que sale/entra por cuenta, para la tabla antes → después), huella}.
-    El resumen deja fuera duplicados y ítems de $0: no mueven plata en los libros."""
-    cambios, _ = _dias(lib, mes, motor)
+    El resumen deja fuera duplicados y ítems de $0: no mueven plata en los libros.
+    Con `cfg`, `dias` = los días cuyo débito o ingresos cambian al rehacerlos con `construir` (como hará `aplicar`, también por reglas
+    nuevas de otros ciclos), con {fecha, antes, despues} de {debito, ingresos, gastos}: el usuario lo ve antes de Aplicar."""
+    cambios, nuevos = _dias(lib, mes, motor)
+    dias = []
+    for fecha, docs in (nuevos.items() if cfg is not None else ()):
+        antes, despues = _totales(lib[fecha].get("filas") or []), _totales(_rehacer(lib[fecha], fecha, docs, cfg)["filas"])
+        if (antes["debito"], antes["ingresos"]) != (despues["debito"], despues["ingresos"]): dias.append(dict(fecha=fecha, antes=antes, despues=despues))
     resumen = {}
     for c in cambios:
         if c["duplicado"] or not c["valor"]: continue
         resumen.setdefault(c["antes"], dict(antes=0, despues=0))["antes"] += c["valor"]
         resumen.setdefault(c["despues"], dict(antes=0, despues=0))["despues"] += c["valor"]
-    return dict(mes=mes, cambios=cambios, resumen=resumen, huella=_huella(lib, mes, cambios))
+    return dict(mes=mes, cambios=cambios, resumen=resumen, dias=dias, huella=_huella(lib, mes, cambios))
 
 
 def aplicar(lib: dict, vista: dict, motor, cfg: dict, ahora: str | None = None) -> dict:
@@ -77,7 +95,7 @@ def aplicar(lib: dict, vista: dict, motor, cfg: dict, ahora: str | None = None) 
     out = dict(lib)
     for fecha, docs in nuevos.items():
         dia = lib[fecha]
-        r = construir(fecha, docs, dia.get("banco") or {}, cfg, dia.get("cierre"), dia.get("extracto"))
+        r = _rehacer(dia, fecha, docs, cfg)
         rastro = dict(fecha_hora=ahora, version=VERSION, cambios=[{k: c[k] for k in ("doc_id", "item", "valor", "antes", "despues")} for c in cambios if c["fecha"] == fecha])
         out[fecha] = dict(dia, documentos=r["documentos"], cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
                           diferencia=r["diferencia"], guardado=ahora, reclasificaciones=[*dia.get("reclasificaciones", []), rastro])
