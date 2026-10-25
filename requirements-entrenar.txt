@@ -1,0 +1,8 @@
+# NO SE USA (ADR-025): registro del spike T5d; sklearn se desinstaló. No instalar.
+# Solo para el PC que entrena el modelo ml (ADR-024); la app no lo necesita.
+# Auditado con OSV (mismas fuentes que pip-audit) el 2026-10-25: sin avisos.
+numpy==2.5.4
+scikit-learn==1.9.1
+scipy==1.18.1
+joblib==1.6.0
+threadpoolctl==3.7.0
