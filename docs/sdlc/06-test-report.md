@@ -31,5 +31,5 @@
 1. `python app.py`, subir una foto en ① (arranca Indra) → en `tasklist | findstr python` aparece un `python` de `indra_venv`.
 2. Cerrar la app con Ctrl+C → a los ≤ 5 s ya no aparece en `tasklist`.
 3. Repetir 1 y cerrar la ventana de la consola (sin Ctrl+C) → tampoco queda.
-4. `indra_venv\Scripts\python.exe` no hace falta tocarlo: `python probar_indra.py` → «OK: 0 fallos».
+4. `python probar_indra.py` → «OK: 0 fallos».
 - Resultado: pendiente del usuario.
