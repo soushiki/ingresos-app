@@ -34,7 +34,8 @@ LEXICO = {
 }
 LEXICO["14050503"] += ["salsero", "recipiente", "kraft"]          # empaques y envases
 LEXICO["14050501"] += ["leche", "panes", "hamburguesa"]          # insumos de cocina
-FRASES = {"papel higienico": "51952501", "papel aluminio": "14050503", "papel vinipel": "14050503", "gas natural": "51353002"}
+FRASES = {"papel higienico": "51952501", "papel aluminio": "14050503", "papel vinipel": "14050503", "gas natural": "51353002",
+          "pago de compras": "14050501"}    # ADR-023: cuenta de mayoría del manual («pago compra» 5 de 6)
 GENERICOS = {"consumidor final", "cuantias menores", "caja", ""}
 
 
@@ -101,15 +102,16 @@ def _tri(s: str) -> set:
 class Motor:
     """Clasifica un ítem en capas de orden fijo y dice cuál decidió. Es puro: recibe el modelo minado, «confirmar» y lo enseñado como dicts."""
 
-    def __init__(self, modelo: dict, confirmar: dict | None = None, aprendido: dict | None = None):
-        self.modelo = {"lexico": {}, "proveedores": {}, "vecinos": []} | (modelo or {})
+    def __init__(self, modelo: dict, confirmar: dict | None = None, aprendido: dict | None = None, terceros: dict | None = None):
+        self.modelo = {"lexico": {}, "bigramas": {}, "proveedores": {}, "vecinos": []} | (modelo or {})
         self.confirmar = confirmar or {}
         self.aprendido = {"terceros": {}, "detalles": {}} | (aprendido or {})
         self.umbral = UMBRALES | self.confirmar.get("umbrales", {})
         self.puente = self.confirmar.get("puentes", {}).get("gasto") or PUENTE_GASTO
         self.alias, self.notas = self.confirmar.get("alias", {}), self.confirmar.get("alias_nota", {})
         self.origen = self.confirmar.get("origen") or ORIGEN
-        self.provs = {norm(k).strip(): v for k, v in self.modelo["proveedores"].items()}
+        self.provs = {norm(k).strip(): dict(v, de=v.get("de", v["n"])) for k, v in (self.modelo["proveedores"] | (terceros or {})).items()}   # + personas (local, N5)
+        self.choque = [d for d in self.confirmar.get("decisiones", []) if d.get("motor") and d.get("estado") == "por confirmar" and d.get("cuenta")]   # ADR-023
         self.indice = {}                                         # trigrama → posiciones en vecinos
         for i, v in enumerate(self.modelo["vecinos"]):
             for t in _tri(v["texto"]): self.indice.setdefault(t, []).append(i)
@@ -122,7 +124,10 @@ class Motor:
         if ruta_aprendido and Path(ruta_aprendido).is_file():
             try: aprendido = json.loads(Path(ruta_aprendido).read_text(encoding="utf8"))
             except json.JSONDecodeError: pass
-        return cls(modelo, confirmar, aprendido)
+        archivo = AQUI / "terceros_cuentas.json"
+        if not archivo.is_file(): archivo = AQUI / "terceros_cuentas.example.json"      # el real no se versiona
+        terceros = json.loads(archivo.read_text(encoding="utf8")) if archivo.is_file() else {}
+        return cls(modelo, confirmar, aprendido, terceros)
 
     def _sale(self, cuenta, conf, capa, motivo): return dict(cuenta=cuenta, conf=round(conf, 2), capa=capa, motivo=motivo)
 
@@ -144,6 +149,8 @@ class Motor:
         toks = _toks(nombre or texto); d = " ".join(toks); t = norm(tercero).strip()
         if d and d in self.aprendido["detalles"]: return self._sale(self.aprendido["detalles"][d], 0.98, "enseñado", "lo enseñaste para esta descripción")
         if t and t not in GENERICOS and t in self.aprendido["terceros"]: return self._sale(self.aprendido["terceros"][t], 0.98, "enseñado", "lo enseñaste para este proveedor")
+        for dec in self.choque:       # ADR-023: palabras de una decisión que choca en el manual; sale la cuenta de mayoría, avisada
+            if any(x in set(dec["afecta"]) for x in toks): return self._sale(dec["cuenta"], 0.75, "confirmar", f"por confirmar: {dec['regla_usada']}")
         base = norm(nombre or texto)
         for f, c in FRASES.items():
             if f in base: return self._sale(c, 0.9, "frase", f"«{f}»")
@@ -157,6 +164,15 @@ class Motor:
             if len(rk) == 1 or sum(w for _, w in rk[1][1]) < sum(w for _, w in rk[0][1]):   # empate entre cuentas: no decide, siguen las capas
                 hits = rk[0][1]
                 return self._sale(rk[0][0], 0.85 if all(w == 1.0 for _, w in hits) else _PESO_DUDOSO, "lexico", "palabras: " + ", ".join(k for k, _ in hits))
+        w3 = re.findall(r"[a-z]{3,20}", base); par = [f"{a} {b}" for a, b in zip(w3, w3[1:])]    # bigramas del minado (≥ 2 veces, ≥ 80 %)
+        hb = [(p, self.modelo["bigramas"][p]) for p in par if p in self.modelo["bigramas"]]
+        if hb:
+            rk = {}
+            for p, e in hb: rk.setdefault(e["cuenta"], []).append((p, e))
+            rk = sorted(rk.items(), key=lambda kv: -sum(e["n"] for _, e in kv[1]))
+            if len(rk) == 1 or sum(e["n"] for _, e in rk[1][1]) < sum(e["n"] for _, e in rk[0][1]):
+                c, hits = rk[0]
+                return self._sale(c, min(0.9, min(e["n"] / e["de"] for _, e in hits)), "minado", "manual: " + ", ".join(f"«{p}» {e['n']} de {e['de']}" for p, e in hits))
         votos = {}
         for x in toks:
             e = self.modelo["lexico"].get(x)

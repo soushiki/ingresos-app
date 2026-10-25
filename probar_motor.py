@@ -114,5 +114,25 @@ escondidos = [k.value for k in ast.walk(arbol) if isinstance(k, ast.Constant) an
 escondidos += re.findall(r"#.*?\b(\d{8})\b", fuente)
 chk(not escondidos, f"ADR-022: decisión contable escondida en el código {escondidos}")
 
+# T5b / ADR-023: bigramas minados, FRASES con la cuenta de mayoría, terceros persona (local), choque domiciliario «por confirmar»
+r = prod.clasificar_item("gasto", "Pago de compras")
+chk((r["cuenta"], r["capa"]) == ("14050501", "frase"), f"ADR-023: «Pago de compras» → mayoría del manual {r['cuenta']} ({r['capa']}, {r['motivo']})")
+r = prod.clasificar_item("gasto", "propina")
+chk(r["cuenta"] == "28150502" and r["capa"] != "puente", f"ADR-023: «propina» → {r['cuenta']} ({r['capa']})")
+r = prod.clasificar_item("gasto", "Domcilios (Cierre)")
+chk(r["capa"] == "confirmar" and "por confirmar" in r["motivo"] and r["cuenta"] == PC["decisiones"][0]["cuenta"], f"ADR-023: «Domcilios (Cierre)» → choque domiciliario por confirmar ({r['cuenta']}, {r['motivo']})")
+chk(PC["decisiones"][0].get("motor") is True and PC["decisiones"][0]["estado"] == "por confirmar", "el choque 28150501/28150502 vive en por_confirmar.json «por confirmar»")
+r = Motor({"lexico": {}, "bigramas": {"hacer pedido": {"cuenta": "14050501", "n": 2, "de": 2}}}, {}, {}).clasificar_item("gasto", "hacer el pedido")
+chk((r["cuenta"], r["capa"]) == ("14050501", "minado") and "«hacer pedido» 2 de 2" in r["motivo"], f"bigrama minado ({r['capa']}, {r['motivo']})")
+TERC = {"fulano de tal": {"cuenta": "51050601", "n": 4}}
+r = Motor({}, {}, {}, TERC).clasificar_item("gasto", "cosa rara", "Fulano de Tal")
+chk((r["cuenta"], r["capa"]) == ("51050601", "proveedor"), f"tercero persona (terceros_cuentas.json) → {r['cuenta']} ({r['capa']}, {r['motivo']})")
+r = Motor({}, {}, {}).clasificar_item("gasto", "cosa rara", "Fulano de Tal")
+chk(r["capa"] == "puente", "sin ese archivo el tercero persona no decide")
+_c = Path(__file__).parent / "parser_module" / "contable"
+tp = json.loads((_c / ("terceros_cuentas.json" if (_c / "terceros_cuentas.json").is_file() else "terceros_cuentas.example.json")).read_text(encoding="utf8"))
+nombre = next(iter(tp)); r = prod.clasificar_item("gasto", "cosa rara", nombre)
+chk(r["capa"] == "proveedor" and r["cuenta"], f"Motor.desde_archivos lee terceros_cuentas: «{nombre}» → {r['cuenta']} ({r['capa']})")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
 sys.exit(0 if ok else 1)

@@ -6,7 +6,7 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: T5b (T5a hecho); gate N1 se re-mide en T5c
+current task: T5c (re-medir, gate N1)
 
 ## Stages
 - [x] 0-triage
@@ -50,3 +50,4 @@ current task: T5b (T5a hecho); gate N1 se re-mide en T5c
 2026-10-25 | 5-implement | ADR-023 plan B (pedido del usuario): ampliar cobertura — proveedores jun–oct (personas a terceros_cuentas.json local), bigramas/FRASES, barrido umbral vecino, cruce «Recibo N» con el libro; gate N1 igual (jun–ago → sept–oct) + walk-forward; tasks T5a–T5c
 2026-10-25 | 5-implement | T5a (run parado por el usuario): minar_manual.py con bigramas (94), modelo jun–oct, terceros persona → terceros_cuentas.json (gitignored); probar_minado TODO OK; diff dentro de los files de T5a; SIN COMMIT. Suite: 16/26 OK hasta probar_motores; probar_motores_falso.py se colgó 2 h (0 CPU, matado; no es de T5a → anotar en 08); faltan probar_parser…probar_variantes (10). Reanudar: correr esos 10 + motores_falso, commit T5a, /sdlc run → T5b
 2026-10-25 | 5-implement | T5a reanudado: suite completa verde (25 tests; probar_motores_falso es el trabajador falso, no test → M-28 cerrado); commit T5a
+2026-10-25 | 5-implement | T5b capa proveedor lee terceros_cuentas.json (o .example), bigramas minados, FRASES «pago de compras» → 14050501, capa «confirmar» (domiciliario 28150501, por_confirmar motor:true); probar_motor +8 checks; suite 24/24 verde; «día laborado» sin frase (sin cifra de mayoría)
