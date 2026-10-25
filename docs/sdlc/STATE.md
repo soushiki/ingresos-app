@@ -6,7 +6,7 @@ size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
 next: 8-maintain
-current task: — (v1.7.0 commit local; tag + push esperan OK del usuario)
+current task: — (v1.7.0 publicada)
 
 ## Stages
 - [x] 0-triage
@@ -56,3 +56,4 @@ current task: — (v1.7.0 commit local; tag + push esperan OK del usuario)
 2026-10-24 | 5-implement | T10 hecho (Sonnet): Cliente.cerrar() acquire(1 s) y mata si hay pedido colgado; +2 en probar_motores.py (cierre colgado 1,0 s, app matada → EOF 0,1 s); nota README; tasklist sin python 3.14; arranque perezoso → un solo trabajador; 22 probar_* OK; I3 completa → next 6-test
 2026-10-24 | 6-test | I3 pasa: 22 probar_* OK; R5 (cierre normal, colgado ≤ 3 s, app matada → EOF ≤ 5 s) y R7/N5 (probar_indra 6 ✓) cubiertos; 3 menores aceptados (_matar sin candado, giro 270 sintético, nota README doble); Musts R1–R4, R6 pasan; falta R8 → next 7-release
 2026-10-24 | 7-release | v1.7.0: VERSION + CHANGELOG + README (instalar, licencia; nota doble recortada); R8 leída (OpenRAIL-M mod.: gratis < US$20 M, sin competir, no redistribuimos; §7 crédito en README, §8 no entrenar con salida de Indra) + copia en docs/licencias/; suite 22/22; commit local, tag+push pendientes del OK → next 8-maintain
+2026-10-24 | 7-release | v1.7.0 publicada: tag + push main (387f910..c7c95b0) con OK del usuario
