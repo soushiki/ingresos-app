@@ -225,11 +225,11 @@ _NO_NOMBRE = re.compile(r"cliente|vendedor|direcci|ciudad|factura|nit|\bcc\b|cra
 
 def _total_factura(L) -> int:
     """El total de una factura: «TOTAL NETO», «TOTAL A PAGAR» o «TOTAL: $…»; si no, lo pagado con visa/efectivo/transferencia; si no, el subtotal."""
-    for pat in (r"total neto", r"^\W*total a pagar", r"^\W*total\W*[:$\d]", r"^\W*total factura", r"^\W*(?:visa|mastercard|efectivo|transferencia|tarjeta)\b.*\$", r"subtotal"):
+    for pat in (r"total neto", r"^\W*total a pagar", r"^\W*total\W*[:$\d>]", r"^\W*total factura", r"^\W*(?:visa|mastercard|efectivo|transferencia|tarjeta)\b.*\$", r"subtotal"):
         for l in L:
             nl = norm(l)
             if re.search(pat, nl) and not re.match(r"^\W*total (de|recibido|items|descuento|l)", nl):
-                v = montos(re.split(pat, nl, maxsplit=1)[-1] if pat != r"^\W*total\W*[:$\d]" else l.split(":", 1)[-1])
+                v = montos(re.split(pat, nl, maxsplit=1)[-1] if pat != r"^\W*total\W*[:$\d>]" else l.split(":", 1)[-1])
                 if v: return max(v) if pat.startswith("^\\W*(?:visa") else v[0]
     return 0
 
@@ -254,6 +254,49 @@ def parse_factura(texto):
     if not d["tercero"]: d["avisos"].append("No se leyó el proveedor")
     if not d["medio"]: d["avisos"].append("No se leyó el medio de pago")
     return d
+
+
+_NO_ITEM = re.compile(r"descripci|desciprci|total|\bcant\b|vr\.? ?unit|subtotal|iva|domicilio|propina|dcto|descuento|efectivo|cambio|nit|cufe|fecha|telefono")
+_NUM = r"\$?\s*\d[\d.,]*"
+_TOPE_ITEM = 5_000_000   # un «ítem» mayor es un NIT, CUFE o resolución, no un valor
+_MIN_ITEM = 100          # un «Reci: | 1 | 1» no es un ítem
+
+
+def _item(nombre, valor, cant=1):
+    return dict(nombre=nombre, cant=cant, valor=valor, cuenta="", conf=0.0, capa="", motivo="", manual="")
+
+
+def _items_texto(texto: str) -> list:
+    """Ítems de una factura: filas «| nombre | … | valor |» (valor = último número) o líneas «nombre … valor». Spike T1: los de tabla mandan."""
+    tabla, plano = [], []
+    for l in (texto or "").splitlines():
+        if _NO_ITEM.search(norm(l)): continue
+        if l.count("|") >= 2:
+            celdas = [c.strip() for c in l.split("|") if c.strip()]
+            nums = [c for c in celdas if re.fullmatch(_NUM, c)]
+            nom = next((c for c in celdas if re.search(r"[^\W\d_]{3,}", c)), "")
+            if nom and nums and _MIN_ITEM <= monto(nums[-1]) < _TOPE_ITEM: tabla.append(_item(nom, monto(nums[-1])))
+        elif "|" not in l:
+            m = re.match(rf"^\W*(?:\d{{1,3}}\s+)?(?P<n>[^\W\d_][^\d$]{{2,}}?)\s+(?P<v>{_NUM})\s*$", l)
+            if m and _MIN_ITEM <= monto(m.group("v")) < _TOPE_ITEM: plano.append(_item(m.group("n").strip(), monto(m.group("v"))))
+    return tabla or plano
+
+
+def items_de(doc: dict) -> list:
+    """Ítems del papel (R2, 03-design C4), sin tocarlo: [{nombre, cant, valor, cuenta, conf, capa, motivo, manual}].
+    · ya trae items[].cuenta → tal cual (idempotente);
+    · factura cuyos ítems del texto suman el total ±1 % (T1: solo esas se reparten) → esos ítems;
+    · si no → un ítem único (detalle + proveedor) por el valor del papel. Migración al leer: papel viejo → su `cuenta` y manual = `cuenta_manual`."""
+    previos = doc.get("items") or []
+    if previos and all(isinstance(i, dict) and "cuenta" in i for i in previos): return previos
+    total = doc.get("valor") or doc.get("consumo") or 0
+    if doc.get("tipo") == "factura" and total:
+        its = _items_texto(doc.get("texto", ""))
+        if its and abs(sum(i["valor"] for i in its) - total) <= 0.01 * total: return its
+    nombre = " ".join(x for x in (doc.get("detalle") or "", doc.get("tercero") or "") if x).strip()
+    uno = _item(nombre, total)
+    uno["cuenta"], uno["manual"] = doc.get("cuenta") or "", str(doc.get("cuenta_manual") or "")
+    return [uno]
 
 
 def _primero(L, patron, **kw):
