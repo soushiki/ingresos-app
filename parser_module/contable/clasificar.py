@@ -214,12 +214,17 @@ class Motor:
             doc["cuenta"], doc["conf"], doc["motivo"] = r["cuenta"], r["conf"], r["motivo"]
             return doc
         if tipo not in ("factura", "gasto_caja", "caja_menor_manuscrito"): return doc
-        its = items_de(doc); origen = "factura" if tipo == "factura" else "gasto"
         a_mano = str(doc["cuenta"]) if doc.get("cuenta_manual") and doc.get("cuenta") else ""   # FIX-1: la cuenta que el usuario eligió en la tarjeta
+        # FIX-2 (06 #4): si cambió el tipo, el tercero, el detalle o el valor desde la última pasada, los ítems no manuales se rehacen
+        huella = [tipo, doc.get("tercero") or "", doc.get("detalle") or "", doc.get("valor") or doc.get("consumo") or 0]
+        if doc.get("items_huella") not in (None, huella) and doc.get("items") and not a_mano and not any(i.get("manual") for i in doc["items"]):
+            doc["items"] = []; doc["cuenta"] = ""
+        doc["items_huella"] = huella
+        its = items_de(doc); origen = "factura" if tipo == "factura" else "gasto"
         for it in its:
             if a_mano and not it.get("manual"): it["manual"] = a_mano
             if it.get("manual"): r = self.clasificar_item(origen, it.get("nombre", ""), manual=it["manual"])
-            elif it.get("capa") or it.get("cuenta"): continue
+            elif it.get("capa") not in (None, "", "puente") or (it.get("cuenta") and not it.get("capa")): continue   # FIX-2 (06 #3): la puente se reclasifica en cada pasada
             else: r = self.clasificar_item(origen, it.get("nombre", ""), doc.get("tercero", ""), doc.get("texto", "") if len(its) == 1 else "")
             it.update(cuenta=r["cuenta"], conf=r["conf"], capa=r["capa"], motivo=r["motivo"])
         doc["items"] = its
