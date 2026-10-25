@@ -161,7 +161,10 @@ class Cliente:
 
     def cerrar(self):
         """quit -> wait(5) -> kill. También corre con atexit."""
-        with self._candado:
+        if not self._candado.acquire(timeout=1.0):     # pedido colgado: no esperar su plazo, matar el trabajador
+            self._matar()
+            return
+        try:
             p = self._p
             if p is None:
                 return
@@ -171,6 +174,8 @@ class Cliente:
             except (OSError, ValueError, subprocess.TimeoutExpired):
                 pass
             self._matar()
+        finally:
+            self._candado.release()
 
     # ---------- pedidos ----------
     def pedir(self, op, img, timeout=None):

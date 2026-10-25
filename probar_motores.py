@@ -196,5 +196,33 @@ for nombre in ("parser_module/contable/validar.py", "parser_module/contable/rele
     t = (AQUI / nombre).read_text(encoding="utf-8")
     chk("motores" not in t and "indra" not in t, f"ADR-017: motor metido en las reglas ({nombre})")
 
+# ---------- T10 · R5 de punta a punta: cierre del trabajador ----------
+c, _ = falso("cuelga", timeout_s=8.0)                           # pedido colgado sostiene el candado
+h = threading.Thread(target=lambda: falla(c), daemon=True); h.start()
+for _ in range(50):
+    if c._p is not None and c._candado.locked(): break
+    time.sleep(0.1)
+time.sleep(0.5)
+p = c._p
+t = time.monotonic(); c.cerrar(); dt = time.monotonic() - t
+chk(p is not None and p.poll() is not None and dt <= 3, f"cerrar() con un pedido colgado mata el trabajador sin esperar el plazo ({dt:.1f} s)")
+h.join(15)
+
+# matar el proceso padre a la fuerza (sin atexit): el trabajador termina por EOF en ≤ 5 s
+cont = TMP / "cont_padre"
+codigo = ("import sys,os,time\nsys.path.insert(0,sys.argv[1])\nfrom ocr_module.indra import Cliente\nfrom pathlib import Path\n"
+          "c=Cliente(python=sys.executable,trabajador=sys.argv[2],timeout_s=5,arranque_s=5,log=Path(sys.argv[3]),env={'FALSO_MODOS':'ok'})\n"
+          "c.pedir('numeros',b'png');print(c._p.pid,flush=True);time.sleep(60)\n")
+padre = subprocess.Popen([sys.executable, "-c", codigo, str(AQUI), str(FALSO), str(LOG)], stdout=subprocess.PIPE, text=True)
+pid_hijo = int(padre.stdout.readline())
+def vivo(pid):
+    r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True)
+    return str(pid) in r.stdout
+chk(vivo(pid_hijo), "el trabajador corre mientras vive la app")
+padre.kill(); padre.wait(5)
+t = time.monotonic()
+while vivo(pid_hijo) and time.monotonic() - t < 6: time.sleep(0.2)
+chk(not vivo(pid_hijo), f"R5: matar la app a la fuerza → el trabajador termina en ≤ 5 s ({time.monotonic() - t:.1f} s)")
+
 print(f"\n{'OK' if not fallos else f'{len(fallos)} FALLOS'}")
 sys.exit(1 if fallos else 0)

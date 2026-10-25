@@ -169,7 +169,11 @@ Pruebas sueltas: `probar_imagen.py` (una foto), `probar_parser.py` (ejemplos del
 - «Ollama sin conexión»: abre la aplicación Ollama o ejecuta `ollama serve`.
 - Error de modelo no instalado: `ollama pull <modelo>` y elígelo en la lista de arriba.
 - Cambiar el puerto: variable `PORT=5051` en `.env`.
+- Indra (OCR local): el trabajador se arranca en la primera foto, no al abrir la app, así que con el recargador de Werkzeug (`debug=True`) sigue habiendo uno solo. Al cerrar la app (o si Flask muere de golpe) el trabajador termina solo en ≤ 5 s; si queda un `python` 3.14 en `tasklist`, mira `logs/indra.log`.
 
 ## Carpeta del día (📁 Subir carpeta)
 Elige la carpeta de un día con subcarpetas **CIERRE**, **COMANDAS** y **GASTOS** (o archivos que empiecen por esos nombres): cada archivo toma su grupo del nombre, los PDF con texto se leen sin OCR y los escaneados/fotos se giran, recortan y separan por papel. El cierre del POS se cruza con tus comandas y vales (rango de facturas, tarjetas, transferencias, propinas, domicilios, descuentos, gastos) y avisa qué comanda falta. ↻ gira 90° y vuelve a leer una foto.
 Los recibos manuscritos necesitan el modelo local de Ollama; Tesseract solo lee impreso (instala el idioma `spa`).
+
+## Indra (OCR de dígitos) y su trabajador
+Indra corre en un proceso aparte (`indra_venv`, python 3.14) que arranca en el primer pedido, no al abrir la app. Si cierras la app (Ctrl+C, cerrar la ventana o matarla), el trabajador se cierra solo en ≤ 5 s; si había un pedido colgado, se mata. Con `python app.py` no hay recargador de Werkzeug (no se usa `debug`), así que hay un solo trabajador. Para comprobarlo: `tasklist | findstr python` no debe mostrar `indra_venv` tras cerrar. Los fallos van a `logs/indra.log`.

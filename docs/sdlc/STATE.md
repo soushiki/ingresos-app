@@ -5,8 +5,8 @@ goal: Indra OCR pasa a ser el segundo lector R3 (en lugar de Tesseract-dígitos)
 size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv + instalador; evidencia ya existe (spike e6e46e2)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
-next: 5-implement
-current task: T10 (I3)
+next: 6-test
+current task: — (I3 completa)
 
 ## Stages
 - [x] 0-triage
@@ -53,3 +53,5 @@ current task: T10 (I3)
 2026-10-20 | 6-test | I2 pasa: 21 probar_* OK; R2 real por la app (20 hojas × 7 ángulos): 18 derechas + 2 de lado, incl ≤ 0,9°, ≤ 0,37 s/hoja, totales 101/107 en todo ángulo; 4 menores aceptados; R1/R3 con --completo en curso (≈ 4 h) → next 5-implement (T9)
 2026-10-24 | 6-test | corrida completa con Indra (informe 20261020-225729): omitidos 5 → 5 (mismos), dudosos 27 → 26, validados con error 7 → 7 → R3 Must pasa; meta ≤ 2/103 (Should) no: R3 solo confirma → M-26 en 08
 2026-10-24 | 5-implement | T9 hecho (Sonnet): probar_indra.py 6 ✓ con indra_venv (ready 1.1.2, numeros, upright 0/90, N5 repetibles); omitido limpio con INDRA_VENV inexistente; pista ADR-018 solo en fallos; probar_* OK → next T10
+2026-10-24 | 5-implement | T10 hecho (Sonnet): Cliente.cerrar() con acquire(timeout=1) y matar si hay pedido colgado; +3 en probar_motores.py (cierre ≈ 1 s, vivo con la app, EOF < 5 s tras taskkill); nota README; sin python 3.14 tras cerrar; 22 probar_* OK; Flask real sin probar (sin debug → sin recargador); I3 completa → next 6-test
+2026-10-24 | 5-implement | T10 hecho (Sonnet): Cliente.cerrar() acquire(1 s) y mata si hay pedido colgado; +2 en probar_motores.py (cierre colgado 1,0 s, app matada → EOF 0,1 s); nota README; tasklist sin python 3.14; arranque perezoso → un solo trabajador; 22 probar_* OK; I3 completa → next 6-test
