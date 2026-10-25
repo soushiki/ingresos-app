@@ -215,13 +215,16 @@ class Motor:
             return doc
         if tipo not in ("factura", "gasto_caja", "caja_menor_manuscrito"): return doc
         its = items_de(doc); origen = "factura" if tipo == "factura" else "gasto"
+        a_mano = str(doc["cuenta"]) if doc.get("cuenta_manual") and doc.get("cuenta") else ""   # FIX-1: la cuenta que el usuario eligió en la tarjeta
         for it in its:
+            if a_mano and not it.get("manual"): it["manual"] = a_mano
             if it.get("manual"): r = self.clasificar_item(origen, it.get("nombre", ""), manual=it["manual"])
             elif it.get("capa") or it.get("cuenta"): continue
             else: r = self.clasificar_item(origen, it.get("nombre", ""), doc.get("tercero", ""), doc.get("texto", "") if len(its) == 1 else "")
             it.update(cuenta=r["cuenta"], conf=r["conf"], capa=r["capa"], motivo=r["motivo"])
         doc["items"] = its
         top = max(its, key=lambda i: int(i.get("valor") or 0))
+        if a_mano: doc["conf"], doc["motivo"] = 1.0, its[0].get("motivo", "") if len(its) == 1 else "lo pusiste a mano"; return doc
         doc["cuenta"] = "" if top.get("capa") == "puente" else top["cuenta"]
         doc["conf"], doc["motivo"] = top.get("conf", 0.0), top.get("motivo", "")
         return doc

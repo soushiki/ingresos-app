@@ -295,7 +295,9 @@ def items_de(doc: dict) -> list:
         if its and abs(sum(i["valor"] for i in its) - total) <= 0.01 * total: return its
     nombre = " ".join(x for x in (doc.get("detalle") or "", doc.get("tercero") or "") if x).strip()
     uno = _item(nombre, total)
-    uno["cuenta"], uno["manual"] = doc.get("cuenta") or "", str(doc.get("cuenta_manual") or "")
+    cm = doc.get("cuenta_manual")      # la app guarda un booleano (contable.html); papeles muy viejos, el código
+    uno["cuenta"] = doc.get("cuenta") or ""
+    uno["manual"] = (uno["cuenta"] if cm is True else cm if isinstance(cm, str) else "")
     return [uno]
 
 
