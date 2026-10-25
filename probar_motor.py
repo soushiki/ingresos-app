@@ -227,8 +227,37 @@ m2 = dict(tipo="gasto_caja", tercero="X", detalle="hielo", valor=8000, texto="",
 mt.clasificar_doc(m2); m2["detalle"] = "pollo"; m2["valor"] = 9000; mt.clasificar_doc(m2)
 chk(m2["items"][0]["cuenta"] == "51350501" and m2["cuenta"] == "51350501", "FIX-2: lo manual no cambia aunque cambie el papel")
 
-print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
-sys.exit(0 if ok else 1)
+# T9 · corregir UN ítem: queda manual, el papel no se rehace, proveedor solo si todos van a la misma cuenta
+c1 = dict(tipo="factura", tercero="Proveedor Prueba", detalle="", valor=30000, texto="", items=[item("pollo", 20000), item("jabon", 10000)])
+c1, misma = mt.corregir_item(c1, 1, "51959501")
+chk(c1["items"][1]["manual"] == "51959501" and c1["items"][1]["capa"] == "manual" and c1["items"][0]["capa"] == "lexico" and not misma, "T9: corregir el ítem 1 → solo ese es manual; proveedor no (cuentas distintas)")
+c1["valor"] = 31000; mt.clasificar_doc(c1)
+chk(c1["items"][1]["cuenta"] == "51959501" and c1["items"][0]["cuenta"] == "14050501", "T9: un papel con ítem manual no se rehace (FIX-2)")
+c1, misma = mt.corregir_item(c1, "Pollo", "51959501")
+chk(misma and c1["items"][0]["manual"] == "51959501", "T9: por nombre; todos a la misma cuenta → proveedor sí")
+try: mt.corregir_item(c1, 9, "51959501"); chk(False, "T9: ítem inexistente debe fallar")
+except ValueError: chk(True, "T9: ítem inexistente → ValueError")
+# por la ruta real: POST /api/contable/aprender {item}, sobre datos temporales; el siguiente ítem igual sale «enseñado»
+import app as _a9
+_tmp9 = Path(tempfile.mkdtemp(prefix="probar_t9_")); _old = (_a9.DATOS, _a9.CLASIF, _a9.MOTOR)
+try:
+    _a9.DATOS = _tmp9; _a9.CLASIF = _a9.Clasificador(str(_tmp9 / "clasificacion.json")); _a9.MOTOR = _a9.Motor.desde_archivos(str(_tmp9 / "clasificacion.json"))
+    cli = _a9.app.test_client()
+    d9 = dict(tipo="factura", tercero="Proveedor T9", detalle="", valor=30000, texto="", items=[item("pollo", 20000), item("zzjabonzz", 10000)])
+    _a9.MOTOR.clasificar_doc(d9)
+    r9 = cli.post("/api/contable/aprender", json=dict(cuenta="51952501", item=1, documento=d9)); j9 = r9.get_json()
+    chk(r9.status_code == 200 and j9["documento"]["items"][1]["capa"] == "manual" and j9["documento"]["items"][0]["capa"] != "manual" and not j9["proveedor"], "T9 endpoint: ítem 1 manual, ítem 0 intacto, proveedor no enseñado")
+    nuevo = dict(tipo="factura", tercero="Otro", detalle="", valor=5000, texto="", items=[item("zzjabonzz", 5000)])
+    _a9._clasificar([nuevo])
+    chk(nuevo["items"][0]["capa"] == "enseñado" and nuevo["items"][0]["cuenta"] == "51952501", f"T9: el siguiente ítem igual sale enseñado ({nuevo['items'][0]['capa']})")
+    chk("proveedor t9" not in json.loads((_tmp9 / "clasificacion.json").read_text(encoding="utf8"))["terceros"], "T9: el proveedor no se aprendió")
+    d9b = dict(tipo="factura", tercero="Proveedor T9b", detalle="", valor=5000, texto="", items=[item("zzcosazz", 5000)])
+    j9b = cli.post("/api/contable/aprender", json=dict(cuenta="51952501", item="zzcosazz", documento=d9b)).get_json()
+    chk(j9b["proveedor"] and "proveedor t9b" in json.loads((_tmp9 / "clasificacion.json").read_text(encoding="utf8"))["terceros"], "T9: todos los ítems a la misma cuenta → proveedor enseñado")
+    chk(cli.post("/api/contable/aprender", json=dict(cuenta="51952501", item=7, documento=d9)).status_code == 400, "T9: ítem inexistente → 400")
+    chk(cli.post("/api/contable/aprender", json=dict(cuenta="51952501", tercero="Proveedor T9c", detalle="")).get_json()["ok"], "T9: sin item sigue como antes")
+finally:
+    _a9.DATOS, _a9.CLASIF, _a9.MOTOR = _old; shutil.rmtree(_tmp9, ignore_errors=True)
 
 # DEBT-2 · el MOTOR se recarga si cambia el mtime de por_confirmar.json (sin reiniciar); sin cambio no se recarga
 import os, app as _app2
@@ -240,3 +269,6 @@ try:
     chk(_app2.MOTOR is not _m0 and _app2._motor_vigente() is _app2.MOTOR, "DEBT-2: cambia el mtime de por_confirmar.json → la siguiente clasificación usa un MOTOR nuevo")
 finally:
     os.utime(_pcf, ns=(_st.st_atime_ns, _st.st_mtime_ns)); _app2._motor_vigente()
+
+print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
+sys.exit(0 if ok else 1)

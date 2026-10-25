@@ -386,9 +386,23 @@ def cont_asientos():
 def cont_aprender():
     j = request.get_json(silent=True) or {}
     if str(j.get("cuenta", "")) not in CATALOGO: return jsonify(error="Cuenta desconocida"), 400
-    CLASIF.aprender(str(j["cuenta"]), str(j.get("tercero", "")), str(j.get("detalle", "")))
-    global MOTOR; MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json"))   # lo enseñado vale desde ya
-    return jsonify(ok=True)
+    global MOTOR
+    cuenta, doc, item = str(j["cuenta"]), j.get("documento"), j.get("item")
+    if item is None:                                     # el papel entero (como siempre)
+        CLASIF.aprender(cuenta, str(j.get("tercero", "")), str(j.get("detalle", "")))
+        MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json"))   # lo enseñado vale desde ya
+        return jsonify(ok=True)
+    if isinstance(item, bool) or not isinstance(item, (int, str)): return jsonify(error="Ítem inválido"), 400
+    if doc is not None and not isinstance(doc, dict): return jsonify(error="Documento inválido"), 400
+    nombre, misma = str(item), False
+    if doc:                                              # T9: corrige solo ese ítem; el proveedor se enseña si todos van a la misma cuenta
+        try: doc, misma = MOTOR.corregir_item(doc, item, cuenta)
+        except ValueError as e: return jsonify(error=str(e)), 400
+        if isinstance(item, int): nombre = doc["items"][item].get("nombre", "")
+    CLASIF.aprender(cuenta, "", nombre)                  # el ítem: enseñado por descripción
+    if doc and misma and doc.get("tercero"): CLASIF.aprender(cuenta, str(doc["tercero"]), "")
+    MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json"))
+    return jsonify(ok=True, documento=doc, proveedor=bool(doc and misma and doc.get("tercero")))
 
 
 RUTA_RECORTES = DATOS / "recortes"

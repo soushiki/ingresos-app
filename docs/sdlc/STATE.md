@@ -6,7 +6,7 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: It. 3 → T9 (aprender por ítem)
+current task: It. 3 → T10 (reclasificar.py)
 
 ## Stages
 - [x] 0-triage
@@ -64,3 +64,4 @@ current task: It. 3 → T9 (aprender por ítem)
 2026-10-25 | 5-implement | FIX-3 _NO_ITEM por palabra completa (olivas/granito/activa quedan); diferencia ≤ 1 % se suma al ítem mayor, > 1 % sigue a puente; +2 checks (items, datos_ocr 0,24 % D = C); suite 25/25 verde
 2026-10-25 | 5-implement | DEBT-2 _motor_vigente() en app.py rehace MOTOR si cambia el mtime de modelo_manual/por_confirmar/terceros_cuentas(.example); +2 checks probar_motor; suite 25/25 verde → FIX de It. 2 completos, next 6-test (re-smoke)
 2026-10-25 | 6-test | re-smoke It. 2 tras FIX-1…3 + DEBT-2: suite 25/25 verde, cada «done when» con check, revisión del diff sin bugs (3 notas → T9/T10/T11), smoke API en copia de sept. (0 descuadres, cuenta a mano sigue, vale→hielo 14050502) → PASA, next 5-implement It. 3 (T9)
+2026-10-25 | 5-implement | T9 Motor.corregir_item + POST /api/contable/aprender {item, documento}: solo ese ítem queda manual, el siguiente igual sale «enseñado», proveedor solo si todos los ítems van a la misma cuenta; +10 checks; los checks DEBT-2 de probar_motor iban tras sys.exit (nunca corrían) → movido al final, pasan; suite verde; la UI aún no manda item (T11)

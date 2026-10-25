@@ -201,6 +201,19 @@ class Motor:
                 return self._sale(vs[i1]["cuenta"], r1, "vecino", f"parecido a {vs[i1]['fuente']} («{vs[i1]['texto']}»)")
         return self._sale(self.puente, 0.0, "puente", "sin palabras conocidas")
 
+    def corregir_item(self, doc: dict, item, cuenta: str) -> tuple:
+        """T9 (R6): el usuario corrige UN ítem (índice o nombre) de un papel de compra: queda `manual` y el papel no se rehace (FIX-1/FIX-2).
+        → (doc, misma): `misma` es True si, tras la corrección, todos los ítems del papel van a la misma cuenta (solo entonces se enseña el proveedor).
+        Un ítem que no existe levanta ValueError."""
+        if doc.get("tipo") not in ("factura", "gasto_caja", "caja_menor_manuscrito"): raise ValueError("el papel no tiene ítems de compra")
+        self.clasificar_doc(doc); its = doc["items"]
+        if isinstance(item, int) and not isinstance(item, bool): idx = item if 0 <= item < len(its) else None
+        else: idx = next((i for i, it in enumerate(its) if norm(it.get("nombre", "")).strip() == norm(str(item)).strip()), None)
+        if idx is None: raise ValueError("ítem desconocido")
+        its[idx]["manual"] = str(cuenta)
+        self.clasificar_doc(doc)
+        return doc, len({str(i["cuenta"]) for i in doc["items"]}) == 1
+
     # T8 (R1, R5): el papel entero. Ventas, Rappi y cierre: la comanda fija el ingreso (origen), sus `items` son líneas de plato y no se tocan.
     # Compras (factura, gasto de caja, caja menor): cada ítem de items_de(doc) pasa por clasificar_item; doc.cuenta = la del ítem de mayor valor.
     def clasificar_doc(self, doc: dict) -> dict:
