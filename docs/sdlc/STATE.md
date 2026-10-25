@@ -5,15 +5,15 @@ goal: la app decide la cuenta PUC de cada papel por su origen (comanda, cierre, 
 size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas por origen, mapa a subcuentas PUC, recálculo de días guardados; evidencia ya existe (cuadro + inconsistencias)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
-next: 1-research
-current task: — (triage confirmado; decisiones: repartir por ítem, regla de mayoría «por confirmar» hasta que conteste el contador)
+next: 5-implement
+current task: T2 (minar_manual → modelo_manual.json); T1 hecho; gate N1 en T5
 
 ## Stages
 - [x] 0-triage
-- [ ] 1-research  (ligera: partir del cuadro, del informe de inconsistencias y de clasificar.py)
-- [ ] 2-requirements
-- [ ] 3-design
-- [ ] 4-plan
+- [x] 1-research  (ligera → 01-research.md)
+- [x] 2-requirements
+- [x] 3-design
+- [x] 4-plan
 - [ ] 5-implement
 - [ ] 6-test
 - [ ] 7-release
@@ -36,3 +36,10 @@ current task: — (triage confirmado; decisiones: repartir por ítem, regla de m
 2026-10-24 | 8-maintain | M-27 anotado: cuenta PUC por origen + ítem (pedido del usuario); cuadro de clasificación con 1.537 filas del manual → data/cuadro_clasificacion_puc.{xlsx,pdf}; informe del manual: sección PUC sin sugerencias de subcuenta, remite al cuadro
 2026-10-24 | 0-triage | M-27 borrador: meta (cuenta PUC por origen + ítem, aprende del manual, PUC de referencia), M, exposed no, regulated yes (decisiones del contador); alternativa barata: solo ampliar LEXICO (25 palabras) y arreglar 5 choques, una cuenta por papel; informe `data/inconsistencias_clasificacion_puc.pdf` → esperando confirmación
 2026-10-25 | 0-triage | confirmado por el usuario: meta y tamaño M; factura con ítems de varias cuentas se reparte por ítem; los 8 puntos del contador van por regla de mayoría del manual, marcados «por confirmar» → next 1-research (ligera)
+2026-10-25 | 2-requirements | borrador 02-requirements.md: R1–R8 Must, R9–R10 Should, N1 ≥ 85 % por ítem sept–oct; hallazgo: factura y gasto no sacan ítems hoy (R2); Q1–Q3 abiertas → esperando aprobación
+2026-10-25 | 1-research | 01-research.md: capas sin deps nuevas (origen → enseñado → léxico → léxico minado del cuadro → vecino difflib → puente), sklearn plan B; validar por mes; hoy 1 cuenta por papel y 1 débito; PUC auxiliares 8 díg. bajo subcuenta oficial; 7 riesgos (ítems con valor fuera de venta, suma ≠ total, no pisar lo manual)
+2026-10-25 | 2-requirements | aprobado por el usuario con defaults (Q1 N1 85 % por ítem, Q2 diferencia → puente + revisión, Q3 botón «Reclasificar mes» con vista previa) → next 3-design
+2026-10-25 | 3-design | borrador 03-design.md + ADR-019 (fila DATOS OCR por papel×cuenta), 020 (motor por capas + modelo_manual.json minado), 021 (reclasificar plan+huella → aplicar, 1 escritura), 022 (por_confirmar.json + puc_valida); hallazgo: el libro no guarda items (sí texto); spike de ítems de factura pendiente → esperando aprobación
+2026-10-25 | 3-design | aprobado por el usuario (ADR-019…022 aceptados) → next 4-plan
+2026-10-25 | 4-plan | 04-plan.md: 3 iteraciones, 12 tasks (5 S + 7 M) ≈ 13 h; It.1 mide primero (spike ítems, minado, motor, informe N1 = gate plan B) → next 5-implement
+2026-10-25 | 5-implement | T1 spike ítems de factura: sept. 96 facturas, 39 (41 %) con ítems con valor, 3 (3 %) cuadran ±1 % → factura = ítem único + proveedor salvo las que cuadran; T6 debe leer mejor el total
