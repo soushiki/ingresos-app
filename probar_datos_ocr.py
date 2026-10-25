@@ -367,4 +367,41 @@ from parser_module.contable import puc
 chk(puc.revisar("41401501")[0] == "ok" and puc.revisar("14050501")[0] == "propia" and puc.revisar("23357501")[0] == "no existe", "PUC: subcuenta oficial, propia y que no existe")
 av_p = [str(c.value) for c in load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": [dict(r12["filas"][0], codigo="23357501")]})))["AVISOS"]["A"]]
 chk(any("PUC" in a_ and "233575" in a_ for a_ in av_p), "PUC: una subcuenta que no existe sale en AVISOS")
+# T7 · R3/R8/ADR-019: factura con ítems de 2 cuentas → una fila de DATOS OCR por cuenta + «diferencia ítems vs total» a la puente; N débitos + 1 crédito
+from parser_module.contable.asientos import DIF_ITEMS
+_it = lambda n, v, c: dict(nombre=n, cant=1, valor=v, cuenta=c, conf=1.0, capa="manual", motivo="", manual=c)
+_fr = dict(f, id="repartida", numero="FE900", tercero="Proveedor Prueba", valor=10000, cuenta="51350501", avisos=[],
+           items=[_it("Aseo", 6000, "51350501"), _it("Acueducto", 3500, "51352501")])
+_r7 = construir("2026-09-12", [_fr]); _d7 = [x for x in _r7["datos"] if x["id"] == "repartida"]
+chk([(x["cuenta"], x["valor"]) for x in _d7] == [("51350501", 6000), ("51352501", 3500), (PG, 500)] and _d7[-1]["aviso"] == DIF_ITEMS,
+    f"ADR-019: factura repartida → 1 fila por cuenta + diferencia a la puente: {[(x['cuenta'], x['valor'], x['aviso']) for x in _d7]}")
+_f7 = [x for x in _r7["filas"] if "repartida" in x["docs"]]
+chk([(x["codigo"], x["debito"], x["credito"]) for x in _f7] == [("51350501", 6000, 0), ("51352501", 3500, 0), (PG, 500, 0), ("11200501", 0, 10000)],
+    f"ADR-019: bloque 4 con 3 débitos + 1 crédito por el total: {[(x['codigo'], x['debito'], x['credito']) for x in _f7]}")
+chk(_r7["debito"] == _r7["credito"] and sum(x["debito"] for x in _f7) == sum(x["credito"] for x in _f7), "ADR-019: papel repartido cuadra (débitos = créditos)")
+chk(_f7[-1]["fx"] == ["credito", ["+", ["fila", 0], ["fila", 1], ["fila", 2]]] and [x["fx"][1][0] for x in _f7[:3]] == ["dato"] * 3,
+    f"ADR-019: el crédito es la suma de sus débitos y cada débito sale de su fila de DATOS OCR: {_f7[-1]['fx']}")
+chk(any(DIF_ITEMS in a for a in _r7["avisos"]), "ADR-019: aviso «diferencia ítems vs total» en el día")
+_r7b = construir("2026-09-12", [dict(_fr, items=[_it("Aseo", 6000, "51350501"), _it("Acueducto", 4000, "51352501")])])
+chk([x["cuenta"] for x in _r7b["datos"] if x["id"] == "repartida"] == ["51350501", "51352501"], "ADR-019: ítems que suman el total → sin fila de diferencia")
+_r7c = construir("2026-09-12", [dict(_fr, items=[_it("Aseo", 6000, "51350501"), _it("Bolsas", 3000, "")])])
+chk([(x["cuenta"], x["valor"]) for x in _r7c["datos"] if x["id"] == "repartida"] == [("51350501", 10000)],
+    "ADR-019: ítem sin cuenta toma la del papel (una sola cuenta → una fila por el total)")
+_r7d = construir("2026-09-12", [dict(_fr, items=[_it("Aseo", 9950, "51350501")])]); _f7d = [x for x in _r7d["filas"] if "repartida" in x["docs"]]
+chk([(x["codigo"], x["debito"], x["credito"]) for x in _f7d] == [("51350501", 10000, 0), ("11200501", 0, 10000)] and _f7d[-1]["fx"] == ["credito", ["fila", 0]],
+    "ADR-019: papel de una sola cuenta → las mismas 2 filas de siempre, por el total (sin diferencia)")
+from parser_module.contable.asientos import DIF_ITEMS_MAS
+_r7e = construir("2026-09-12", [dict(_fr, items=[_it("Aseo", 6000, "51350501"), _it("Acueducto", 4800, "51352501")])])
+_d7e = [x for x in _r7e["datos"] if x["id"] == "repartida"]; _f7e = [x for x in _r7e["filas"] if "repartida" in x["docs"]]
+chk([(x["cuenta"], x["valor"], x["aviso"]) for x in _d7e][-1] == (PG, 800, DIF_ITEMS_MAS) and all(x["valor"] >= 0 for x in _d7e) and
+    [(x["codigo"], x["debito"], x["credito"]) for x in _f7e] == [("51350501", 6000, 0), ("51352501", 4800, 0), (PG, 0, 800), ("11200501", 0, 10000)] and
+    all(x["debito"] >= 0 and x["credito"] >= 0 for x in _r7e["filas"]) and _r7e["debito"] == _r7e["credito"],
+    f"ADR-019/M-1: ítems > total → el sobrante es un CRÉDITO positivo a la puente, nada negativo: {[(x['codigo'], x['debito'], x['credito']) for x in _f7e]}")
+_x7e = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": _r7e["filas"]}, datos={"2026-09-12": _r7e["datos"]}))); _s7e, _m7e = movimientos(_x7e)
+chk([(int(d), int(c)) for _, d, c in _m7e] == [(x["debito"], x["credito"]) for x in _r7e["filas"]], "ADR-019/M-1: evaluadas, las fórmulas de ítems > total dan lo mismo que construir()")
+xl7 = load_workbook(io.BytesIO(libro_a_excel({"2026-09-12": _r7["filas"]}, datos={"2026-09-12": _r7["datos"]})))
+chk(sum(1 for q in xl7["DATOS OCR"].iter_rows(min_row=2, values_only=True) if "repartida" in q) == 3, "R8: DATOS OCR del Excel trae una fila por cuenta del papel (más la diferencia)")
+_s7, _m7 = movimientos(xl7)
+chk([(int(d), int(c)) for _, d, c in _m7] == [(x["debito"], x["credito"]) for x in _r7["filas"]] and evaluar(xl7, _s7.title, "F7", {}) == evaluar(xl7, _s7.title, "G7", {}),
+    "R8: evaluadas, las fórmulas del papel repartido dan lo mismo que construir() y el mes cuadra")
 print("\nTODO BIEN" if ok else "\nHAY FALLOS")

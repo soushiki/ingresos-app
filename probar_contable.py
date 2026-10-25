@@ -320,4 +320,21 @@ _cap = appmod.app.test_client().get("/api/contable/capacidades").get_json()
 _sin_venv = _cap.get("motor") == "tesseract"
 chk(_cap.get("motor") in ("indra", "tesseract") and (not _sin_venv or "Indra no disponible" in (_cap.get("aviso") or "")),
     f"capacidades trae motor y aviso: {_cap.get('motor')} / {_cap.get('aviso')}")
+# T7 · fitness ADR-019/R8: en cada día de datos/libro.json, cada papel del bloque 4 cuadra (Σ débitos de su id = crédito) y uno de una sola cuenta
+# da las mismas 2 filas de v1.7.0 (1 débito a su cuenta y 1 crédito por el total)
+import copy as _cp, json as _js, pathlib as _pl
+from parser_module.contable.asientos import CFG as _CFG, DIF_ITEMS as _DIF
+_lib_p = _pl.Path("datos/libro.json"); _no_cuadra, _cambio, _n19 = [], [], 0
+for _fe, _dia in (sorted(_js.loads(_lib_p.read_text(encoding="utf8")).items()) if _lib_p.exists() else []):
+    _r19 = construir(_fe, _cp.deepcopy(_dia["documentos"]), _dia.get("banco", {}), None, _dia.get("cierre"), _dia.get("extracto"))
+    for _id in {x["id"] for x in _r19["datos"] if x["bloque"] == "factura" and x["estado"] == "ok"}:
+        _ds = [x for x in _r19["datos"] if x["id"] == _id and x["bloque"] == "factura"]; _fs = [x for x in _r19["filas"] if x["docs"] == [_id] and x["grupo"] == "gasto"]; _n19 += 1
+        if sum(x["debito"] for x in _fs) != sum(x["credito"] for x in _fs): _no_cuadra.append((_fe, _id))
+        if len(_ds) == 1 and [(x["codigo"], x["debito"], x["credito"]) for x in _fs] != [(_ds[0]["cuenta"], _ds[0]["valor"], 0), (_fs[-1]["codigo"], 0, _ds[0]["valor"])]: _cambio.append((_fe, _id))
+chk(not _no_cuadra, f"ADR-019: papel repartido no cuadra — {_n19} papeles revisados en datos/libro.json: {_no_cuadra[:3]}")
+chk(not _cambio, f"ADR-019: cambió el asiento de un papel de una cuenta — {_cambio[:3]}")
+_fx = dict(f, id="dif19", valor=10000, cuenta="51350501", avisos=[], items=[dict(nombre="Aseo", valor=6000, cuenta="51350501"), dict(nombre="Acueducto", valor=3000, cuenta="51352501")])
+_rd19 = construir("2026-09-12", [_fx])
+chk(any(x["id"] == "dif19" and x["cuenta"] == _CFG["puente_gasto"] and x["valor"] == 1000 and x["aviso"] == _DIF for x in _rd19["datos"]) and _rd19["debito"] == _rd19["credito"],
+    "ADR-019: diferencia sin puente")
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))

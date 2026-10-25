@@ -4,7 +4,7 @@ import json, re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from .documentos import medio_canonico
+from .documentos import items_de, medio_canonico
 AQUI = Path(__file__).parent
 CATALOGO = {c["codigo"]: c for c in json.loads((AQUI / "plan_de_cuentas.json").read_text(encoding="utf8"))}
 EFECTIVO, BANCO, RESTAURANTE, DOMICILIOS, PROPINAS = "11050501", "11200501", "41401501", "28150501", "28150502"
@@ -189,7 +189,19 @@ def marcar_duplicados(docs: list) -> list:
 
 
 FALTA_CUENTA = "falta la cuenta"   # aviso de DATOS OCR que construir() reconoce (DEBT-1)
+DIF_ITEMS = "diferencia ítems vs total"   # ADR-019: fila a la puente cuando los ítems de un papel repartido no suman su total (faltan: débito)
+DIF_ITEMS_MAS = "diferencia ítems vs total: los ítems suman más"   # sobran: crédito a la puente, nunca un importe negativo (M-1)
 COLS_DATOS = ["fecha", "archivo", "tipo", "numero", "tercero", "detalle", "valor", "medio", "cuenta", "estado", "aviso", "propina", "domicilio", "bloque", "id", "recibo", "motivo", "medio_detalle"]   # T12: recibo = validado|dudoso|revisado (estado_de) y motivo = por qué es dudoso (R7)
+
+
+def por_cuenta(d: dict) -> list:
+    """R3/ADR-019: ítems del papel (items_de) agrupados por cuenta → [(cuenta, Σ valor, nombres)], la de mayor valor primero.
+    Un ítem sin cuenta toma la del papel (la del ítem de mayor valor); si tampoco hay, queda "" (puente)."""
+    g = defaultdict(lambda: [0, []])
+    for it in items_de(d):
+        c = it.get("cuenta") or d.get("cuenta") or ""; g[c][0] += int(it.get("valor") or 0)
+        if it.get("nombre"): g[c][1].append(str(it["nombre"]))
+    return sorted(((c, v, "; ".join(n)[:120]) for c, (v, n) in g.items()), key=lambda t: -t[1])
 
 
 def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
@@ -239,8 +251,15 @@ def datos_ocr(fecha: str, todos: list, banco: dict, cfg: dict) -> list:
             if medio == "Mixto":   # T3: una factura de gasto no se reparte; toma el medio del mayor valor pagado y conserva «Mixto» como detalle (aviso «revisa el medio»)
                 pagos = [(d.get(k) or 0, m) for k, m in (("efectivo", "Efectivo"), ("tarjeta", "Tarjeta"), ("transf", d.get("medio_transf") or "Transferencia"), ("credito", "Crédito personal")) if d.get(k)]
                 medio, detalle = (max(pagos)[1] if pagos else ""), "Mixto"
-            dato(d, valor=d["valor"], medio=medio, medio_detalle=detalle, cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
-                 aviso="; ".join(a for a in ("" if d["valor"] else "sin valor leído", "" if d["cuenta"] else FALTA_CUENTA) if a), bloque="factura")
+            partes = por_cuenta(d) if d["valor"] else []
+            if len(partes) > 1:   # R3/ADR-019: una fila por (papel, cuenta) con la suma de sus ítems; lo que no cuadra con el total va a la puente
+                for cod, v, nom in partes:
+                    dato(d, detalle=nom or d.get("detalle", ""), valor=v, medio=medio, medio_detalle=detalle, cuenta=cod or cfg["puente_gasto"], aviso="" if cod else FALTA_CUENTA, bloque="factura")
+                dif = d["valor"] - sum(v for _, v, _ in partes)
+                if abs(dif) > 1: dato(d, valor=abs(dif), medio=medio, medio_detalle=detalle, cuenta=cfg["puente_gasto"], aviso=DIF_ITEMS if dif > 0 else DIF_ITEMS_MAS, bloque="factura")
+            else:   # un papel de una sola cuenta: la misma fila de siempre, por el total (fitness R8)
+                dato(d, valor=d["valor"], medio=medio, medio_detalle=detalle, cuenta=d["cuenta"] or cfg["puente_gasto"], estado="ok" if d["valor"] else "pendiente",
+                     aviso="; ".join(a for a in ("" if d["valor"] else "sin valor leído", "" if d["cuenta"] else FALTA_CUENTA) if a), bloque="factura")
         else:
             dato(d, valor=d.get("valor") or 0, estado="no cuenta", aviso="tipo de papel sin asiento")
     return datos
@@ -439,19 +458,27 @@ def construir(fecha: str, docs: list, banco: dict | None = None, cfg: dict | Non
                            fx=["-", ["dato", j_dom], ["min", ["dato", j_dom], en_v]]))
         fila(EFECTIVO, "Consumidor Final", "Pago de propinas y domicilios según cierre", cre=pago_pro + pago_dom, reporta=cfg["reporta_efectivo"], medio="Efectivo", grupo="gasto", fx=["+", *F(*jr)])
 
-    # 4) facturas y gastos pagados por banco o en efectivo, uno por uno (si no se leyó el valor, no se inventa un asiento: queda en pendientes)
+    # 4) facturas y gastos pagados por banco o en efectivo, uno por uno (si no se leyó el valor, no se inventa un asiento: queda en pendientes).
+    #    ADR-019: las filas de DATOS OCR de un mismo papel (una por cuenta, más la diferencia) dan N débitos y 1 crédito por el total.
+    por_papel = defaultdict(list)
     for i, x in enumerate(datos):
-        if x["bloque"] != "factura": continue
-        ref = x["numero"] or x["tercero"] or "s/n"
+        if x["bloque"] == "factura": por_papel[x["id"]].append((i, x))
+    for xs in por_papel.values():
+        x = xs[0][1]; ref = x["numero"] or x["tercero"] or "s/n"
         if x["estado"] == "pendiente":
             pendientes.append(dict(id=x["id"], tipo=x["tipo"], numero=x["numero"], tercero=x["tercero"], valor=0, motivo="sin valor leído"))
             avisos.append(f"Factura {ref}: sin valor leído, quedó en pendientes (corrige el valor o desmárcala)"); continue
         if x["medio"] == "Tarjeta" or x["medio_detalle"] == "Mixto": avisos.append(f"Factura {ref}: pagada con tarjeta; se registró contra Bancos, revisa el medio")
-        if x["aviso"] == FALTA_CUENTA: avisos.append(f"Factura {ref}: falta la cuenta; quedó en la cuenta puente {cfg['puente_gasto']}")
+        if any(y["aviso"] == FALTA_CUENTA for _, y in xs): avisos.append(f"Factura {ref}: falta la cuenta; quedó en la cuenta puente {cfg['puente_gasto']}")
+        if any(y["aviso"] in (DIF_ITEMS, DIF_ITEMS_MAS) for _, y in xs): avisos.append(f"Factura {ref}: {DIF_ITEMS}; la diferencia quedó en la cuenta puente {cfg['puente_gasto']}")
         ef = x["medio"] == "Efectivo"; rep = cfg["reporta_efectivo"] if ef else cfg["reporta_banco"]
         desc = x["detalle"] or "Compra"; ter = x["tercero"] or "Proveedor"
-        j = fila(x["cuenta"], ter, desc, deb=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["dato", i])
-        fila(EFECTIVO if ef else BANCO, ter, desc, cre=x["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["fila", j])
+        mas = [(i, y) for i, y in xs if y["aviso"] == DIF_ITEMS_MAS]   # los ítems suman más que el total: el sobrante es un crédito a la puente
+        js = [fila(y["cuenta"], ter, y["detalle"] or "Compra", deb=y["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["dato", i]) for i, y in xs if (i, y) not in mas]
+        jm = [fila(y["cuenta"], ter, DIF_ITEMS_MAS, cre=y["valor"], reporta=rep, medio=x["medio"], grupo="gasto", docs=[x["id"]], fx=["dato", i]) for i, y in mas]
+        sum_js = ["fila", js[0]] if len(js) == 1 else ["+", *F(*js)]
+        fila(EFECTIVO if ef else BANCO, ter, desc, cre=sum(filas[j]["debito"] for j in js) - sum(filas[j]["credito"] for j in jm), reporta=rep, medio=x["medio"], grupo="gasto",
+             docs=[x["id"]], fx=["-", sum_js, *F(*jm)] if jm else sum_js)
 
     # 5) extracto bancario (R6, ADR-012): cada línea de destino cuenta o revisar → 2 filas contra Bancos por el valor exacto del extracto.
     #    Entra (+): débito Bancos / crédito la cuenta; sale (−): débito la cuenta / crédito Bancos. La cuenta viene de extracto_reglas.json
