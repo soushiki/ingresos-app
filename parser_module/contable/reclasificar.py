@@ -41,7 +41,8 @@ def _dias(lib: dict, mes: str, motor) -> tuple:
                 if antes == despues: continue
                 hubo = True
                 cambios.append(dict(fecha=fecha, doc_id=doc.get("id", ""), numero=doc.get("numero", ""), tipo=doc["tipo"], tercero=doc.get("tercero", ""),
-                                    item=it.get("nombre", ""), valor=int(it.get("valor") or 0), antes=antes, despues=despues, capa=it.get("capa", ""), motivo=it.get("motivo", "")))
+                                    item=it.get("nombre", ""), valor=int(it.get("valor") or 0), antes=antes, despues=despues, capa=it.get("capa", ""), motivo=it.get("motivo", ""),
+                                    duplicado=doc.get("contar") is False))     # copia de otro papel (dup_de): se reclasifica igual, pero no va a los libros
             docs.append(nuevo)
         if hubo: nuevos[fecha] = docs
     return cambios, nuevos
@@ -54,10 +55,12 @@ def _huella(lib: dict, mes: str, cambios: list) -> str:
 
 def plan(lib: dict, mes: str, motor) -> dict:
     """mes «2026-09». No toca `lib`. → {mes, cambios:[{fecha, doc_id, numero, tipo, tercero, item, valor, antes, despues, capa, motivo}],
-    resumen: {cuenta: {antes, despues}} (Σ valor que sale/entra por cuenta, para la tabla antes → después), huella}."""
+    resumen: {cuenta: {antes, despues}} (Σ valor que sale/entra por cuenta, para la tabla antes → después), huella}.
+    El resumen deja fuera duplicados y ítems de $0: no mueven plata en los libros."""
     cambios, _ = _dias(lib, mes, motor)
     resumen = {}
     for c in cambios:
+        if c["duplicado"] or not c["valor"]: continue
         resumen.setdefault(c["antes"], dict(antes=0, despues=0))["antes"] += c["valor"]
         resumen.setdefault(c["despues"], dict(antes=0, despues=0))["despues"] += c["valor"]
     return dict(mes=mes, cambios=cambios, resumen=resumen, huella=_huella(lib, mes, cambios))

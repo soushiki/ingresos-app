@@ -46,6 +46,14 @@ except HuellaDistinta: chk(True, "día guardado entre plan y aplicar → HuellaD
 try: aplicar(LIB, dict(p, mes=""), m, cfg); chk(False, "sin mes no aplica")
 except HuellaDistinta: chk(True, "vista sin mes → HuellaDistinta")
 
+chk(not any(c["duplicado"] for c in p["cambios"]), "papeles que cuentan: duplicado = False")
+dup = copy.deepcopy(LIB); dup["2026-09-05"]["documentos"].append(dict(viejo, id="g1b", contar=False, dup_de="g1"))
+pd = plan(dup, "2026-09", m)
+chk([c["doc_id"] for c in pd["cambios"] if c["duplicado"]] == ["g1b"], "copia (contar=False) sale marcada duplicado")
+chk(pd["resumen"] == p["resumen"], "el resumen no suma duplicados (T11: sept. 09-10 recibo 203 ×5)")
+cero = copy.deepcopy(LIB); cero["2026-09-05"]["documentos"].append(papel("g0", "gasto_caja", detalle="Hielo", valor=0, cuenta="51355001"))
+chk(plan(cero, "2026-09", m)["resumen"] == p["resumen"], "ítem de $0 no entra al resumen")
+
 nuevo = aplicar(LIB, p, m, cfg, ahora="2026-10-25T12:00:00")
 chk(json.dumps(LIB, sort_keys=True) == foto, "aplicar no muta el libro de entrada")
 dia = nuevo["2026-09-05"]; docs = {d["id"]: d for d in dia["documentos"]}
