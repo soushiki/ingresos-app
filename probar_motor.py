@@ -192,5 +192,12 @@ rr = construir("2026-09-10", [mp], {}, None, None, None)
 fp = [d for d in rr["datos_ocr"] if d["id"] == "p1"] if "datos_ocr" in rr else []
 chk(any("falta la cuenta" in a and "F1" in a and "xqzw" in a for a in rr["avisos"]) and all((f.get("debito") or 0) >= 0 and (f.get("credito") or 0) >= 0 for f in rr["filas"]), f"ítem a la puente en papel multicuenta → aviso con papel e ítem ({[a for a in rr['avisos'] if 'cuenta' in a]})")
 
+# 6-test · R2: los «Gastos detallados» del cierre llegan como ítem del vale sin descripción (completar_desde_cierre corre antes del motor)
+from parser_module.contable import completar_desde_cierre
+vale = dict(tipo="gasto_caja", tercero="Cuantías menores", detalle="", valor=8000, texto="")
+cie = dict(tipo="cierre", cuenta="", gastos_detalle=[("HIELO", 8000)])
+for d in completar_desde_cierre([vale, cie]): mt.clasificar_doc(d)
+chk(vale["detalle"] == "Hielo" and vale["items"][0]["cuenta"] == "14050502" and vale["items"][0]["capa"] != "puente", f"R2: gasto del cierre → ítem del vale clasificado ({vale['items'][0]})")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
 sys.exit(0 if ok else 1)

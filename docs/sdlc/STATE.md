@@ -5,8 +5,8 @@ goal: la app decide la cuenta PUC de cada papel por su origen (comanda, cierre, 
 size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas por origen, mapa a subcuentas PUC, recálculo de días guardados; evidencia ya existe (cuadro + inconsistencias)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
-next: 6-test
-current task: It. 2 completa (T6–T8) → 6-test de It. 2; luego vuelve a 5-implement para It. 3 (T9–T12)
+next: 5-implement
+current task: FIX-1 (6-test It. 2 falló: 3 bugs de cuenta) → FIX-2, FIX-3, DEBT-2 → re-smoke → It. 3 (T9–T12)
 
 ## Stages
 - [x] 0-triage
@@ -58,3 +58,4 @@ current task: It. 2 completa (T6–T8) → 6-test de It. 2; luego vuelve a 5-imp
 2026-10-25 | 5-implement | T6 items_de(doc) en documentos.py (cuadran ±1 % → ítems; si no → ítem único detalle+proveedor; papel viejo → manual=cuenta_manual; no muta), _total_factura lee «TOTAL -> N»; probar_items 15 checks (NIT real de prueba cambiado por 900000000); suite 25/25 verde
 2026-10-25 | 5-implement | T7 datos_ocr: una fila por (papel, cuenta), «diferencia ítems vs total» a puente_gasto (falta → débito; sobra → crédito, sin montos negativos, pedido en revisión), bloque 4 N débitos + 1 crédito; R8 OK (sept. 30 días, mismo BALANCE x CTA, D = C = 62.833.386); suite 25/25 verde
 2026-10-25 | 5-implement | T8 Motor.clasificar_doc conectado en app._clasificar y sop_compra (MOTOR se rehace tras /aprender); compras por ítem, venta/Rappi/cierre → 41401501 «origen: comanda»; ítem a la puente en papel repartido → aviso «falta la cuenta de «ítem»» (pedido del usuario); +__init__.py y probar_motor.py (aprobado); 1 día de sept. 90 papeles 0,013 s (N3); suite verde → It. 2 completa, next 6-test
+2026-10-25 | 6-test | It. 2: suite 25/25 verde, R1/R2/R3/R5/R8 cubiertos (+1 check R2 cierre→vale), N3 0,013 s; /code-review high 8 hallazgos, 3 reproducidos que ponen cuenta equivocada (cuenta a mano pisada; cuenta_manual booleano → «True»; puente nunca se reclasifica) → FALLA; FIX-1…3 + DEBT-2 en 04; smoke tras los FIX → next 5-implement
