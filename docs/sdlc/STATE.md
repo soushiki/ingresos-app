@@ -5,8 +5,8 @@ goal: Indra OCR pasa a ser el segundo lector R3 (en lugar de Tesseract-dígitos)
 size: M  # dos piezas (lector R3 + enderezado) + proceso trabajador en otro venv + instalador; evidencia ya existe (spike e6e46e2)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # OCR, no cifras fiscales; licencia pesos OpenRAIL-M modificada: gratis bajo US$20 M de ingresos → aplica
-next: 7-release
-current task: — (I3 completa)
+next: 8-maintain
+current task: — (v1.7.0 commit local; tag + push esperan OK del usuario)
 
 ## Stages
 - [x] 0-triage
@@ -16,7 +16,7 @@ current task: — (I3 completa)
 - [x] 4-plan
 - [x] 5-implement
 - [x] 6-test
-- [ ] 7-release
+- [x] 7-release
 - [ ] 8-maintain
 
 ## Ciclos anteriores
@@ -55,3 +55,4 @@ current task: — (I3 completa)
 2026-10-24 | 5-implement | T9 hecho (Sonnet): probar_indra.py 6 ✓ con indra_venv (ready 1.1.2, numeros, upright 0/90, N5 repetibles); omitido limpio con INDRA_VENV inexistente; pista ADR-018 solo en fallos; probar_* OK → next T10
 2026-10-24 | 5-implement | T10 hecho (Sonnet): Cliente.cerrar() acquire(1 s) y mata si hay pedido colgado; +2 en probar_motores.py (cierre colgado 1,0 s, app matada → EOF 0,1 s); nota README; tasklist sin python 3.14; arranque perezoso → un solo trabajador; 22 probar_* OK; I3 completa → next 6-test
 2026-10-24 | 6-test | I3 pasa: 22 probar_* OK; R5 (cierre normal, colgado ≤ 3 s, app matada → EOF ≤ 5 s) y R7/N5 (probar_indra 6 ✓) cubiertos; 3 menores aceptados (_matar sin candado, giro 270 sintético, nota README doble); Musts R1–R4, R6 pasan; falta R8 → next 7-release
+2026-10-24 | 7-release | v1.7.0: VERSION + CHANGELOG + README (instalar, licencia; nota doble recortada); R8 leída (OpenRAIL-M mod.: gratis < US$20 M, sin competir, no redistribuimos; §7 crédito en README, §8 no entrenar con salida de Indra) + copia en docs/licencias/; suite 22/22; commit local, tag+push pendientes del OK → next 8-maintain

@@ -169,7 +169,7 @@ Pruebas sueltas: `probar_imagen.py` (una foto), `probar_parser.py` (ejemplos del
 - «Ollama sin conexión»: abre la aplicación Ollama o ejecuta `ollama serve`.
 - Error de modelo no instalado: `ollama pull <modelo>` y elígelo en la lista de arriba.
 - Cambiar el puerto: variable `PORT=5051` en `.env`.
-- Indra (OCR local): el trabajador se arranca en la primera foto, no al abrir la app, así que con el recargador de Werkzeug (`debug=True`) sigue habiendo uno solo. Al cerrar la app (o si Flask muere de golpe) el trabajador termina solo en ≤ 5 s; si queda un `python` 3.14 en `tasklist`, mira `logs/indra.log`.
+- Indra (OCR local): si queda un `python` 3.14 en `tasklist` después de cerrar la app, mira `logs/indra.log` (detalle en «Indra» abajo).
 
 ## Carpeta del día (📁 Subir carpeta)
 Elige la carpeta de un día con subcarpetas **CIERRE**, **COMANDAS** y **GASTOS** (o archivos que empiecen por esos nombres): cada archivo toma su grupo del nombre, los PDF con texto se leen sin OCR y los escaneados/fotos se giran, recortan y separan por papel. El cierre del POS se cruza con tus comandas y vales (rango de facturas, tarjetas, transferencias, propinas, domicilios, descuentos, gastos) y avisa qué comanda falta. ↻ gira 90° y vuelve a leer una foto.
@@ -177,3 +177,7 @@ Los recibos manuscritos necesitan el modelo local de Ollama; Tesseract solo lee 
 
 ## Indra (OCR de dígitos) y su trabajador
 Indra corre en un proceso aparte (`indra_venv`, python 3.14) que arranca en el primer pedido, no al abrir la app. Si cierras la app (Ctrl+C, cerrar la ventana o matarla), el trabajador se cierra solo en ≤ 5 s; si había un pedido colgado, se mata. Con `python app.py` no hay recargador de Werkzeug (no se usa `debug`), así que hay un solo trabajador. Para comprobarlo: `tasklist | findstr python` no debe mostrar `indra_venv` tras cerrar. Los fallos van a `logs/indra.log`.
+
+**Instalar (una vez por PC, solo el tuyo):** Python 3.14 (`winget install Python.Python.3.14`) y luego `instalar_indra.bat`. Crea `indra_venv\`, instala `indra_requisitos.txt` (indra-ocr 1.1.2), baja los modelos una sola vez y termina en «Indra listo»; después funciona sin internet. Sin `indra_venv` la app usa Tesseract como en 1.6.0 y lo avisa con una banda en la pantalla.
+
+**Licencia:** el código de Indra es Apache-2.0. Los pesos del modelo ([datalab-to/indra-ocr](https://huggingface.co/datalab-to/indra-ocr)) son de Datalab y usan una OpenRAIL-M modificada; hay copia en `docs/licencias/indra-ocr-pesos-LICENSE.txt`. Se pueden usar gratis mientras el negocio tenga menos de US$20 M de ingresos y de financiación, y no ofrezca nada que compita con Datalab. Este repo no incluye los pesos: cada PC los baja de Hugging Face. No entrenes ni ajustes otro modelo con lo que lee Indra, porque la licencia lo cuenta como derivado.

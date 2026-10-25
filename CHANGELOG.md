@@ -2,6 +2,24 @@
 
 ## [Sin publicar]
 
+## [1.7.0] — 2026-10-24
+Indra OCR: un lector local nuevo lee los números de los recibos y endereza las fotos torcidas o de lado. Si Indra no está, todo funciona con Tesseract como en 1.6.0, y la pantalla lo avisa.
+
+### Lectura
+- El segundo lector de R3 (los dígitos de cada recorte) es Indra (indra-ocr 1.1.2) en vez de Tesseract-dígitos. Con los 103 recibos de sept. hay 5 omitidos (igual que antes), 26 dudosos (antes 27) y 7 validados con error (igual). No hay totales peores.
+- Enderezado: antes de recortar se detectan el giro (0/90/180/270) y la inclinación de cada hoja, y se corrigen con fondo blanco. Una hoja derecha (giro 0 y menos de 0,3°) no se toca, así que salen los mismos recortes que en 1.6.0. Probado con 20 hojas en 7 ángulos: 18 derechas y 2 de lado, inclinación ≤ 0,9°, ≤ 0,37 s por hoja.
+
+### Trabajador y respaldo
+- Indra corre en su propio proceso (`indra_venv`, Python 3.14). Arranca con la primera foto y se cierra solo, en ≤ 5 s, cuando se cierra o se mata la app. Si se cuelga o muere, se reinicia una vez; si falla de nuevo, se usa Tesseract el resto de la sesión.
+- Si no hay `indra_venv` o Indra se cae, se usa Tesseract y aparece la banda «Indra no disponible: se usa Tesseract» en la pantalla contable. `/api/contable/capacidades` trae `motor` y `aviso`.
+
+### Instalar
+- `instalar_indra.bat` comprueba que esté Python 3.14, crea `indra_venv\`, instala `indra_requisitos.txt` y baja los modelos una vez (luego funciona sin internet). Se puede correr otra vez sin problema. `probar_indra.py` revisa la versión y que las lecturas se repitan.
+- Licencia de los pesos (OpenRAIL-M modificada, de Datalab): ver README «Indra» y `docs/licencias/`.
+
+### Datos
+- Sin migración de soporte.db y sin recálculo del libro (VERSION_RESPALDO sigue en 1.6.0). Solo cambia cómo se leen las fotos nuevas o re-subidas.
+
 ## [1.6.0] — 2026-10-20
 Extracto bancario: el Excel que se descarga del banco entra al libro, cada línea clasificada y con su asiento; lo dudoso queda para que elijas la cuenta.
 
