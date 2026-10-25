@@ -28,3 +28,15 @@ def revisar(codigo) -> tuple[str, str]:
     if c[:6] in NOMBRES: return "ok", f"{c}: {NOMBRES[c[:6]]} ({c[:4]} {NOMBRES[c[:4]]})"
     if not oficiales: return "propia", f"{c}: {c[:4]} {NOMBRES[c[:4]]} no trae subcuentas en el PUC; la {c[:6]} es del negocio"
     return "no existe", f"{c}: la subcuenta {c[:6]} no está en el PUC; {c[:4]} {NOMBRES[c[:4]]} tiene " + ", ".join(f"{k} {NOMBRES[k]}" for k in oficiales[:6]) + ("…" if len(oficiales) > 6 else "")
+
+
+def puc_valida(cuenta, alias: dict | None = None, notas: dict | None = None) -> tuple[str, str, str]:
+    """(cuenta, estado, aviso) · aplica primero el alias manual→PUC (`por_confirmar.json`, ADR-022) y luego `revisar`.
+    estado: el de `revisar` sobre la cuenta final; aviso: «» o por qué se cambió o dudó. No decide la puente: eso lo hace el motor.
+    notas: `alias_nota` del mismo JSON; su «estado» va en el aviso (sin nota → «por confirmar»)."""
+    c = str(cuenta or "").strip(); aviso = ""
+    destino = (alias or {}).get(c)
+    nota = (notas or {}).get(c); est = nota.get("estado", "por confirmar") if isinstance(nota, dict) else "por confirmar"
+    if destino and destino != c: aviso = f"{c} → {destino} (alias manual→PUC, {est})"; c = destino
+    estado, expl = revisar(c)
+    return c, estado, aviso or ("" if estado in ("ok", "propia") else expl)

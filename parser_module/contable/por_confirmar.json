@@ -1,0 +1,32 @@
+{
+ "version": 1,
+ "nota": "Decisiones del contador (ADR-022). Para contestar: cambia «estado» a «confirmado» y, si hace falta, «cuenta» o el alias; luego «Reclasificar mes».",
+ "alias": {
+  "51353002": "51355501",
+  "51353004": "51353501",
+  "51353003": "51359501",
+  "51957501": "51959502",
+  "51157501": "53152001"
+ },
+ "alias_nota": {
+  "51353002": {"nota": "gas: el manual usa 513530 Energía eléctrica; PUC 513555 Gas", "estado": "por confirmar", "fuente": "Decreto 2650 art. 6–7 (513555 Gas); contador, pendiente"},
+  "51353004": {"nota": "teléfono: el manual usa 513530; PUC 513535 Teléfono", "estado": "por confirmar", "fuente": "Decreto 2650 art. 6–7 (513535 Teléfono); contador, pendiente"},
+  "51353003": {"nota": "internet: el manual usa 513530; PUC sin subcuenta propia, 513595 Otros", "estado": "por confirmar", "fuente": "regla de mayoría (sin subcuenta → 5135 Otros); contador, pendiente"},
+  "51957501": {"nota": "herramientas: el manual usa 519575 Pólvora y similares; PUC 519595 Otros", "estado": "por confirmar", "fuente": "regla de mayoría (sin subcuenta → 5195 Otros); contador, pendiente"},
+  "51157501": {"nota": "4x1000: 511575 no existe en el PUC; se junta con 53152001 (una sola cuenta)", "estado": "por confirmar", "fuente": "informe de inconsistencias (una sola cuenta para el GMF); contador, pendiente"}
+ },
+ "decisiones": [
+  {"id": 1, "pregunta": "Pago a domiciliarios: 2815 (valor recibido para terceros) si se cobró al cliente; 5135 transporte solo para mandados y envíos de compras", "regla_usada": "mayoría del manual: 28150501 (28 de 44)", "cuenta": "28150501", "estado": "por confirmar", "fuente": "contador, pendiente", "afecta": ["domicilio", "domiciliario", "domicilios"]},
+  {"id": 2, "pregunta": "Carbón: insumo de cocina (1405) o aseo y cafetería (5195)", "regla_usada": "mayoría del manual: 51952501 (5 de 10)", "cuenta": "51952501", "estado": "por confirmar", "fuente": "contador, pendiente", "afecta": ["carbon"]},
+  {"id": 3, "pregunta": "Frutas para jugos (fresas, zumo): cocina o barra", "regla_usada": "mayoría del manual: fresas 14050501 (3 de 5), zumo 14050502 (2 de 3)", "cuenta": "14050501", "estado": "por confirmar", "fuente": "contador, pendiente", "afecta": ["fresas", "zumo"]},
+  {"id": 4, "pregunta": "Agua: recibo de agua = servicio público 513525; agua embotellada = barra", "regla_usada": "por origen y proveedor (recibo → 51352501, compra → 14050502)", "cuenta": "51352501", "estado": "por confirmar", "fuente": "Decreto 2650 art. 6–7 (513525); contador, pendiente", "afecta": ["agua"]},
+  {"id": 5, "pregunta": "Préstamos y cortesías: préstamo de socios (2355), cuenta por cobrar (1305) o Rappi (1345)", "regla_usada": "mayoría del manual: préstamo 23550501, cortesía 13050501", "cuenta": "13050501", "estado": "por confirmar", "fuente": "contador, pendiente", "afecta": ["prestamo", "cortesia"]},
+  {"id": 6, "pregunta": "Subcuentas PUC: gas 513555, teléfono 513535, internet 513595 Otros, herramientas 519595 Otros, extintores 514515, una sola cuenta para el 4x1000", "regla_usada": "alias manual→PUC de este archivo", "cuenta": "", "estado": "por confirmar", "fuente": "Decreto 2650 art. 6–7; contador, pendiente", "afecta": ["51353002", "51353003", "51353004", "51957501", "51451501", "51157501", "53152001"]},
+  {"id": 7, "pregunta": "Códigos que no existen (administrador 51104001, contador 51104002, aseo y vigilancia 23357501): a qué subcuenta PUC van", "regla_usada": "sin alias: salen avisados y, si el motor los decide, van a la puente", "cuenta": "", "estado": "por confirmar", "fuente": "contador, pendiente", "afecta": ["51104001", "51104002", "23357501"]},
+  {"id": 8, "pregunta": "Nombres: un solo nombre por código (Sueldos, Insumos barra, Cta. Ahorros Bancolombia…)", "regla_usada": "el nombre mayoritario del manual", "cuenta": "", "estado": "por confirmar", "fuente": "contador, pendiente", "afecta": ["51050601", "14050502", "11200501", "28150502", "51953001"]}
+ ],
+ "origen": {"venta": "41401501", "rappi": "41401501", "cierre": "41401501"},
+ "origen_fuente": "R1: la comanda fija el ingreso (414015 Restaurantes, Decreto 2650); la contrapartida va por medio (asientos)",
+ "puentes": {"gasto": "51959501", "ingreso": "13809501"},
+ "umbrales": {"vecino": 0.75, "empate": 0.05, "candidatos": 20}
+}

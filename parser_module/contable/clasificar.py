@@ -4,6 +4,8 @@ import json, re
 from difflib import SequenceMatcher
 from pathlib import Path
 from ..numeros import norm
+from .puc import puc_valida
+from .asientos import CFG as _CFG_ASIENTOS
 
 AQUI = Path(__file__).parent
 _PESO_DUDOSO = 0.6
@@ -79,12 +81,16 @@ class Clasificador:
 
 
 # ── Motor por capas (M-27, ADR-020) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-# Fuentes de las cuentas (regulated): origen → R1 (41401501 ingresos de restaurante, plan de cuentas del negocio); LEXICO/FRASES → a mano;
+# Fuentes de las cuentas (regulated): origen → R1 (`por_confirmar.json` «origen», con su fuente); LEXICO/FRASES → a mano;
 # minado/proveedor/vecino → el cuadro manual del contador (jun–oct, `modelo_manual.json`); puente → cuenta del contador para «gasto sin cuenta»
-# (asientos.CFG["puente_gasto"]). La validación contra el PUC (Decreto 2650/1993) la añade `puc_valida` (T4, ADR-022).
+# (asientos.CFG["puente_gasto"], que pisa contable.json). La validación contra el PUC (Decreto 2650/1993) la hace `puc_valida` (T4, ADR-022)
+# sobre toda salida que no sea la puente, también la minada (así el alias reescribe los códigos viejos del manual); solo lo que el usuario
+# puso a mano (`manual=`) no se cambia, solo se avisa. ADR-022: ningún código de 8 dígitos fuera de LEXICO/FRASES vive aquí.
 
-PUENTE_GASTO = "51959501"            # = asientos.CFG["puente_gasto"]
-ORIGEN = {"venta": "41401501", "rappi": "41401501", "cierre": "41401501"}   # R1: la comanda fija el ingreso; la contrapartida va por medio (asientos)
+PUENTE_GASTO = _CFG_ASIENTOS["puente_gasto"]
+_PC = AQUI / "por_confirmar.json"
+CONFIRMAR = json.loads(_PC.read_text(encoding="utf8")) if _PC.is_file() else {}
+ORIGEN = CONFIRMAR.get("origen", {})      # R1: la comanda fija el ingreso; la contrapartida va por medio (asientos)
 UMBRALES = {"vecino": 0.75, "empate": 0.05, "candidatos": 20}               # ADR-020; se pueden pisar en confirmar["umbrales"]
 
 
@@ -101,6 +107,8 @@ class Motor:
         self.aprendido = {"terceros": {}, "detalles": {}} | (aprendido or {})
         self.umbral = UMBRALES | self.confirmar.get("umbrales", {})
         self.puente = self.confirmar.get("puentes", {}).get("gasto") or PUENTE_GASTO
+        self.alias, self.notas = self.confirmar.get("alias", {}), self.confirmar.get("alias_nota", {})
+        self.origen = self.confirmar.get("origen") or ORIGEN
         self.provs = {norm(k).strip(): v for k, v in self.modelo["proveedores"].items()}
         self.indice = {}                                         # trigrama → posiciones en vecinos
         for i, v in enumerate(self.modelo["vecinos"]):
@@ -109,8 +117,7 @@ class Motor:
     @classmethod
     def desde_archivos(cls, ruta_aprendido: str | None = None, ruta_modelo: str | None = None) -> "Motor":
         modelo = json.loads(Path(ruta_modelo or AQUI / "modelo_manual.json").read_text(encoding="utf8"))
-        conf = AQUI / "por_confirmar.json"
-        confirmar = json.loads(conf.read_text(encoding="utf8")) if conf.is_file() else {}
+        confirmar = json.loads(_PC.read_text(encoding="utf8")) if _PC.is_file() else {}
         aprendido = {}
         if ruta_aprendido and Path(ruta_aprendido).is_file():
             try: aprendido = json.loads(Path(ruta_aprendido).read_text(encoding="utf8"))
@@ -119,9 +126,21 @@ class Motor:
 
     def _sale(self, cuenta, conf, capa, motivo): return dict(cuenta=cuenta, conf=round(conf, 2), capa=capa, motivo=motivo)
 
-    def clasificar_item(self, origen: str, nombre: str, tercero: str = "", texto: str = "") -> dict:
-        """origen: venta · rappi · cierre · gasto · factura … ; nombre: el ítem (o el detalle del papel). → {cuenta, conf, capa, motivo}."""
-        if origen in ORIGEN: return self._sale(ORIGEN[origen], 1.0, "origen", "origen: comanda")
+    def clasificar_item(self, origen: str, nombre: str, tercero: str = "", texto: str = "", manual: str = "") -> dict:
+        """origen: venta · rappi · cierre · gasto · factura … ; nombre: el ítem (o el detalle del papel). → {cuenta, conf, capa, motivo}.
+        manual: la cuenta que el usuario puso a mano (T9); se respeta y solo se avisa.
+        Último paso `puc_valida` (ADR-022) para toda salida menos la puente: alias manual→PUC y `revisar`; lo que no sea «ok»/«propia» va a la puente."""
+        if manual:
+            m = str(manual).strip(); _, _, aviso = puc_valida(m, self.alias, self.notas)
+            return self._sale(m, 1.0, "manual", "lo pusiste a mano" + (f" · aviso PUC: {aviso}" if aviso else ""))
+        r = self._decidir(origen, nombre, tercero, texto)
+        if r["capa"] == "puente": return r
+        cuenta, estado, aviso = puc_valida(r["cuenta"], self.alias, self.notas)
+        if estado not in ("ok", "propia"): return self._sale(self.puente, 0.0, "puente", f"{r['cuenta']} fuera del PUC ({estado}); {r['motivo']}")
+        return dict(r, cuenta=cuenta, motivo=f"{r['motivo']} · {aviso}" if aviso else r["motivo"])
+
+    def _decidir(self, origen: str, nombre: str, tercero: str = "", texto: str = "") -> dict:
+        if origen in self.origen: return self._sale(self.origen[origen], 1.0, "origen", "origen: comanda")
         toks = _toks(nombre or texto); d = " ".join(toks); t = norm(tercero).strip()
         if d and d in self.aprendido["detalles"]: return self._sale(self.aprendido["detalles"][d], 0.98, "enseñado", "lo enseñaste para esta descripción")
         if t and t not in GENERICOS and t in self.aprendido["terceros"]: return self._sale(self.aprendido["terceros"][t], 0.98, "enseñado", "lo enseñaste para este proveedor")
