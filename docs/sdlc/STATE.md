@@ -6,7 +6,7 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: T2 (minar_manual → modelo_manual.json); T1 hecho; gate N1 en T5
+current task: T3 (Motor por capas, Opus); T1–T2 hechos; gate N1 en T5
 
 ## Stages
 - [x] 0-triage
@@ -43,3 +43,4 @@ current task: T2 (minar_manual → modelo_manual.json); T1 hecho; gate N1 en T5
 2026-10-25 | 3-design | aprobado por el usuario (ADR-019…022 aceptados) → next 4-plan
 2026-10-25 | 4-plan | 04-plan.md: 3 iteraciones, 12 tasks (5 S + 7 M) ≈ 13 h; It.1 mide primero (spike ítems, minado, motor, informe N1 = gate plan B) → next 5-implement
 2026-10-25 | 5-implement | T1 spike ítems de factura: sept. 96 facturas, 39 (41 %) con ítems con valor, 3 (3 %) cuadran ±1 % → factura = ítem único + proveedor salvo las que cuadran; T6 debe leer mejor el total
+2026-10-25 | 5-implement | T2 minar_manual.py → modelo_manual.json (74 palabras, 35 proveedores, 204 vecinos, jun–oct); probar_minado 16 checks OK; «pan» descartado como token de persona

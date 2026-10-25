@@ -1,0 +1,1556 @@
+{
+ "version": 1,
+ "meses": [
+  "2026-06",
+  "2026-07",
+  "2026-08",
+  "2026-09",
+  "2026-10"
+ ],
+ "lexico": {
+  "aceite": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "acueducto": {
+   "cuenta": "51352501",
+   "n": 2,
+   "de": 2
+  },
+  "adelanto": {
+   "cuenta": "51050601",
+   "n": 11,
+   "de": 11
+  },
+  "agua": {
+   "cuenta": "51352501",
+   "n": 4,
+   "de": 5
+  },
+  "alcantarillado": {
+   "cuenta": "51352501",
+   "n": 2,
+   "de": 2
+  },
+  "arreglo": {
+   "cuenta": "51501501",
+   "n": 2,
+   "de": 2
+  },
+  "arriendo": {
+   "cuenta": "51201001",
+   "n": 4,
+   "de": 4
+  },
+  "atlantic": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "atlantis": {
+   "cuenta": "14050501",
+   "n": 19,
+   "de": 19
+  },
+  "cajonera": {
+   "cuenta": "51501001",
+   "n": 2,
+   "de": 2
+  },
+  "calypso": {
+   "cuenta": "14050501",
+   "n": 4,
+   "de": 4
+  },
+  "carne": {
+   "cuenta": "14050501",
+   "n": 19,
+   "de": 20
+  },
+  "carnes": {
+   "cuenta": "14050501",
+   "n": 4,
+   "de": 4
+  },
+  "cepillo": {
+   "cuenta": "51952501",
+   "n": 2,
+   "de": 2
+  },
+  "cerdo": {
+   "cuenta": "14050501",
+   "n": 6,
+   "de": 6
+  },
+  "cerveza": {
+   "cuenta": "14050502",
+   "n": 2,
+   "de": 2
+  },
+  "consolidadas": {
+   "cuenta": "13452501",
+   "n": 6,
+   "de": 7
+  },
+  "credito": {
+   "cuenta": "13452501",
+   "n": 11,
+   "de": 11
+  },
+  "ctg": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "desechables": {
+   "cuenta": "51952501",
+   "n": 4,
+   "de": 5
+  },
+  "direct": {
+   "cuenta": "52356001",
+   "n": 3,
+   "de": 3
+  },
+  "domcilios": {
+   "cuenta": "28150501",
+   "n": 8,
+   "de": 8
+  },
+  "domiciliario": {
+   "cuenta": "28150502",
+   "n": 2,
+   "de": 2
+  },
+  "dotacion": {
+   "cuenta": "51055101",
+   "n": 4,
+   "de": 5
+  },
+  "efectivo": {
+   "cuenta": "51050601",
+   "n": 2,
+   "de": 2
+  },
+  "epa": {
+   "cuenta": "51401501",
+   "n": 3,
+   "de": 3
+  },
+  "facebook": {
+   "cuenta": "52356001",
+   "n": 5,
+   "de": 5
+  },
+  "ferreteria": {
+   "cuenta": "51501501",
+   "n": 2,
+   "de": 2
+  },
+  "gas": {
+   "cuenta": "51353002",
+   "n": 3,
+   "de": 3
+  },
+  "gaseosas": {
+   "cuenta": "14050502",
+   "n": 2,
+   "de": 2
+  },
+  "google": {
+   "cuenta": "51651001",
+   "n": 4,
+   "de": 4
+  },
+  "harina": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "hielo": {
+   "cuenta": "14050502",
+   "n": 7,
+   "de": 7
+  },
+  "horas": {
+   "cuenta": "51050601",
+   "n": 2,
+   "de": 2
+  },
+  "impuestos": {
+   "cuenta": "53152001",
+   "n": 16,
+   "de": 16
+  },
+  "insumos": {
+   "cuenta": "14050501",
+   "n": 15,
+   "de": 15
+  },
+  "internet": {
+   "cuenta": "51353003",
+   "n": 2,
+   "de": 2
+  },
+  "lechuga": {
+   "cuenta": "14050501",
+   "n": 4,
+   "de": 4
+  },
+  "luz": {
+   "cuenta": "51353001",
+   "n": 3,
+   "de": 3
+  },
+  "mandado": {
+   "cuenta": "28150501",
+   "n": 2,
+   "de": 2
+  },
+  "marketing": {
+   "cuenta": "52356001",
+   "n": 6,
+   "de": 6
+  },
+  "masa": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "molida": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 5
+  },
+  "movistar": {
+   "cuenta": "51353004",
+   "n": 2,
+   "de": 2
+  },
+  "nomina": {
+   "cuenta": "51050601",
+   "n": 95,
+   "de": 95
+  },
+  "orden": {
+   "cuenta": "13452501",
+   "n": 12,
+   "de": 12
+  },
+  "panela": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "papas": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 5
+  },
+  "papel": {
+   "cuenta": "51952501",
+   "n": 2,
+   "de": 2
+  },
+  "participacion": {
+   "cuenta": "51352501",
+   "n": 3,
+   "de": 3
+  },
+  "pauta": {
+   "cuenta": "52356001",
+   "n": 9,
+   "de": 9
+  },
+  "pechuga": {
+   "cuenta": "14050501",
+   "n": 4,
+   "de": 4
+  },
+  "personal": {
+   "cuenta": "13452501",
+   "n": 7,
+   "de": 8
+  },
+  "plantas": {
+   "cuenta": "51501001",
+   "n": 2,
+   "de": 2
+  },
+  "platanos": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "pollo": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "postobon": {
+   "cuenta": "14050502",
+   "n": 7,
+   "de": 7
+  },
+  "principal": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "propina": {
+   "cuenta": "28150502",
+   "n": 6,
+   "de": 7
+  },
+  "propinas": {
+   "cuenta": "28150502",
+   "n": 14,
+   "de": 14
+  },
+  "publicidad": {
+   "cuenta": "52356001",
+   "n": 2,
+   "de": 2
+  },
+  "publicitaria": {
+   "cuenta": "52356001",
+   "n": 2,
+   "de": 2
+  },
+  "publicos": {
+   "cuenta": "51353002",
+   "n": 2,
+   "de": 2
+  },
+  "queso": {
+   "cuenta": "14050501",
+   "n": 10,
+   "de": 10
+  },
+  "salario": {
+   "cuenta": "51050601",
+   "n": 2,
+   "de": 2
+  },
+  "servicio": {
+   "cuenta": "51352501",
+   "n": 5,
+   "de": 5
+  },
+  "servicios": {
+   "cuenta": "51353002",
+   "n": 2,
+   "de": 2
+  },
+  "transp": {
+   "cuenta": "51355001",
+   "n": 3,
+   "de": 3
+  },
+  "transporte": {
+   "cuenta": "51355001",
+   "n": 18,
+   "de": 18
+  },
+  "trasnporte": {
+   "cuenta": "51355001",
+   "n": 2,
+   "de": 2
+  },
+  "trigo": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "turno": {
+   "cuenta": "51050601",
+   "n": 4,
+   "de": 4
+  },
+  "ventas": {
+   "cuenta": "13452501",
+   "n": 6,
+   "de": 7
+  },
+  "verduras": {
+   "cuenta": "14050501",
+   "n": 14,
+   "de": 14
+  }
+ },
+ "proveedores": {
+  "afinia": {
+   "cuenta": "51353001",
+   "n": 2,
+   "de": 2
+  },
+  "aguas de cartagena": {
+   "cuenta": "51352501",
+   "n": 3,
+   "de": 3
+  },
+  "alimentos el paneton s.a.s.": {
+   "cuenta": "14050501",
+   "n": 15,
+   "de": 15
+  },
+  "atlantic fs s.a.s.": {
+   "cuenta": "14050501",
+   "n": 32,
+   "de": 32
+  },
+  "bancolombia": {
+   "cuenta": "53152001",
+   "n": 16,
+   "de": 17
+  },
+  "bazurto": {
+   "cuenta": "14050501",
+   "n": 6,
+   "de": 6
+  },
+  "comercializadora de productos carnicos": {
+   "cuenta": "14050501",
+   "n": 9,
+   "de": 9
+  },
+  "comercializadora de productos carnicos ja s.a.s.": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "comercializadora la elite": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "desechables el oriente": {
+   "cuenta": "51952501",
+   "n": 2,
+   "de": 2
+  },
+  "desechables parqui centro": {
+   "cuenta": "51952501",
+   "n": 2,
+   "de": 2
+  },
+  "dlocal colombia s.a.s.": {
+   "cuenta": "52356001",
+   "n": 5,
+   "de": 5
+  },
+  "dollar city": {
+   "cuenta": "51952501",
+   "n": 3,
+   "de": 3
+  },
+  "el gigante de hogar": {
+   "cuenta": "51952501",
+   "n": 2,
+   "de": 2
+  },
+  "el quesale": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "epa": {
+   "cuenta": "51401501",
+   "n": 3,
+   "de": 3
+  },
+  "facebook": {
+   "cuenta": "52356001",
+   "n": 2,
+   "de": 2
+  },
+  "google": {
+   "cuenta": "51651001",
+   "n": 4,
+   "de": 4
+  },
+  "grupo empresarial papis s.a.s.": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "ja carnes": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 5
+  },
+  "maite marketing": {
+   "cuenta": "52356001",
+   "n": 4,
+   "de": 4
+  },
+  "megatiendas express": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "movistar": {
+   "cuenta": "51353004",
+   "n": 2,
+   "de": 2
+  },
+  "nutrialimentos": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "nutricarnicos cartagena": {
+   "cuenta": "14050501",
+   "n": 4,
+   "de": 4
+  },
+  "postobon": {
+   "cuenta": "14050502",
+   "n": 13,
+   "de": 13
+  },
+  "rappi": {
+   "cuenta": "13452501",
+   "n": 82,
+   "de": 94
+  },
+  "soluciones comerciales y constructivas sas": {
+   "cuenta": "51201001",
+   "n": 2,
+   "de": 2
+  },
+  "supertienda olimpica": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 5
+  },
+  "surtidora de gas de caribe s.a.": {
+   "cuenta": "51353002",
+   "n": 2,
+   "de": 2
+  },
+  "surtigas": {
+   "cuenta": "51353002",
+   "n": 3,
+   "de": 3
+  }
+ },
+ "vecinos": [
+  {
+   "texto": "aceite",
+   "cuenta": "14050501",
+   "fuente": "septiembre fila 227"
+  },
+  {
+   "texto": "aceite azucar frutas",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 85"
+  },
+  {
+   "texto": "adelanto",
+   "cuenta": "51050601",
+   "fuente": "julio fila 22"
+  },
+  {
+   "texto": "adelanto nomina",
+   "cuenta": "51050601",
+   "fuente": "junio fila 171"
+  },
+  {
+   "texto": "adelanto nomina cocina",
+   "cuenta": "51050601",
+   "fuente": "julio fila 904"
+  },
+  {
+   "texto": "agua brisa",
+   "cuenta": "14050502",
+   "fuente": "julio fila 289"
+  },
+  {
+   "texto": "agua casa",
+   "cuenta": "51352501",
+   "fuente": "junio fila 142"
+  },
+  {
+   "texto": "alcohol",
+   "cuenta": "51952501",
+   "fuente": "octubre fila 161"
+  },
+  {
+   "texto": "alfomras cocina",
+   "cuenta": "51952501",
+   "fuente": "julio fila 597"
+  },
+  {
+   "texto": "anticipo proveedores",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 425"
+  },
+  {
+   "texto": "aros cebolla",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 103"
+  },
+  {
+   "texto": "arreglo nevera",
+   "cuenta": "51501501",
+   "fuente": "septiembre fila 538"
+  },
+  {
+   "texto": "arreglo tuberia",
+   "cuenta": "51501501",
+   "fuente": "septiembre fila 612"
+  },
+  {
+   "texto": "arriendo casa",
+   "cuenta": "51201001",
+   "fuente": "julio fila 92"
+  },
+  {
+   "texto": "atlantic principal ctg",
+   "cuenta": "14050501",
+   "fuente": "julio fila 103"
+  },
+  {
+   "texto": "atlantis",
+   "cuenta": "14050501",
+   "fuente": "julio fila 199"
+  },
+  {
+   "texto": "atlantis carnes papas",
+   "cuenta": "14050501",
+   "fuente": "junio fila 205"
+  },
+  {
+   "texto": "bandejas implementos",
+   "cuenta": "51952501",
+   "fuente": "julio fila 146"
+  },
+  {
+   "texto": "bebidas",
+   "cuenta": "14050502",
+   "fuente": "septiembre fila 541"
+  },
+  {
+   "texto": "bolsa casta",
+   "cuenta": "51952501",
+   "fuente": "julio fila 637"
+  },
+  {
+   "texto": "bolsas basura",
+   "cuenta": "51952501",
+   "fuente": "julio fila 693"
+  },
+  {
+   "texto": "bolsas botar basuras",
+   "cuenta": "51952501",
+   "fuente": "septiembre fila 513"
+  },
+  {
+   "texto": "bolsas cepillo hinodoro atomizador afilador cuchillos etc",
+   "cuenta": "51952501",
+   "fuente": "agosto fila 171"
+  },
+  {
+   "texto": "cajas antigrasantes",
+   "cuenta": "51952501",
+   "fuente": "julio fila 845"
+  },
+  {
+   "texto": "cajonera plantas",
+   "cuenta": "51501001",
+   "fuente": "junio fila 147"
+  },
+  {
+   "texto": "calipso",
+   "cuenta": "51501501",
+   "fuente": "junio fila 183"
+  },
+  {
+   "texto": "calypso",
+   "cuenta": "14050501",
+   "fuente": "julio fila 555"
+  },
+  {
+   "texto": "canaletaas",
+   "cuenta": "51501501",
+   "fuente": "junio fila 24"
+  },
+  {
+   "texto": "carbon aceite",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 124"
+  },
+  {
+   "texto": "carne",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 260"
+  },
+  {
+   "texto": "carne molida",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 160"
+  },
+  {
+   "texto": "carnes",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 20"
+  },
+  {
+   "texto": "carnes papas etc",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 397"
+  },
+  {
+   "texto": "cepillo piso escoba",
+   "cuenta": "51952501",
+   "fuente": "julio fila 916"
+  },
+  {
+   "texto": "cerdo carne",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 72"
+  },
+  {
+   "texto": "cerdo carne pechuga",
+   "cuenta": "14050501",
+   "fuente": "septiembre fila 104"
+  },
+  {
+   "texto": "cerdo pollo queso",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 158"
+  },
+  {
+   "texto": "cerveza",
+   "cuenta": "14050502",
+   "fuente": "junio fila 145"
+  },
+  {
+   "texto": "chorizo carne molida",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 358"
+  },
+  {
+   "texto": "ciabatta",
+   "cuenta": "14050501",
+   "fuente": "septiembre fila 111"
+  },
+  {
+   "texto": "cinta aislante",
+   "cuenta": "51501501",
+   "fuente": "agosto fila 31"
+  },
+  {
+   "texto": "cobro contador",
+   "cuenta": "51104002",
+   "fuente": "octubre fila 105"
+  },
+  {
+   "texto": "cocina",
+   "cuenta": "51059501",
+   "fuente": "septiembre fila 147"
+  },
+  {
+   "texto": "comision retiro cajero",
+   "cuenta": "53050502",
+   "fuente": "junio fila 118"
+  },
+  {
+   "texto": "coopa tapas soufle desechables",
+   "cuenta": "51952501",
+   "fuente": "julio fila 403"
+  },
+  {
+   "texto": "copia llaves pasador",
+   "cuenta": "51501501",
+   "fuente": "septiembre fila 478"
+  },
+  {
+   "texto": "copias inventarios",
+   "cuenta": "51953001",
+   "fuente": "julio fila 647"
+  },
+  {
+   "texto": "cortesia",
+   "cuenta": "13050501",
+   "fuente": "agosto fila 153"
+  },
+  {
+   "texto": "cortesia archivo",
+   "cuenta": "13050501",
+   "fuente": "julio fila 260"
+  },
+  {
+   "texto": "costillas tocinetas platanos",
+   "cuenta": "14050501",
+   "fuente": "julio fila 401"
+  },
+  {
+   "texto": "credito orden",
+   "cuenta": "13452501",
+   "fuente": "octubre fila 120"
+  },
+  {
+   "texto": "credito personal",
+   "cuenta": "13452501",
+   "fuente": "octubre fila 176"
+  },
+  {
+   "texto": "credito personal orden",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 524"
+  },
+  {
+   "texto": "credito personal orden valores",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 553"
+  },
+  {
+   "texto": "cucharitas",
+   "cuenta": "51952501",
+   "fuente": "agosto fila 203"
+  },
+  {
+   "texto": "dadis",
+   "cuenta": "51401501",
+   "fuente": "julio fila 557"
+  },
+  {
+   "texto": "desechables",
+   "cuenta": "51952501",
+   "fuente": "julio fila 733"
+  },
+  {
+   "texto": "devolucion caja",
+   "cuenta": "51050601",
+   "fuente": "junio fila 240"
+  },
+  {
+   "texto": "devolucion prestamo",
+   "cuenta": "23550501",
+   "fuente": "septiembre fila 557"
+  },
+  {
+   "texto": "diddi mandado",
+   "cuenta": "28150501",
+   "fuente": "julio fila 912"
+  },
+  {
+   "texto": "domcilios",
+   "cuenta": "28150501",
+   "fuente": "septiembre fila 419"
+  },
+  {
+   "texto": "domiciliario oct",
+   "cuenta": "28150502",
+   "fuente": "octubre fila 230"
+  },
+  {
+   "texto": "domicilio carne",
+   "cuenta": "51355001",
+   "fuente": "agosto fila 326"
+  },
+  {
+   "texto": "domicilio dotacion",
+   "cuenta": "28150501",
+   "fuente": "julio fila 635"
+  },
+  {
+   "texto": "dotacion",
+   "cuenta": "51055101",
+   "fuente": "julio fila 46"
+  },
+  {
+   "texto": "eds matagua matorral",
+   "cuenta": "51953501",
+   "fuente": "agosto fila 166"
+  },
+  {
+   "texto": "enchufes",
+   "cuenta": "51500501",
+   "fuente": "agosto fila 87"
+  },
+  {
+   "texto": "epa",
+   "cuenta": "51401501",
+   "fuente": "julio fila 627"
+  },
+  {
+   "texto": "exito burger veggie",
+   "cuenta": "14050501",
+   "fuente": "julio fila 851"
+  },
+  {
+   "texto": "exprimidor",
+   "cuenta": "51952501",
+   "fuente": "agosto fila 56"
+  },
+  {
+   "texto": "extintores",
+   "cuenta": "51451501",
+   "fuente": "julio fila 210"
+  },
+  {
+   "texto": "facebook direct",
+   "cuenta": "52356001",
+   "fuente": "septiembre fila 82"
+  },
+  {
+   "texto": "factureros",
+   "cuenta": "51953001",
+   "fuente": "julio fila 516"
+  },
+  {
+   "texto": "fecula maiz",
+   "cuenta": "14050501",
+   "fuente": "julio fila 823"
+  },
+  {
+   "texto": "ferreteria fama soporte tornillos",
+   "cuenta": "51501501",
+   "fuente": "julio fila 853"
+  },
+  {
+   "texto": "ferreteria waiper",
+   "cuenta": "51501501",
+   "fuente": "julio fila 914"
+  },
+  {
+   "texto": "fideicomisos sociedad",
+   "cuenta": "53050502",
+   "fuente": "agosto fila 373"
+  },
+  {
+   "texto": "flayers obed",
+   "cuenta": "52356001",
+   "fuente": "julio fila 20"
+  },
+  {
+   "texto": "flexometro llave pulir etc",
+   "cuenta": "51501501",
+   "fuente": "agosto fila 55"
+  },
+  {
+   "texto": "fotografias",
+   "cuenta": "52356001",
+   "fuente": "julio fila 118"
+  },
+  {
+   "texto": "frutas gaseosas",
+   "cuenta": "14050502",
+   "fuente": "julio fila 340"
+  },
+  {
+   "texto": "gas",
+   "cuenta": "51353002",
+   "fuente": "junio fila 236"
+  },
+  {
+   "texto": "gaseosas bolsas hielo",
+   "cuenta": "14050502",
+   "fuente": "julio fila 687"
+  },
+  {
+   "texto": "google",
+   "cuenta": "51651001",
+   "fuente": "julio fila 39"
+  },
+  {
+   "texto": "granos santa rosario carbon",
+   "cuenta": "51952501",
+   "fuente": "julio fila 855"
+  },
+  {
+   "texto": "hacama",
+   "cuenta": "51501001",
+   "fuente": "julio fila 275"
+  },
+  {
+   "texto": "hamburguesa",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 169"
+  },
+  {
+   "texto": "harina",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 169"
+  },
+  {
+   "texto": "harina trigo",
+   "cuenta": "14050501",
+   "fuente": "julio fila 395"
+  },
+  {
+   "texto": "hielo",
+   "cuenta": "14050502",
+   "fuente": "julio fila 287"
+  },
+  {
+   "texto": "implementos cocina",
+   "cuenta": "51952501",
+   "fuente": "julio fila 188"
+  },
+  {
+   "texto": "implementos epa",
+   "cuenta": "51401501",
+   "fuente": "julio fila 231"
+  },
+  {
+   "texto": "impresiones",
+   "cuenta": "51953001",
+   "fuente": "julio fila 865"
+  },
+  {
+   "texto": "impuestos",
+   "cuenta": "53152001",
+   "fuente": "junio fila 80"
+  },
+  {
+   "texto": "instalacion office",
+   "cuenta": "51452501",
+   "fuente": "agosto fila 29"
+  },
+  {
+   "texto": "insumos",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 251"
+  },
+  {
+   "texto": "internet",
+   "cuenta": "51353003",
+   "fuente": "septiembre fila 496"
+  },
+  {
+   "texto": "jabon liquido",
+   "cuenta": "51952501",
+   "fuente": "septiembre fila 210"
+  },
+  {
+   "texto": "lava loza",
+   "cuenta": "51952501",
+   "fuente": "julio fila 691"
+  },
+  {
+   "texto": "leche",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 186"
+  },
+  {
+   "texto": "lechuga",
+   "cuenta": "14050501",
+   "fuente": "julio fila 595"
+  },
+  {
+   "texto": "lechuga papas",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 232"
+  },
+  {
+   "texto": "lechuga zumo limon",
+   "cuenta": "14050501",
+   "fuente": "julio fila 918"
+  },
+  {
+   "texto": "limones zumo",
+   "cuenta": "14050502",
+   "fuente": "julio fila 631"
+  },
+  {
+   "texto": "luz",
+   "cuenta": "51353001",
+   "fuente": "julio fila 11"
+  },
+  {
+   "texto": "mano obra",
+   "cuenta": "51050601",
+   "fuente": "junio fila 14"
+  },
+  {
+   "texto": "mano obra impermeabilizacion techo",
+   "cuenta": "51501501",
+   "fuente": "septiembre fila 368"
+  },
+  {
+   "texto": "manzana verde",
+   "cuenta": "14050501",
+   "fuente": "julio fila 641"
+  },
+  {
+   "texto": "marketing",
+   "cuenta": "52356001",
+   "fuente": "agosto fila 299"
+  },
+  {
+   "texto": "marketing pauta",
+   "cuenta": "52356001",
+   "fuente": "agosto fila 362"
+  },
+  {
+   "texto": "materas parte",
+   "cuenta": "51501001",
+   "fuente": "junio fila 78"
+  },
+  {
+   "texto": "mayonesa",
+   "cuenta": "14050501",
+   "fuente": "julio fila 776"
+  },
+  {
+   "texto": "merienda",
+   "cuenta": "51059501",
+   "fuente": "agosto fila 32"
+  },
+  {
+   "texto": "merienda personal",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 228"
+  },
+  {
+   "texto": "millar cajas empaque",
+   "cuenta": "14050503",
+   "fuente": "septiembre fila 374"
+  },
+  {
+   "texto": "movistar",
+   "cuenta": "51353004",
+   "fuente": "julio fila 155"
+  },
+  {
+   "texto": "nomina",
+   "cuenta": "51050601",
+   "fuente": "junio fila 261"
+  },
+  {
+   "texto": "nomina adelanto",
+   "cuenta": "51050601",
+   "fuente": "septiembre fila 325"
+  },
+  {
+   "texto": "nomina efectivo",
+   "cuenta": "51050601",
+   "fuente": "julio fila 440"
+  },
+  {
+   "texto": "nomina horas",
+   "cuenta": "51050601",
+   "fuente": "julio fila 180"
+  },
+  {
+   "texto": "nuevo sistema pos dkt",
+   "cuenta": "51957501",
+   "fuente": "septiembre fila 610"
+  },
+  {
+   "texto": "nutrialimentos masa pechuga",
+   "cuenta": "14050501",
+   "fuente": "julio fila 863"
+  },
+  {
+   "texto": "obed hale empuje pta",
+   "cuenta": "51501501",
+   "fuente": "julio fila 150"
+  },
+  {
+   "texto": "olimpica batavia",
+   "cuenta": "14050501",
+   "fuente": "julio fila 922"
+  },
+  {
+   "texto": "orden",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 406"
+  },
+  {
+   "texto": "orden cortesia",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 269"
+  },
+  {
+   "texto": "orden credito",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 207"
+  },
+  {
+   "texto": "orden credito personal",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 323"
+  },
+  {
+   "texto": "orden paga credito",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 267"
+  },
+  {
+   "texto": "pagp calypso papas cebollas etc",
+   "cuenta": "14050501",
+   "fuente": "julio fila 861"
+  },
+  {
+   "texto": "pagp hielo diamante",
+   "cuenta": "14050502",
+   "fuente": "julio fila 920"
+  },
+  {
+   "texto": "pagp inversiones caribe cerdo",
+   "cuenta": "14050501",
+   "fuente": "julio fila 859"
+  },
+  {
+   "texto": "panela",
+   "cuenta": "14050501",
+   "fuente": "julio fila 332"
+  },
+  {
+   "texto": "panos bolsas",
+   "cuenta": "51952501",
+   "fuente": "julio fila 729"
+  },
+  {
+   "texto": "papas",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 22"
+  },
+  {
+   "texto": "papel aluminio",
+   "cuenta": "51952501",
+   "fuente": "julio fila 330"
+  },
+  {
+   "texto": "pauta",
+   "cuenta": "52356001",
+   "fuente": "julio fila 269"
+  },
+  {
+   "texto": "pauta facebook dkt",
+   "cuenta": "52356001",
+   "fuente": "octubre fila 32"
+  },
+  {
+   "texto": "pauta publicitaria",
+   "cuenta": "52356001",
+   "fuente": "junio fila 151"
+  },
+  {
+   "texto": "pechuga",
+   "cuenta": "14050501",
+   "fuente": "septiembre fila 38"
+  },
+  {
+   "texto": "pechugas",
+   "cuenta": "14050501",
+   "fuente": "julio fila 322"
+  },
+  {
+   "texto": "pechusga masa",
+   "cuenta": "14050501",
+   "fuente": "julio fila 476"
+  },
+  {
+   "texto": "pedidos",
+   "cuenta": "14050501",
+   "fuente": "julio fila 689"
+  },
+  {
+   "texto": "perro",
+   "cuenta": "14050501",
+   "fuente": "julio fila 639"
+  },
+  {
+   "texto": "platanos",
+   "cuenta": "14050501",
+   "fuente": "julio fila 285"
+  },
+  {
+   "texto": "pollo",
+   "cuenta": "14050501",
+   "fuente": "julio fila 633"
+  },
+  {
+   "texto": "pollo cerdo",
+   "cuenta": "14050501",
+   "fuente": "septiembre fila 186"
+  },
+  {
+   "texto": "postobon",
+   "cuenta": "14050502",
+   "fuente": "julio fila 448"
+  },
+  {
+   "texto": "propina",
+   "cuenta": "28150502",
+   "fuente": "julio fila 137"
+  },
+  {
+   "texto": "propinas",
+   "cuenta": "28150502",
+   "fuente": "agosto fila 24"
+  },
+  {
+   "texto": "publicidad",
+   "cuenta": "52356001",
+   "fuente": "julio fila 212"
+  },
+  {
+   "texto": "queso",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 224"
+  },
+  {
+   "texto": "queso cheddar",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 70"
+  },
+  {
+   "texto": "queso crema",
+   "cuenta": "14050501",
+   "fuente": "julio fila 235"
+  },
+  {
+   "texto": "rappi mandado",
+   "cuenta": "28150501",
+   "fuente": "julio fila 910"
+  },
+  {
+   "texto": "recipiente lavamanos",
+   "cuenta": "51952501",
+   "fuente": "julio fila 695"
+  },
+  {
+   "texto": "rollo servilletas ect",
+   "cuenta": "51952501",
+   "fuente": "septiembre fila 585"
+  },
+  {
+   "texto": "rollos termicos impresora",
+   "cuenta": "51953001",
+   "fuente": "septiembre fila 577"
+  },
+  {
+   "texto": "salario",
+   "cuenta": "51050601",
+   "fuente": "julio fila 434"
+  },
+  {
+   "texto": "saldo",
+   "cuenta": "51050601",
+   "fuente": "junio fila 97"
+  },
+  {
+   "texto": "saldo fresas",
+   "cuenta": "14050501",
+   "fuente": "septiembre fila 586"
+  },
+  {
+   "texto": "saldo robo mercado",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 424"
+  },
+  {
+   "texto": "saldo saldo",
+   "cuenta": "51050601",
+   "fuente": "agosto fila 131"
+  },
+  {
+   "texto": "salseros papel toallas etc",
+   "cuenta": "51952501",
+   "fuente": "julio fila 399"
+  },
+  {
+   "texto": "serviciio internet",
+   "cuenta": "51353003",
+   "fuente": "julio fila 731"
+  },
+  {
+   "texto": "servicio acueducto alcantarillado",
+   "cuenta": "51352501",
+   "fuente": "julio fila 549"
+  },
+  {
+   "texto": "servicio agua dkt participacion casa",
+   "cuenta": "51352501",
+   "fuente": "agosto fila 384"
+  },
+  {
+   "texto": "servicios publicos",
+   "cuenta": "51353002",
+   "fuente": "agosto fila 405"
+  },
+  {
+   "texto": "servilleta",
+   "cuenta": "51952501",
+   "fuente": "septiembre fila 575"
+  },
+  {
+   "texto": "sistema prestamo",
+   "cuenta": "13050501",
+   "fuente": "agosto fila 112"
+  },
+  {
+   "texto": "sutiimpresiones vinilo",
+   "cuenta": "51501501",
+   "fuente": "julio fila 857"
+  },
+  {
+   "texto": "tarros miel pina",
+   "cuenta": "14050501",
+   "fuente": "septiembre fila 536"
+  },
+  {
+   "texto": "tenedores plasticos",
+   "cuenta": "51952501",
+   "fuente": "julio fila 727"
+  },
+  {
+   "texto": "tienda",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 97"
+  },
+  {
+   "texto": "tomate",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 128"
+  },
+  {
+   "texto": "transferencia suc virtual",
+   "cuenta": "51501501",
+   "fuente": "julio fila 157"
+  },
+  {
+   "texto": "transp",
+   "cuenta": "51355001",
+   "fuente": "septiembre fila 143"
+  },
+  {
+   "texto": "transp vasos",
+   "cuenta": "51355001",
+   "fuente": "septiembre fila 174"
+  },
+  {
+   "texto": "transporte",
+   "cuenta": "51355001",
+   "fuente": "julio fila 336"
+  },
+  {
+   "texto": "transporte cajas desengrasates",
+   "cuenta": "51355001",
+   "fuente": "agosto fila 91"
+  },
+  {
+   "texto": "transporte desechables",
+   "cuenta": "51355001",
+   "fuente": "septiembre fila 495"
+  },
+  {
+   "texto": "transporte mercado",
+   "cuenta": "51355001",
+   "fuente": "septiembre fila 47"
+  },
+  {
+   "texto": "transporte oct",
+   "cuenta": "51355001",
+   "fuente": "octubre fila 244"
+  },
+  {
+   "texto": "transporte recoger panes",
+   "cuenta": "51355001",
+   "fuente": "julio fila 591"
+  },
+  {
+   "texto": "transporte recogida",
+   "cuenta": "51355001",
+   "fuente": "septiembre fila 62"
+  },
+  {
+   "texto": "trapero cucharas vasos",
+   "cuenta": "51952501",
+   "fuente": "agosto fila 86"
+  },
+  {
+   "texto": "trasnporte",
+   "cuenta": "51355001",
+   "fuente": "septiembre fila 542"
+  },
+  {
+   "texto": "trasnporte carbon",
+   "cuenta": "51355001",
+   "fuente": "septiembre fila 587"
+  },
+  {
+   "texto": "trnasportes",
+   "cuenta": "51355001",
+   "fuente": "julio fila 908"
+  },
+  {
+   "texto": "turno",
+   "cuenta": "51050601",
+   "fuente": "julio fila 279"
+  },
+  {
+   "texto": "utiles aseo",
+   "cuenta": "51952501",
+   "fuente": "julio fila 559"
+  },
+  {
+   "texto": "vasos desechables",
+   "cuenta": "51952501",
+   "fuente": "julio fila 283"
+  },
+  {
+   "texto": "vendido rappi",
+   "cuenta": "13452501",
+   "fuente": "septiembre fila 555"
+  },
+  {
+   "texto": "venta archivo whatsapp image",
+   "cuenta": "13452501",
+   "fuente": "julio fila 709"
+  },
+  {
+   "texto": "venta rappi archivo",
+   "cuenta": "13452501",
+   "fuente": "julio fila 896"
+  },
+  {
+   "texto": "venta restaurante archivo",
+   "cuenta": "13301501",
+   "fuente": "julio fila 242"
+  },
+  {
+   "texto": "ventas rappi consolidadas",
+   "cuenta": "13452501",
+   "fuente": "agosto fila 122"
+  },
+  {
+   "texto": "verduras",
+   "cuenta": "14050501",
+   "fuente": "julio fila 338"
+  },
+  {
+   "texto": "verduras carbon",
+   "cuenta": "14050501",
+   "fuente": "agosto fila 164"
+  },
+  {
+   "texto": "verduras carne",
+   "cuenta": "14050501",
+   "fuente": "octubre fila 20"
+  },
+  {
+   "texto": "viveres verduras cerdo",
+   "cuenta": "14050501",
+   "fuente": "julio fila 474"
+  },
+  {
+   "texto": "zanahoria",
+   "cuenta": "14050501",
+   "fuente": "julio fila 825"
+  },
+  {
+   "texto": "zumo limon",
+   "cuenta": "14050502",
+   "fuente": "septiembre fila 584"
+  }
+ ]
+}
