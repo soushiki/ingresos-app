@@ -6,7 +6,7 @@ size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas p
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
 next: 5-implement
-current task: It. 3 → T11 (interfaz: cuenta por ítem + «Reclasificar mes»)
+current task: It. 3 → T12 (por_confirmar_pdf.py: PDF de los 8 puntos + alias)
 
 ## Stages
 - [x] 0-triage
@@ -66,3 +66,5 @@ current task: It. 3 → T11 (interfaz: cuenta por ítem + «Reclasificar mes»)
 2026-10-25 | 6-test | re-smoke It. 2 tras FIX-1…3 + DEBT-2: suite 25/25 verde, cada «done when» con check, revisión del diff sin bugs (3 notas → T9/T10/T11), smoke API en copia de sept. (0 descuadres, cuenta a mano sigue, vale→hielo 14050502) → PASA, next 5-implement It. 3 (T9)
 2026-10-25 | 5-implement | T9 Motor.corregir_item + POST /api/contable/aprender {item, documento}: solo ese ítem queda manual, el siguiente igual sale «enseñado», proveedor solo si todos los ítems van a la misma cuenta; +10 checks; los checks DEBT-2 de probar_motor iban tras sys.exit (nunca corrían) → movido al final, pasan; suite verde; la UI aún no manda item (T11)
 2026-10-25 | 5-implement | T10 reclasificar.py: plan (cambios + resumen + huella) → aplicar (HuellaDistinta, construir solo días con cambios) → guardar (respaldo antes-v1.8.0, 1 escritura); solo compras; rastro reclasificaciones[] por día (claves del libro = fechas); probar_reclasificar 27 checks; sept. 39 cambios/22 días en 0,19 s, idempotente; suite verde; nota: 7 ítems 14050501 → puente
+2026-10-25 | 5-implement | T11 código listo (Sonnet), sin commit: endpoint reclasificar + tarjeta «Reclasificar mes» + cuenta por ítem; suite verde (+11 checks probar_reclasificar); API en copia de sept. OK (39 cambios, 409 huella vieja, idempotente); falta navegador (navegación al localhost denegada) → esperando al usuario
+2026-10-25 | 5-implement | T11 navegador probado por el usuario en la copia de sept. (localhost:5061) → commit T11; sigue T12

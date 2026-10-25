@@ -82,4 +82,26 @@ if real.is_file():
     chk(all(next(x for x in ns[k]["documentos"] if x["id"] == i)["cuenta"] == cu for k, i, cu in man), f"sept.: {len(man)} papel(es) con cuenta a mano intactos")
 else: print("· sin datos/libro.json: se salta sept.")
 
+# ── T11: POST /api/contable/reclasificar (copia temporal del libro, nunca el real) ──
+import app as appmod
+_t = Path(tempfile.mkdtemp()); appmod.RUTA_LIBRO, appmod.RUTA_SOPORTE = _t / "libro.json", _t / "soporte.db"
+_l = copy.deepcopy(LIB); _l["2026-09-06"] = dict(copy.deepcopy(_l["2026-09-05"]), fecha="2026-09-06", guardado="2026-09-07T10:00:00")
+appmod.RUTA_LIBRO.write_text(json.dumps(_l), encoding="utf8"); cl = appmod.app.test_client(); URL = "/api/contable/reclasificar"
+chk(cl.post(URL, json={"mes": "2026-9"}).status_code == 400 and cl.post(URL, json={}).status_code == 400 and cl.post(URL, data="x").status_code == 400, "endpoint: mes inválido/ausente → 400")
+chk(cl.post(URL, json={"mes": "2026-09", "huella": "zz"}).status_code == 400 and cl.post(URL, json={"mes": "2026-09", "huella": 5}).status_code == 400, "endpoint: huella inválida → 400")
+chk(cl.post(URL, data="x" * 5000, content_type="application/json").status_code == 413, "endpoint: cuerpo grande → 413")
+_antes = appmod.RUTA_LIBRO.read_text(encoding="utf8"); r = cl.post(URL, json={"mes": "2026-09"}); v = r.get_json()
+chk(r.status_code == 200 and v["cambios"] and len(v["huella"]) == 64 and v["resumen"] and "puente" in v, f"endpoint: vista previa con tabla y huella ({len(v.get('cambios', []))} cambios)")
+chk(appmod.RUTA_LIBRO.read_text(encoding="utf8") == _antes, "endpoint: la vista previa no escribe")
+chk(cl.post(URL, json={"mes": "2026-09", "huella": "0" * 64}).status_code == 409 and appmod.RUTA_LIBRO.read_text(encoding="utf8") == _antes, "endpoint: huella distinta → 409 y no escribe")
+_bl = appmod._bloqueos; appmod._bloqueos = lambda f, d: ["DS transmitido"] if f == "2026-09-06" else []
+vb = cl.post(URL, json={"mes": "2026-09"}).get_json()
+chk(set(vb["bloqueados"]) == {"2026-09-06"} and all(c["fecha"] != "2026-09-06" for c in vb["cambios"]), "endpoint: día con DS transmitido no se toca y se avisa")
+rb = cl.post(URL, json={"mes": "2026-09", "huella": vb["huella"]}).get_json(); _lb = json.loads(appmod.RUTA_LIBRO.read_text(encoding="utf8"))
+chk(rb["ok"] and "2026-09-06" not in rb["dias"] and _lb["2026-09-06"] == _l["2026-09-06"], "endpoint: aplicar respeta el día bloqueado")
+appmod._bloqueos = _bl
+v2 = cl.post(URL, json={"mes": "2026-09"}).get_json(); ra = cl.post(URL, json={"mes": "2026-09", "huella": v2["huella"]}).get_json()
+chk(ra["ok"] and "2026-09-06" in ra["dias"] and (_t / f"libro.antes-v{VERSION}.json").is_file(), "endpoint: aplicar con huella buena guarda y deja el respaldo")
+chk(cl.post(URL, json={"mes": "2026-09"}).get_json()["cambios"] == [], "endpoint: repetir → 0 cambios")
+
 print("TODO OK" if ok else "HAY FALLOS"); raise SystemExit(0 if ok else 1)

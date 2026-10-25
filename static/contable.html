@@ -47,7 +47,12 @@ button.fp{background:none;color:inherit;padding:2px 4px;font-size:14px}.fh{posit
 .pf{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}.pf label{font-size:12px;color:var(--mut);display:block}.pf input,.pf select{width:100%}
 .est{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}.est.en_plazo{background:var(--verde);color:#1b6b46}.est.vence_pronto{background:var(--warn);color:#8a5d00}.est.vencida{background:#fdeceb;color:var(--bad)}.est.hecho{background:var(--head);color:#17466f}
 #tws td{padding:6px}#tws tr.hecho td{opacity:.7}.sc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ib{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:6px 0;overflow-wrap:anywhere}.ib span{flex:1 1 180px;min-width:0}.ib select{flex:1 1 200px;min-width:0;max-width:100%}
+#rc .wrap{margin-top:8px}#rc_out .bar{margin-top:8px}#rc_out td,#rc_out th{overflow-wrap:anywhere}#rc_out .puente{background:#fff4d6}
 @media(max-width:1000px){main{flex-direction:column}#panel{width:auto}}
+@media(max-width:600px) and (min-height:501px){#rc .bar>*{flex:1 1 100%;min-height:44px}#rc_out .bar>button{flex:1 1 100%}.ib select{flex:1 1 100%}}
+@media(min-width:601px) and (max-width:1000px) and (min-height:501px){#rc .wrap{max-height:50vh}}
+@media(max-height:500px) and (orientation:landscape){#rc .wrap{max-height:60vh}#rc{padding:8px}}
 @media(max-width:1000px){#m1,#m2,#m3{align-items:stretch}#m1>.col,#m2>.col,#m3>.col{width:100%;max-width:100%}}
 @media(max-width:600px){#m1 .bar,#m2 .bar,#m3 .bar{flex-wrap:wrap}#m1 .bar>button,#m2 .bar>button,#m3 .bar>button{flex:1 1 140px}#m2 .bar .sp,#m3 .bar .sp{display:none}}
 @media(max-width:800px){#tabs{overflow-x:auto}#tabs button{white-space:nowrap}.wrap{max-height:none}}
@@ -125,6 +130,7 @@ tr.falta td{background:var(--warn);color:#8a5d00;font-weight:600;border-top:1px 
   hasta <span class="fw"><input type="text" class="fx" id="f2" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa"><button type="button" class="fp" tabindex="-1">📅</button><input type="date" class="fh" tabindex="-1"></span>
   <button class="g" id="fclr">Todo</button><button id="xl2" disabled>⬇ Excel (MOVIMIENTOS)</button><button class="g" id="cru2" disabled title="Lo leído de estos días, para importarlo en el PC del contador (sin OCR)">⬇ Datos crudos (.json)</button><button class="g" id="imp2" title="Trae los días leídos en otro PC (archivo .json de «Datos crudos»)">⬆ Importar datos crudos</button><input type="file" id="impf" accept=".json,application/json" hidden></div>
  <div class="card" id="impr" hidden></div>
+ <div class="card" id="rc"><div class="bar"><b>Reclasificar mes</b><input type="month" id="rc_mes" aria-label="Mes a reclasificar"><button class="g" id="rc_ver">Reclasificar mes</button><span class="m" id="rc_msg">Vuelve a clasificar los ítems guardados; lo que corregiste a mano no cambia. Primero ves qué cambia.</span></div><div id="rc_out" hidden></div></div>
  <div class="card" id="res2"></div>
  <div class="wrap" style="max-height:62vh"><table style="min-width:1100px"><thead><tr><th>Fecha</th><th>Código</th><th>Cuenta</th><th>Tercero</th><th>Descripción</th><th>Débito</th><th>Crédito</th><th>Reporta</th><th>Medio</th></tr></thead><tbody id="tbl"></tbody></table>
   <div id="vacio2" class="m" style="padding:30px;text-align:center">Aún no hay días en el libro.</div></div>
@@ -282,13 +288,20 @@ $("tbd").addEventListener("change",async e=>{const t=e.target,d=docs.find(x=>x.i
 $("tbd").addEventListener("click",e=>{const x=e.target.dataset.del;if(x){docs=docs.filter(d=>d.id!==x);if(sel===x)sel=null;renderDocs();recalcular();return}const s=e.target.closest("[data-sel]");if(s){sel=s.dataset.sel;renderDocs()}});
 function panel(){const p=$("panel"),d=docs.find(x=>x.id===sel);if(!d){p.classList.remove("on");return}p.classList.add("on");const fo=FOTOS[d.foto];
  p.innerHTML=`<h2>${esc(TIPOS[d.tipo])} ${esc(d.numero)}</h2>${fo?(fo.pdf?`<iframe src="${fo.url}#page=${fo.pagina}" style="width:100%;height:300px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px"></iframe>`:`<div id="imgbox"><img src="${fo.url}"></div>`):""}<h2>Texto leído</h2><pre>${esc(d.texto||"(papel manual)")}</pre>
- ${(d.avisos||[]).length?`<ul class="av">${d.avisos.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:""}${d.motivo?`<p class="m">Cuenta propuesta: ${esc(d.motivo)}</p>`:""}<div class="bar"><button class="g" id="cp">Cerrar</button></div>`;$("cp").onclick=()=>{sel=null;renderDocs()}}
+ ${(d.avisos||[]).length?`<ul class="av">${d.avisos.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:""}${d.motivo?`<p class="m">Cuenta propuesta: ${esc(d.motivo)}</p>`:""}<div id="pitems"></div><div class="bar"><button class="g" id="cp">Cerrar</button></div>`;$("cp").onclick=()=>{sel=null;renderDocs()};panelItems(d)}
+function panelItems(d){/* T11 (R6): cuenta por ítem; textContent/DOM, sin innerHTML con datos */const box=$("pitems");if(!box||!(d.items||[]).length)return;box.append(el("h2",null,"Cuenta por ítem"));
+ d.items.forEach((it,i)=>{const s=el("select",{class:"it_c","aria-label":"Cuenta de "+(it.nombre||"ítem")}),o0=el("option",null,"— elegir —");o0.value="";s.append(o0);
+  for(const k of CUENTAS){const o=el("option",null,`${k.codigo} · ${k.nombre}`);o.value=k.codigo;if(k.codigo===it.cuenta)o.selected=true;s.append(o)}
+  s.onchange=async()=>{if(!s.value){s.value=it.cuenta||"";return}s.disabled=true;try{const r=await fetch("/api/contable/aprender",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cuenta:s.value,item:i,documento:{...d,texto:(d.texto||"").slice(0,1500)}})}),j=await r.json().catch(()=>({}));
+   if(!r.ok||!j.documento){toast(j.error||"No se pudo guardar la cuenta del ítem");s.value=it.cuenta||"";return}
+   for(const k of ["items","cuenta","conf","motivo"])if(k in j.documento)d[k]=j.documento[k];toast(j.proveedor?"Aprendido: ítem y proveedor":"Aprendido: ese ítem");recalcular();renderDocs()}catch(e){toast("Sin conexión");s.value=it.cuenta||""}finally{s.disabled=false}};
+  box.append(el("div",{class:"ib"},el("span",null,`${it.nombre||"(sin nombre)"} · $ ${fmt(it.valor||0)}${it.manual?" · a mano":""}`),s))})}
 document.querySelectorAll(".bk").forEach(i=>{i.addEventListener("input",()=>{banco[i.dataset.b]=parseInt(i.value.replace(/\D/g,""),10)||0;recalcular()});i.addEventListener("focusout",()=>i.value=banco[i.dataset.b]?fmt(banco[i.dataset.b]):"")});
 /* ── cálculo de asientos y cruces (en el servidor) ── */
 function recalcular(){clearTimeout(tmr);tmr=setTimeout(()=>dias.filter(d=>d.docs.length||Object.values(d.banco||{}).some(Boolean)).forEach(recalcDia),160)}
 async function recalcDia(d){const body={fecha:d.fecha,banco:d.banco,cierre:d.cierre,documentos:d.docs.map(x=>({...x,texto:(x.texto||"").slice(0,1500)}))};let r;
  try{r=await (await fetch("/api/contable/asientos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json()}catch(e){return}
- d.res=r;let cambio=false;r.documentos.forEach((x,i)=>{const o=d.docs[i];if(!o)return;for(const k of ["cuenta","conf","motivo","contar","dup_de"])if(o[k]!==x[k]){o[k]=x[k];cambio=true}});
+ d.res=r;let cambio=false;r.documentos.forEach((x,i)=>{const o=d.docs[i];if(!o)return;for(const k of ["cuenta","conf","motivo","contar","dup_de"])if(o[k]!==x[k]){o[k]=x[k];cambio=true}if(x.items&&JSON.stringify(o.items)!==JSON.stringify(x.items)){o.items=x.items;cambio=true}});
  renderChips();if(d===dia()){renderAsientos();renderCierre();if(cambio)renderDocs();botones()}}
 function renderAsientos(){const r=res;if(!r){$("tba").innerHTML="";$("tot").innerHTML="";$("av").innerHTML="";return}
  $("tba").innerHTML=r.filas.map(f=>`<tr class="${f.grupo==="venta"?"venta":"gasto"}"><td>${esc(f.codigo)}</td><td>${esc(f.nombre)}</td><td>${esc(f.tercero)}</td><td>${esc(f.descripcion)}</td><td class="num">${f.debito?fmt(f.debito):""}</td><td class="num">${f.credito?fmt(f.credito):""}</td><td>${esc(f.reporta)}</td><td>${esc(f.medio)}</td></tr>`).join("");
@@ -327,7 +340,7 @@ $("conf").onclick=async()=>{const dd=dudosos();
  const j=await r.json();if(!r.ok)return j.bloqueos?alert(j.error+":\n\n"+j.bloqueos.join("\n")):toast(j.error||"No se pudo confirmar");toast(`✔ El día ${fmtF(fecha)} pasó al libro (${j.dias} ${j.dias===1?"día":"días"})`,4500);
  dias.splice(act,1);if(!dias.length)dias.push(nuevoDiaObj());act=Math.min(act,dias.length-1);$("msg").textContent="";syncUI();await cargarLibro()};
 /* ══════ módulo ②: libro ══════ */
-async function cargarLibro(){LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length;renderLibro()}
+async function cargarLibro(){LIBRO=(await (await fetch("/api/contable/libro")).json()).dias;$("b2").textContent=LIBRO.length;if(!$("rc_mes").value&&LIBRO.length)$("rc_mes").value=LIBRO[0].fecha.slice(0,7);renderLibro()}
 const fval=id=>parseFecha($(id).value)||"";
 function renderLibro(){const a=fval("f1"),b=fval("f2"),L=LIBRO.filter(d=>(!a||d.fecha>=a)&&(!b||d.fecha<=b));$("vacio2").style.display=L.length?"none":"block";$("xl2").disabled=$("cru2").disabled=!L.length;
  $("tbl").innerHTML=L.map(d=>`<tr class="dia"><td colspan="5">📅 ${fmtF(d.fecha)} · ${d.filas.length} filas · ${d.documentos.filter(x=>x.contar).length} papeles${(d.cruces||[]).some(x=>!x.ok)?' · <span class="bad">⚠ cierre ≠ papeles</span>':""}</td><td class="num">${fmt(d.debito)}</td><td class="num">${fmt(d.credito)}</td><td colspan="2">${d.diferencia===0?'<span class="ok">✓ cuadra</span>':`<span class="bad">⚠ dif. ${fmt(d.diferencia)}</span>`} <button class="g" data-ab="${d.fecha}">✎ Reabrir</button> <button class="g" data-bo="${d.fecha}">✕</button></td></tr>`+
@@ -409,6 +422,29 @@ $("s_gen").onclick=async()=>{const el=[...document.querySelectorAll("#s_tb .sk:c
   toast(`${ds.length} ${ds.length===1?"documento generado":"documentos generados"}`);await cargarSoporte()}catch(e){toast("No se pudo generar")}finally{sopBoton()}};
 async function bajarXl(ids){const r=await fetch("/api/soporte/excel"+(ids?"?ids="+encodeURIComponent(ids):""));if(!r.ok)return toast(await errDe(r));const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=/filename="?([^";]+)/.exec(r.headers.get("Content-Disposition")||"")?.[1]||"documento_soporte.xlsx";a.click()}
 $("s_xl").onclick=()=>bajarXl("");$("s_res").addEventListener("click",e=>{if(e.target.id==="s_dl")bajarXl(e.target.dataset.ids)});
+// ── Reclasificar mes (T11 · R7 · ADR-021): vista previa con huella → Aplicar; todo con DOM/textContent ──
+let RC=null;
+function rcMsg(t){$("rc_msg").textContent=t}
+async function rcPedir(cuerpo){const r=await fetch("/api/contable/reclasificar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cuerpo)}),j=await r.json().catch(()=>({}));return{r,j}}
+function rcTabla(v){const out=$("rc_out");out.replaceChildren();out.hidden=false;const N=v.cambios.length;
+ if(v.bloqueados&&Object.keys(v.bloqueados).length)out.append(el("p",{class:"m"},"No se tocan (documento soporte transmitido): "+Object.keys(v.bloqueados).map(fmtF).join(", ")));
+ if(!N){out.append(el("p",{class:"ok"},"Nada que cambiar en "+v.mes+": ya está al día."));RC=null;return}
+ const nom=c=>{const k=CUENTAS.find(x=>x.codigo===c);return k?k.nombre:""},th=(...t)=>el("tr",null,...t.map((x,i)=>el("th",i?{class:"num"}:null,x))),tb=el("table"),cu=Object.keys(v.resumen).sort();
+ tb.append(el("thead",null,th("Cuenta","Antes","Después")));const body=el("tbody");
+ for(const c of cu){const q=v.resumen[c];body.append(el("tr",{class:c===v.puente?"puente":""},el("td",null,`${c} ${nom(c)}${c===v.puente?" (puente: falta cuenta)":""}`),el("td",{class:"num"},q.antes?fmt(q.antes):""),el("td",{class:"num"},q.despues?fmt(q.despues):"")))}
+ tb.append(body);out.append(el("p",null,`${N} ítem(s) cambian de cuenta en ${new Set(v.cambios.map(c=>c.fecha)).size} día(s).`),el("div",{class:"wrap"},tb));
+ const aPuente=v.cambios.filter(c=>c.despues===v.puente);
+ if(aPuente.length){const ul=el("ul",{class:"av"});for(const c of aPuente.slice(0,30))ul.append(el("li",null,`${fmtF(c.fecha)} · ${c.tercero||c.numero||"?"} · ${c.item} · $ ${fmt(c.valor)}: ${c.antes} → puente (queda «falta cuenta»)`));out.append(el("p",{class:"bad"},`${aPuente.length} ítem(s) pasan a la cuenta puente; corrígelos en la tarjeta del papel.`),ul)}
+ const ap=el("button",{type:"button"},"Aplicar"),ca=el("button",{type:"button",class:"g"},"Cancelar");
+ ca.onclick=()=>{RC=null;out.hidden=true;out.replaceChildren();rcMsg("")};
+ ap.onclick=async()=>{ap.disabled=ca.disabled=true;try{const{r,j}=await rcPedir({mes:v.mes,huella:v.huella});
+   if(r.status===409){rcMsg("El libro cambió desde la vista previa. Vuelve a pedirla.");toast("El libro cambió: vuelve a pedir la vista previa");out.hidden=true;RC=null;return}
+   if(!r.ok){toast(j.error||"No se pudo aplicar");ap.disabled=ca.disabled=false;return}
+   toast(`Reclasificado: ${j.dias.length} día(s)`);rcMsg(`Listo: ${j.dias.length} día(s) rehechos. Respaldo guardado.`);out.hidden=true;out.replaceChildren();RC=null;await cargarLibro()}catch(e){toast("Sin conexión");ap.disabled=ca.disabled=false}};
+ out.append(el("div",{class:"bar"},ap,ca))}
+$("rc_ver").onclick=async()=>{const mes=$("rc_mes").value;if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes))return toast("Elige el mes");$("rc_ver").disabled=true;rcMsg("Calculando…");
+ try{const{r,j}=await rcPedir({mes});if(!r.ok){rcMsg("");return toast(j.error||"Error "+r.status)}rcMsg("");RC=j;rcTabla(j)}catch(e){rcMsg("");toast("Sin conexión")}finally{$("rc_ver").disabled=false}};
+
 // ── ④ Revisión (T11 · R8): todo con textContent/DOM, nada de innerHTML con datos leídos ──
 const RV_ENT=[["consumo","Consumo"],["propina","Propina"],["domicilio","Domicilio"],["descuento","Descuento"],["cortesia","Cortesía"],["subtotal","Subtotal"],["efectivo","Efectivo"],["tarjeta","Tarjeta"],["transf","Transferencia"],["credito","Fiado"],["pagado","Pagado"],["cambio","Cambio"]],RV_MED=MEDIOS;
 function el(t,p,...k){const e=document.createElement(t);if(p)for(const x in p){if(x==="class")e.className=p[x];else if(x==="onclick")e.onclick=p[x];else e[x]=p[x]}for(const c of k)if(c!=null)e.append(c);return e}

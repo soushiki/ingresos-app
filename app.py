@@ -21,6 +21,7 @@ from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplic
 from parser_module.contable import Clasificador, Motor, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de, casillas_efectivas, CASILLA_DESC
 from parser_module.contable import referencia, extracto as extr
+from parser_module.contable import reclasificar as reclas
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura, faltantes
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
 from dataclasses import asdict
@@ -403,6 +404,37 @@ def cont_aprender():
     if doc and misma and doc.get("tercero"): CLASIF.aprender(cuenta, str(doc["tercero"]), "")
     MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json"))
     return jsonify(ok=True, documento=doc, proveedor=bool(doc and misma and doc.get("tercero")))
+
+
+RE_MES, RE_HUELLA = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$"), re.compile(r"^[0-9a-f]{64}$")
+
+
+@app.post("/api/contable/reclasificar")
+def cont_reclasificar():
+    """ADR-021 / R7: sin `huella` = vista previa del mes (cambios + tabla antes → después + huella); con `huella` = aplicar si nada cambió (si no, 409).
+    Los días con compras de un documento soporte transmitido (`_bloqueos`) no se tocan: salen en `bloqueados`."""
+    if (request.content_length or 0) > 4 * 1024: return jsonify(error="Cuerpo demasiado grande"), 413
+    j = request.get_json(silent=True)
+    if not isinstance(j, dict): return jsonify(error="Cuerpo inválido"), 400
+    mes, huella = j.get("mes"), j.get("huella")
+    if not isinstance(mes, str) or not RE_MES.match(mes): return jsonify(error="Mes inválido (AAAA-MM)"), 400
+    if huella is not None and (not isinstance(huella, str) or not RE_HUELLA.match(huella)): return jsonify(error="Huella inválida"), 400
+    with LOCK:
+        lib = _leer_libro(); bloqueados, libre = {}, {}
+        for k, dia in lib.items():
+            if not k.startswith(mes + "-"): continue
+            b = _bloqueos(k, dia.get("documentos", []))
+            if b: bloqueados[k] = b
+            else: libre[k] = dia
+        motor = _motor_vigente()
+        if huella is None:
+            v = reclas.plan(libre, mes, motor)
+            return jsonify(**v, bloqueados=bloqueados, puente=motor.puente)
+        try: nuevo = reclas.aplicar(libre, dict(mes=mes, huella=huella), motor, _cont_cfg())
+        except reclas.HuellaDistinta as e: return jsonify(error=str(e)), 409
+        cambiados = [k for k in libre if nuevo[k] is not libre[k]]
+        if cambiados: reclas.guardar(RUTA_LIBRO, {**lib, **{k: nuevo[k] for k in cambiados}})
+    return jsonify(ok=True, dias=cambiados, bloqueados=bloqueados)
 
 
 RUTA_RECORTES = DATOS / "recortes"
