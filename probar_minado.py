@@ -47,6 +47,21 @@ def privado(modelo, extra=()):
     toks = set(re.findall(r"[a-z]{3,}", M.norm(s)))
     return not re.search(r"\d{4,}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|20\d\d-\d\d", s) and not (toks & (PERSONAS | set(extra)))
 chk(privado(m), "ADR-020/N5: dato personal o valor en el modelo (sintético)")
+# T5a (ADR-023): bigramas ≥ 2 y ≥ 80 %, y terceros persona fuera del modelo, en terceros_cuentas.json local
+filas2 = filas + [f(L, 40, "14050501", "Plaza", "Pago de compras"), f(A, 41, "14050501", "Plaza", "Pago compras mercado"), f(J, 42, "51952501", "X", "Pago compras uno"),
+                  f(J, 43, "51952501", "", "Dia laborado Luisa"), f(L, 44, "51952501", "", "Dia laborado Luisa")]
+m2 = M.minar(filas2)
+bg = m2.get("bigramas", {})
+chk("pago compras" not in bg, "bigramas: «pago compras» 2 de 3 (67 %) no entra")
+chk(bg.get("dia laborado", {}).get("cuenta") == "51952501" and bg["dia laborado"]["de"] == 2, "bigramas: «dia laborado» 2 de 2 entra (con palabras vacías, sin la persona)")
+chk("pago domicilios" in bg and bg["pago domicilios"]["cuenta"] == "28150501", "bigramas: «pago domicilios» → 28150501")
+chk(all(len(k.split()) == 2 for k in bg) and not any(re.search(r"\d", k) for k in bg), "bigramas: son de 2 palabras, sin cifras")
+chk(privado(m2), "ADR-020/N5: bigramas sin personas ni valores")
+ter = M.terceros(filas2)
+chk(ter.get("luisa perez", {}).get("cuenta") == "51050601" and ter["luisa perez"]["de"] == 2, "terceros persona: «luisa perez» → 51050601 (solo en terceros_cuentas)")
+chk("luisa perez" not in m2["proveedores"] and "luisa" not in json.dumps(m2).lower() and "afinia" not in ter, "terceros persona: nunca en el modelo; proveedores normales no se duplican")
+chk(M.TERCEROS.name == "terceros_cuentas.json" and "terceros_cuentas.json" in (Path(__file__).parent / ".gitignore").read_text(), "terceros_cuentas.json local y en .gitignore")
+
 # el valor «12345» del texto y los nombres no se cuelan
 chk("12345" not in json.dumps(m) and "luisa" not in json.dumps(m).lower(), "sin números del texto ni nombres de nómina")
 

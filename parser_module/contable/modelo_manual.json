@@ -379,6 +379,478 @@
    "de": 14
   }
  },
+ "bigramas": {
+  "abono compra": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "abono nomina": {
+   "cuenta": "51050601",
+   "n": 3,
+   "de": 3
+  },
+  "abono pedido": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "acueducto alcantarillado": {
+   "cuenta": "51352501",
+   "n": 2,
+   "de": 2
+  },
+  "adelanto nomina": {
+   "cuenta": "51050601",
+   "n": 8,
+   "de": 8
+  },
+  "agua dkt": {
+   "cuenta": "51352501",
+   "n": 3,
+   "de": 3
+  },
+  "archivo recibo": {
+   "cuenta": "13050501",
+   "n": 2,
+   "de": 2
+  },
+  "arriendo casa": {
+   "cuenta": "51201001",
+   "n": 4,
+   "de": 4
+  },
+  "atlantic abono": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "cajonera plantas": {
+   "cuenta": "51501001",
+   "n": 2,
+   "de": 2
+  },
+  "carne molida": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 5
+  },
+  "carnes papas": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "cerdo carne": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "compra carne": {
+   "cuenta": "14050501",
+   "n": 6,
+   "de": 6
+  },
+  "compra carnes": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "compra cerdo": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "compra desechables": {
+   "cuenta": "51952501",
+   "n": 2,
+   "de": 2
+  },
+  "compra google": {
+   "cuenta": "51651001",
+   "n": 4,
+   "de": 4
+  },
+  "compra harina": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "compra hielo": {
+   "cuenta": "14050502",
+   "n": 5,
+   "de": 5
+  },
+  "compra insumos": {
+   "cuenta": "14050501",
+   "n": 11,
+   "de": 11
+  },
+  "compra lechuga": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "compra movistar": {
+   "cuenta": "51353004",
+   "n": 2,
+   "de": 2
+  },
+  "compra panela": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "compra queso": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 5
+  },
+  "compra varios": {
+   "cuenta": "51952501",
+   "n": 2,
+   "de": 2
+  },
+  "compra verduras": {
+   "cuenta": "14050501",
+   "n": 7,
+   "de": 7
+  },
+  "con credito": {
+   "cuenta": "13452501",
+   "n": 3,
+   "de": 3
+  },
+  "credito personal": {
+   "cuenta": "13452501",
+   "n": 7,
+   "de": 7
+  },
+  "dias horas": {
+   "cuenta": "51050601",
+   "n": 2,
+   "de": 2
+  },
+  "dkt participacion": {
+   "cuenta": "51352501",
+   "n": 3,
+   "de": 3
+  },
+  "domiciliario oct": {
+   "cuenta": "28150502",
+   "n": 2,
+   "de": 2
+  },
+  "facebook direct": {
+   "cuenta": "52356001",
+   "n": 3,
+   "de": 3
+  },
+  "facebook dkt": {
+   "cuenta": "52356001",
+   "n": 2,
+   "de": 2
+  },
+  "factura atlantis": {
+   "cuenta": "14050501",
+   "n": 18,
+   "de": 18
+  },
+  "factura postobon": {
+   "cuenta": "14050502",
+   "n": 2,
+   "de": 2
+  },
+  "factura servicios": {
+   "cuenta": "51353002",
+   "n": 2,
+   "de": 2
+  },
+  "harina trigo": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "nomina agosto": {
+   "cuenta": "51050601",
+   "n": 6,
+   "de": 6
+  },
+  "nomina dias": {
+   "cuenta": "51050601",
+   "n": 2,
+   "de": 2
+  },
+  "nomina junio": {
+   "cuenta": "51050601",
+   "n": 3,
+   "de": 3
+  },
+  "nomina septiembre": {
+   "cuenta": "51050601",
+   "n": 6,
+   "de": 6
+  },
+  "orden credito": {
+   "cuenta": "13452501",
+   "n": 2,
+   "de": 2
+  },
+  "orden pago": {
+   "cuenta": "13452501",
+   "n": 2,
+   "de": 2
+  },
+  "pago adelanto": {
+   "cuenta": "51050601",
+   "n": 4,
+   "de": 4
+  },
+  "pago arreglo": {
+   "cuenta": "51501501",
+   "n": 2,
+   "de": 2
+  },
+  "pago arriendo": {
+   "cuenta": "51201001",
+   "n": 4,
+   "de": 4
+  },
+  "pago cajonera": {
+   "cuenta": "51501001",
+   "n": 2,
+   "de": 2
+  },
+  "pago calypso": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "pago carne": {
+   "cuenta": "14050501",
+   "n": 9,
+   "de": 9
+  },
+  "pago cerdo": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "pago cerveza": {
+   "cuenta": "14050502",
+   "n": 2,
+   "de": 2
+  },
+  "pago compra": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 6
+  },
+  "pago con": {
+   "cuenta": "13452501",
+   "n": 2,
+   "de": 2
+  },
+  "pago dia": {
+   "cuenta": "51050601",
+   "n": 2,
+   "de": 2
+  },
+  "pago domiciliario": {
+   "cuenta": "28150502",
+   "n": 2,
+   "de": 2
+  },
+  "pago dotacion": {
+   "cuenta": "51055101",
+   "n": 3,
+   "de": 3
+  },
+  "pago facebook": {
+   "cuenta": "52356001",
+   "n": 3,
+   "de": 3
+  },
+  "pago impuestos": {
+   "cuenta": "53152001",
+   "n": 16,
+   "de": 16
+  },
+  "pago insumos": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "pago marketing": {
+   "cuenta": "52356001",
+   "n": 6,
+   "de": 6
+  },
+  "pago nomina": {
+   "cuenta": "51050601",
+   "n": 61,
+   "de": 61
+  },
+  "pago pauta": {
+   "cuenta": "52356001",
+   "n": 8,
+   "de": 8
+  },
+  "pago pechuga": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "pago postobon": {
+   "cuenta": "14050502",
+   "n": 4,
+   "de": 4
+  },
+  "pago propina": {
+   "cuenta": "28150502",
+   "n": 6,
+   "de": 7
+  },
+  "pago propinas": {
+   "cuenta": "28150502",
+   "n": 14,
+   "de": 14
+  },
+  "pago publicidad": {
+   "cuenta": "52356001",
+   "n": 2,
+   "de": 2
+  },
+  "pago queso": {
+   "cuenta": "14050501",
+   "n": 4,
+   "de": 4
+  },
+  "pago quincena": {
+   "cuenta": "51050601",
+   "n": 11,
+   "de": 11
+  },
+  "pago salario": {
+   "cuenta": "51050601",
+   "n": 2,
+   "de": 2
+  },
+  "pago servicio": {
+   "cuenta": "51352501",
+   "n": 5,
+   "de": 5
+  },
+  "pago turno": {
+   "cuenta": "51050601",
+   "n": 4,
+   "de": 4
+  },
+  "pago verduras": {
+   "cuenta": "14050501",
+   "n": 5,
+   "de": 5
+  },
+  "para compras": {
+   "cuenta": "51355001",
+   "n": 12,
+   "de": 14
+  },
+  "participacion casa": {
+   "cuenta": "51352501",
+   "n": 3,
+   "de": 3
+  },
+  "pauta facebook": {
+   "cuenta": "52356001",
+   "n": 2,
+   "de": 2
+  },
+  "pauta publicitaria": {
+   "cuenta": "52356001",
+   "n": 2,
+   "de": 2
+  },
+  "pedido ferreteria": {
+   "cuenta": "51501501",
+   "n": 2,
+   "de": 2
+  },
+  "pedido principal": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "personal orden": {
+   "cuenta": "13452501",
+   "n": 4,
+   "de": 4
+  },
+  "principal ctg": {
+   "cuenta": "14050501",
+   "n": 3,
+   "de": 3
+  },
+  "quincena junio": {
+   "cuenta": "51050601",
+   "n": 11,
+   "de": 11
+  },
+  "rappi archivo": {
+   "cuenta": "13452501",
+   "n": 17,
+   "de": 17
+  },
+  "rappi consolidadas": {
+   "cuenta": "13452501",
+   "n": 6,
+   "de": 7
+  },
+  "recibo gas": {
+   "cuenta": "51353002",
+   "n": 3,
+   "de": 3
+  },
+  "recibo luz": {
+   "cuenta": "51353001",
+   "n": 3,
+   "de": 3
+  },
+  "recibo transp": {
+   "cuenta": "51355001",
+   "n": 2,
+   "de": 2
+  },
+  "servicio acueducto": {
+   "cuenta": "51352501",
+   "n": 2,
+   "de": 2
+  },
+  "servicio agua": {
+   "cuenta": "51352501",
+   "n": 3,
+   "de": 3
+  },
+  "servicios publicos": {
+   "cuenta": "51353002",
+   "n": 2,
+   "de": 2
+  },
+  "transporte para": {
+   "cuenta": "51355001",
+   "n": 12,
+   "de": 12
+  },
+  "trigo otros": {
+   "cuenta": "14050501",
+   "n": 2,
+   "de": 2
+  },
+  "ventas rappi": {
+   "cuenta": "13452501",
+   "n": 6,
+   "de": 7
+  }
+ },
  "proveedores": {
   "afinia": {
    "cuenta": "51353001",

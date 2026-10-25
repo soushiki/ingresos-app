@@ -13,6 +13,7 @@ from parser_module.numeros import norm
 
 MANUAL = Path(r"D:\Claude\image_to_text\data\Reporte contable 2026 actualizado 10-16-2026.xlsx")
 SALIDA = APP / "parser_module" / "contable" / "modelo_manual.json"
+TERCEROS = APP / "parser_module" / "contable" / "terceros_cuentas.json"   # local, en .gitignore: aquí sí van las personas (N5)
 MIN_VECES, MIN_PCT = 2, 0.80
 GENERICOS = {"consumidor final", "cuantias menores", "caja", ""}
 VACIAS = set("""pago pagos compra compras del las los con por para una sus que factura facturas fact recibo recibos abono junio julio agosto
@@ -26,6 +27,16 @@ NO_GASTO = ("11", "41", "31", "15", "42")   # caja/banco, ingresos, capital, apo
 def fuente(hoja: str, fila: int) -> str: return f"{hoja.split()[1].lower()} fila {fila}"
 def toks(s: str) -> list[str]:
     return [t for t in re.findall(r"[a-z]{3,20}", norm(s)) if t not in VACIAS and not re.fullmatch(r"[a-f]+", t)]   # sin pedazos de ID
+
+
+def pares(desc: str, pers: set[str]) -> set[str]:
+    """bigramas de palabras contiguas (se conservan «pago», «dia»…); una persona o un pedazo de ID corta la cadena."""
+    out, ant = set(), None
+    for t in re.findall(r"[a-z]{3,20}", norm(desc)):
+        if t in pers or re.fullmatch(r"[a-f]+", t): ant = None; continue
+        if ant: out.add(f"{ant} {t}")
+        ant = t
+    return out
 
 
 def leer_filas(ruta: Path = MANUAL) -> list[dict]:
@@ -64,10 +75,11 @@ def minar(filas: list[dict], meses: set[str] | None = None, hasta: str | None = 
     pers = personas(filas)   # los nombres se aprenden de TODAS las filas, aunque el filtro las deje fuera
     usadas = [x for x in filas if (not meses or norm(x["hoja"].split()[1])[:3] in meses) and (not hasta or x["mes"] <= hasta)]
     gastos = [x for x in usadas if x["deb"] > 0 and not x["codigo"].startswith(NO_GASTO) and "recaud" not in norm(x["desc"]) and "recuad" not in norm(x["desc"])]
-    lex, prov, vec = defaultdict(Counter), defaultdict(Counter), {}
+    lex, prov, vec, big = defaultdict(Counter), defaultdict(Counter), {}, defaultdict(Counter)
     for x in gastos:
         ts = {t for t in toks(x["desc"]) if t not in pers}
         for t in ts: lex[t][x["codigo"]] += 1
+        for b in pares(x["desc"], pers): big[b][x["codigo"]] += 1
         t = " ".join(norm(x["tercero"]).split())
         if t and t not in GENERICOS and not re.search(r"\d{4,}", t) and not x["codigo"].startswith(CUENTAS_PERSONA) and not (set(re.findall(r"[a-z]{3,}", t)) & pers):
             prov[t][x["codigo"]] += 1
@@ -76,7 +88,10 @@ def minar(filas: list[dict], meses: set[str] | None = None, hasta: str | None = 
 
     def mayoria(c: Counter):
         cta, n = c.most_common(1)[0]; tot = sum(c.values()); return cta, n, tot
-    lexico, proveedores, vecinos = {}, {}, []
+    lexico, proveedores, vecinos, bigramas = {}, {}, [], {}
+    for t, c in sorted(big.items()):
+        cta, n, tot = mayoria(c)
+        if tot >= MIN_VECES and n / tot >= MIN_PCT: bigramas[t] = dict(cuenta=cta, n=n, de=tot)
     for t, c in sorted(lex.items()):
         cta, n, tot = mayoria(c)
         if tot >= MIN_VECES and n / tot >= MIN_PCT: lexico[t] = dict(cuenta=cta, n=n, de=tot)
@@ -86,7 +101,22 @@ def minar(filas: list[dict], meses: set[str] | None = None, hasta: str | None = 
     for txt, lst in sorted(vec.items()):
         c = Counter(a for a, _ in lst); cta, n, tot = mayoria(c)
         if n / tot >= MIN_PCT: vecinos.append(dict(texto=txt, cuenta=cta, fuente=next(f for a, f in lst if a == cta)))
-    return dict(version=1, meses=sorted({x["mes"] for x in usadas}), lexico=lexico, proveedores=proveedores, vecinos=vecinos)
+    return dict(version=1, meses=sorted({x["mes"] for x in usadas}), lexico=lexico, bigramas=bigramas, proveedores=proveedores, vecinos=vecinos)
+
+
+def terceros(filas: list[dict], meses: set[str] | None = None, hasta: str | None = None) -> dict:
+    """terceros que son personas (nómina, socios, quien reporta) → cuenta de mayoría (≥ 2, ≥ 80 %). Solo para terceros_cuentas.json local."""
+    pers = personas(filas); c = defaultdict(Counter)
+    for x in filas:
+        if meses and norm(x["hoja"].split()[1])[:3] not in meses or hasta and x["mes"] > hasta: continue
+        t = " ".join(norm(x["tercero"]).split())
+        if x["deb"] > 0 and t and t not in GENERICOS and not re.search(r"\d{4,}", t) and not x["codigo"].startswith(NO_GASTO)            and (x["codigo"].startswith(CUENTAS_PERSONA) or set(re.findall(r"[a-z]{3,}", t)) & pers):
+            c[t][x["codigo"]] += 1
+    out = {}
+    for t, cn in sorted(c.items()):
+        cta, n = cn.most_common(1)[0]; tot = sum(cn.values())
+        if tot >= MIN_VECES and n / tot >= MIN_PCT: out[t] = dict(cuenta=cta, n=n, de=tot)
+    return out
 
 
 def main(argv=None):
@@ -97,10 +127,13 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if (a.meses or a.hasta) and not a.salida: ap.error("con --meses/--hasta indica --salida (no se pisa el modelo de producción)")
     meses = {m.strip().lower()[:3] for m in a.meses.split(",")} if a.meses else None
-    modelo = minar(leer_filas(a.manual), meses, a.hasta)
+    filas = leer_filas(a.manual)
+    modelo = minar(filas, meses, a.hasta)
     destino = a.salida or SALIDA
     destino.write_text(json.dumps(modelo, ensure_ascii=False, indent=1), encoding="utf8")
-    print(f"{destino}: {len(modelo['lexico'])} palabras · {len(modelo['proveedores'])} proveedores · {len(modelo['vecinos'])} vecinos · meses {modelo['meses']}")
+    if not a.salida:   # modelo de producción: las personas van aparte, a un archivo local
+        TERCEROS.write_text(json.dumps(terceros(filas), ensure_ascii=False, indent=1), encoding="utf8")
+    print(f"{destino}: {len(modelo['lexico'])} palabras · {len(modelo['proveedores'])} proveedores · {len(modelo['vecinos'])} vecinos · {len(modelo['bigramas'])} bigramas · meses {modelo['meses']}")
 
 
 if __name__ == "__main__": main()
