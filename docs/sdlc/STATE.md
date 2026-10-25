@@ -5,8 +5,8 @@ goal: la app decide la cuenta PUC de cada papel por su origen (comanda, cierre, 
 size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas por origen, mapa a subcuentas PUC, recálculo de días guardados; evidencia ya existe (cuadro + inconsistencias)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
-next: 6-test
-current task: re-smoke It. 2 tras FIX-1…3 + DEBT-2 → It. 3 (T9–T12)
+next: 5-implement
+current task: It. 3 → T9 (aprender por ítem)
 
 ## Stages
 - [x] 0-triage
@@ -63,3 +63,4 @@ current task: re-smoke It. 2 tras FIX-1…3 + DEBT-2 → It. 3 (T9–T12)
 2026-10-25 | 5-implement | FIX-2 ítems vigentes: items_huella (tipo, tercero, detalle, valor) → si cambia y no hay ítem manual se rehacen con items_de; ítems en puente se reclasifican cada pasada; +6 checks probar_motor; suite 25/25 verde; papeles viejos sin huella la graban en su 1.ª pasada; si hay algún ítem manual no se rehace nada (conservador)
 2026-10-25 | 5-implement | FIX-3 _NO_ITEM por palabra completa (olivas/granito/activa quedan); diferencia ≤ 1 % se suma al ítem mayor, > 1 % sigue a puente; +2 checks (items, datos_ocr 0,24 % D = C); suite 25/25 verde
 2026-10-25 | 5-implement | DEBT-2 _motor_vigente() en app.py rehace MOTOR si cambia el mtime de modelo_manual/por_confirmar/terceros_cuentas(.example); +2 checks probar_motor; suite 25/25 verde → FIX de It. 2 completos, next 6-test (re-smoke)
+2026-10-25 | 6-test | re-smoke It. 2 tras FIX-1…3 + DEBT-2: suite 25/25 verde, cada «done when» con check, revisión del diff sin bugs (3 notas → T9/T10/T11), smoke API en copia de sept. (0 descuadres, cuenta a mano sigue, vale→hielo 14050502) → PASA, next 5-implement It. 3 (T9)
