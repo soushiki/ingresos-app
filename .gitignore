@@ -5,6 +5,8 @@ __pycache__/
 venv/
 # datos reales del negocio
 datos/
+# excepto los datos de prueba sintéticos del modo contador web (T3)
+!web/pruebas/datos/
 parser_module/contable/terceros_cuentas.json
 *.xlsx
 
