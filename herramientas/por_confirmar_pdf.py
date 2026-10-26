@@ -96,6 +96,7 @@ th,td{{border:1px solid #d5dde6;padding:3px 6px;text-align:left;vertical-align:t
         est = '<span class="est ok">confirmado</span>' if d.get("estado") == "confirmado" else '<span class="est">por confirmar</span>'
         h.append(f"""<div class="p"><b class="q">{d['id']}. {e(d['pregunta'])} {est}</b>
 <table><tr><th style="width:24%">Hoy la app usa</th><td>{e(d.get('regla_usada', ''))}{f" → <b>{e(d['cuenta'])}</b>" if d.get('cuenta') else ""}</td></tr>
+{f'<tr><th>Ya respondido</th><td>{e(d["respuesta"])}</td></tr>' if d.get("respuesta") else ""}
 <tr><th>Afecta</th><td>Manual: {pl(c['manual'], 'fila', 'filas')} · en el manual fueron a {e(cu)}<br>Libro: {pl(c['libro'], 'ítem', 'ítems')}{f" · $ {miles(c['libro_valor'])}" if c['libro_valor'] else ""}</td></tr>
 <tr><th>Busca</th><td class="m">{e(", ".join(d.get('afecta', [])))}</td></tr>""")
         if d["id"] == 8:

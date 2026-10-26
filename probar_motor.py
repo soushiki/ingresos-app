@@ -117,6 +117,13 @@ chk(not escondidos, f"ADR-022: decisión contable escondida en el código {escon
 # T5b / ADR-023: bigramas minados, FRASES con la cuenta de mayoría, terceros persona (local), choque domiciliario «por confirmar»
 r = prod.clasificar_item("gasto", "Pago de compras")
 chk((r["cuenta"], r["capa"]) == ("14050501", "frase"), f"ADR-023: «Pago de compras» → mayoría del manual {r['cuenta']} ({r['capa']}, {r['motivo']})")
+# decisión 4 (usuario 2026-10-25): el recibo de agua es el cobro del acueducto (servicio público); el agua que se compra va a barra
+for nombre, ter, cta in [("Pago recibo de agua casa1 50% CM junio", "Aguas de Cartagena", "51352501"), ("Pago servicio agua DKT / participación Casa 1", "", "51352501"),
+                         ("Pago servicio de Acueducto y alcantarillado", "", "51352501"), ("Pago", "Aguas de Cartagena", "51352501"),
+                         ("Agua fría", "", "14050502"), ("Compra de Agua Brisa", "Tiendas Ara", "14050502"), ("Agua", "", "14050502"),
+                         ("aguacate", "", "14050501"), ("aguardiente", "", "14050502"), ("Pan", "Agua Brisa SA", "14050501")]:
+    r = prod.clasificar_item("factura", nombre, tercero=ter)
+    chk(r["cuenta"] == cta, f"agua: «{nombre}» ({ter or 'sin tercero'}) → {cta}: sale {r['cuenta']} ({r['capa']}, {r['motivo']})")
 r = prod.clasificar_item("gasto", "propina")
 chk(r["cuenta"] == "28150502" and r["capa"] != "puente", f"ADR-023: «propina» → {r['cuenta']} ({r['capa']})")
 r = prod.clasificar_item("gasto", "Domcilios (Cierre)")

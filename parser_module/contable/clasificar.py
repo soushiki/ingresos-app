@@ -36,7 +36,12 @@ LEXICO = {
 LEXICO["14050503"] += ["salsero", "recipiente", "kraft"]          # empaques y envases
 LEXICO["14050501"] += ["leche", "panes", "hamburguesa"]          # insumos de cocina
 FRASES = {"papel higienico": "51952501", "papel aluminio": "14050503", "papel vinipel": "14050503", "gas natural": "51353002",
-          "pago de compras": "14050501"}    # ADR-023: cuenta de mayoría del manual («pago compra» 5 de 6)
+          "pago de compras": "14050501",    # ADR-023: cuenta de mayoría del manual («pago compra» 5 de 6)
+          # decisión 4 (usuario 2026-10-25): el recibo de agua es el cobro del acueducto (servicio público); el agua que se compra va a barra.
+          # Van antes que «agua» porque se revisan en orden; también miran el proveedor.
+          "recibo de agua": "51352501", "recibo agua": "51352501", "servicio de agua": "51352501", "servicio agua": "51352501",
+          "factura de agua": "51352501", "aguas de cartagena": "51352501", "agua": "14050502"}
+FRASES_PROVEEDOR = {"aguas de cartagena", "gas natural"}    # empresas de servicios: su nombre como proveedor basta (venden solo eso)
 GENERICOS = {"consumidor final", "cuantias menores", "caja", ""}
 
 
@@ -153,8 +158,9 @@ class Motor:
         for dec in self.choque:       # ADR-023: palabras de una decisión que choca en el manual; sale la cuenta de mayoría, avisada
             if any(x in set(dec["afecta"]) for x in toks): return self._sale(dec["cuenta"], 0.75, "confirmar", f"por confirmar: {dec['regla_usada']}")
         base = norm(nombre or texto)
-        for f, c in FRASES.items():
-            if f in base: return self._sale(c, 0.9, "frase", f"«{f}»")
+        for f, c in FRASES.items():   # palabra completa: «agua» no toca «aguacate» ni «aguardiente»
+            if re.search(rf"\b{re.escape(f)}\b", base): return self._sale(c, 0.9, "frase", f"«{f}»")
+            if f in FRASES_PROVEEDOR and t and re.search(rf"\b{re.escape(f)}\b", t): return self._sale(c, 0.9, "frase", f"proveedor «{f}»")
         puntos = {}
         for cuenta, kws in LEXICO.items():
             for kw in kws:
