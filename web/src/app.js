@@ -2,11 +2,11 @@
 // al Worker (ADR-028). Todo texto que viene de afuera (nombre del archivo, mensajes del motor) entra con textContent (S2).
 
 const MB = 2 ** 20;
-const TOPE_CRUDO = 20 * MB;   // S2: el mismo tope del Worker y de libro.generar, antes de leer el archivo
+const TOPE_CRUDO = 20 * MB, TOPE_EXTRACTO = 5 * MB;   // S2: los mismos topes del Worker y de libro.generar, antes de leer el archivo
 const CLAVE = "ingresos.contador";   // 03 §4: lo único que se guarda (negocio y NIT)
 
 const $ = (id) => document.getElementById(id);
-const form = $("form"), negocio = $("negocio"), nit = $("nit"), crudo = $("crudo"), boton = $("generar");
+const form = $("form"), negocio = $("negocio"), nit = $("nit"), crudo = $("crudo"), extracto = $("extracto"), boton = $("generar");
 
 // R6: la carpeta /vX.Y.Z/ es la versión de la página; el núcleo la confirma el Worker con su manifiesto.
 const vRuta = location.pathname.match(/\/v(\d+\.\d+\.\d+)\//);
@@ -44,15 +44,33 @@ function error(mensaje, detalle = "") {
 
 function puedeGenerar() { boton.disabled = ocupado || !crudo.files.length; }
 
+const tamano = (f) => f.size < MB ? `${Math.max(1, Math.round(f.size / 1024))} KB` : `${(f.size / MB).toFixed(1).replace(".", ",")} MB`;
+
 crudo.addEventListener("change", () => {
   limpiar();
   const f = crudo.files[0];
-  const tam = !f ? "" : f.size < MB ? `${Math.max(1, Math.round(f.size / 1024))} KB` : `${(f.size / MB).toFixed(1).replace(".", ",")} MB`;
-  $("archivo").textContent = f ? `${f.name} · ${tam}` : "";
+  $("archivo").textContent = f ? `${f.name} · ${tamano(f)}` : "";
   mostrar("archivo", !!f);
   if (f && f.size > TOPE_CRUDO) error("El crudo pesa más de 20 MB; revise que sea el archivo .json que exporta la captura.");
   puedeGenerar();
 });
+
+// R2: el extracto es opcional; si no sirve se quita solo él y el crudo elegido se queda.
+function quitarExtracto() {
+  extracto.value = "";
+  mostrar("archivo-extracto", false);
+}
+extracto.addEventListener("change", () => {
+  limpiar();
+  const f = extracto.files[0];
+  if (f && f.size > TOPE_EXTRACTO) {
+    quitarExtracto();
+    return error(`El extracto «${f.name}» pesa más de 5 MB; revise que sea el .xlsx que baja del banco. El crudo sigue elegido.`);
+  }
+  $("archivo-extracto-nombre").textContent = f ? `${f.name} · ${tamano(f)}` : "";
+  mostrar("archivo-extracto", !!f);
+});
+$("quitar-extracto").addEventListener("click", () => { quitarExtracto(); limpiar(); });
 
 function nuevoMotor() {
   const w = new Worker("motor.worker.js", { type: "module" });
@@ -68,7 +86,8 @@ function nuevoMotor() {
     if (data.tipo === "avance") { $("paso").textContent = data.paso; return; }
     terminar();
     if (data.tipo === "error") {
-      error(data.mensaje, data.detalle);
+      const delExtracto = /^El extracto/.test(data.mensaje);
+      error(delExtracto ? `${data.mensaje}. El crudo sigue elegido: quite el extracto o elija otro.` : data.mensaje, data.detalle);
       // El Worker dice «recargue» cuando su Pyodide murió: uno nuevo evita pedirle al contador que recargue.
       if (/recargue/i.test(data.mensaje)) { w.terminate(); if (motor === w) motor = null; }
     } else if (data.tipo === "listo") listo(data);
@@ -78,7 +97,18 @@ function nuevoMotor() {
 
 function terminar() { ocupado = false; boton.textContent = "Generar Excel"; puedeGenerar(); }
 
-function listo({ xlsx, nombre, invalidos, nucleo }) {
+// R2: lo que hizo el extracto, para que el contador sepa qué revisar en el Excel.
+const cuenta = (x, uno, varios) => `${x} ${x === 1 ? uno : varios}`;
+function resumenExtracto(r) {
+  if (!r) return "";
+  const partes = [cuenta(r.nuevas, "línea nueva", "líneas nuevas"), `${r.por_revisar} por revisar`];
+  if (r.ya_estaban) partes.push(cuenta(r.ya_estaban, "repetida", "repetidas"));
+  const creados = r.dias_creados || [];
+  partes.push(creados.length ? `${cuenta(creados.length, "día creado", "días creados")} (${creados.join(", ")})` : "ningún día creado");
+  return `Extracto: ${partes.join(" · ")}.`;
+}
+
+function listo({ xlsx, nombre, invalidos, extracto: resumen, nucleo }) {
   mostrar("estado", false);
   if (urlExcel) URL.revokeObjectURL(urlExcel);
   urlExcel = URL.createObjectURL(new Blob([xlsx], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
@@ -87,6 +117,8 @@ function listo({ xlsx, nombre, invalidos, nucleo }) {
   a.download = nombre;
   $("listo-texto").textContent = `Listo: ${nombre}. Si la descarga no empezó, use el botón.`;
   $("v-nucleo").textContent = `v${nucleo}`;
+  $("resumen-extracto").textContent = resumenExtracto(resumen);
+  mostrar("resumen-extracto", !!resumen);
   const lista = $("invalidos-lista");
   lista.replaceChildren(...(invalidos || []).map(({ fecha, motivo }) => {
     const li = document.createElement("li");
@@ -109,11 +141,15 @@ form.addEventListener("submit", async (ev) => {
   boton.textContent = "Generando…";
   $("paso").textContent = "Leyendo archivo…";
   mostrar("estado", true);
-  let bytes;
+  const fe = extracto.files[0];
+  let bytes, bytesExt;
   try { bytes = await f.arrayBuffer(); }
-  catch { terminar(); return error("No se pudo leer el archivo; vuelva a elegirlo."); }
+  catch { terminar(); return error("No se pudo leer el crudo; vuelva a elegirlo."); }
+  try { bytesExt = fe ? await fe.arrayBuffer() : undefined; }
+  catch { terminar(); quitarExtracto(); return error("No se pudo leer el extracto; vuelva a elegirlo. El crudo sigue elegido."); }
   motor ??= nuevoMotor();
-  motor.postMessage({ tipo: "generar", crudo: bytes, negocio: negocio.value.trim(), nit: nit.value.trim() }, [bytes]);
+  motor.postMessage({ tipo: "generar", crudo: bytes, extracto: bytesExt, negocio: negocio.value.trim(), nit: nit.value.trim() },
+                    bytesExt ? [bytes, bytesExt] : [bytes]);
 });
 
 puedeGenerar();

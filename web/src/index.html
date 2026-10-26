@@ -13,7 +13,7 @@
   <main>
     <header>
       <h1>Libro contable</h1>
-      <p class="sub">Suba el crudo que le mandaron y descargue el Excel del libro. Todo se calcula en este navegador: ningún archivo sale de su PC.</p>
+      <p class="sub">Suba el crudo que le mandaron (y, si quiere, el extracto del banco) y descargue el Excel del libro. Todo se calcula en este navegador: ningún archivo sale de su PC.</p>
     </header>
 
     <form id="form" novalidate>
@@ -29,11 +29,16 @@
       </fieldset>
 
       <fieldset>
-        <legend>Archivo</legend>
+        <legend>Archivos</legend>
         <label>Crudo de la captura (.json, hasta 20 MB)
           <input id="crudo" name="crudo" type="file" accept=".json,application/json">
         </label>
         <p class="archivo" id="archivo" hidden></p>
+        <label>Extracto del banco (.xlsx, opcional, hasta 5 MB)
+          <input id="extracto" name="extracto" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        </label>
+        <p class="archivo" id="archivo-extracto" hidden><span id="archivo-extracto-nombre"></span>
+          <button id="quitar-extracto" class="secundario" type="button">Quitar</button></p>
       </fieldset>
 
       <button id="generar" type="submit" disabled>Generar Excel</button>
@@ -53,6 +58,7 @@
 
     <section id="listo" class="listo" hidden>
       <p id="listo-texto"></p>
+      <p id="resumen-extracto" hidden></p>
       <a id="descarga" class="boton" href="#" download>Descargar de nuevo</a>
       <div id="invalidos" hidden>
         <p>Días que no entraron al libro:</p>

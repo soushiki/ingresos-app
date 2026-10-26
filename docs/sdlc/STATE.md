@@ -5,8 +5,8 @@ goal: una página estática en Netlify (URL fija por versión) donde el contador
 size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por tag, test de compatibilidad del crudo); sin lógica contable nueva
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
-next: 6-test
-current task: It. 1 completa (T1–T7); 6-test de la It. 1, luego T8
+next: 5-implement
+current task: T9 (It. 2: ataques en navegador)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
@@ -55,3 +55,5 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 5-implement | T6 PASS: `web/src/{index.html,app.js,estilos.css}`: crudo → Excel (5 hojas) en el navegador del panel con las cabeceras reales; Red solo GET al mismo origen; error en español con detalle plegado; negocio/NIT en localStorage; @media teléfono/tableta → T7
 2026-10-26 | 5-implement | T7 borrador: sitio libro-contable-web creado, deploy sin --prod; cabeceras = _headers, wasm application/wasm, crudo de prueba → Excel en 3,6 s en frío; esperando comparación del usuario con sept. real
 2026-10-26 | 5-implement | T7 PASS: usuario comparó sept. real en la URL borrador = Excel de ②; It. 1 completa → next 6-test
+2026-10-26 | 6-test | It. 1 PASS: 29/29 probar_*.py + contrato.mjs verdes; revisión código/seguridad sin defectos; ataque nuevo (fórmulas en el crudo → 0 activas) en probar_libro.py; cabeceras en vivo = S4; carga N/A (estático) → 06-test-report.md → next 5-implement (T8)
+2026-10-26 | 5-implement | T8 PASS: extracto en la página (selector opcional, tope 5 MB, «Quitar», crudo se conserva si el extracto no sirve, resumen nuevas/por revisar/días creados); contrato.mjs: crudo + extracto → 0 celdas distintas Pyodide vs CPython; panel OK, solo mismo origen → T9

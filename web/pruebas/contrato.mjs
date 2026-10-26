@@ -49,7 +49,7 @@ const COMPARAR = `
 import io, sys, json
 from openpyxl import load_workbook
 from parser_module.contable import libro
-crudo, pyo, neg, nit, ahora = sys.argv[1:]
+crudo, ext, pyo, neg, nit, ahora = sys.argv[1:]
 def celdas(x):
     wb = load_workbook(io.BytesIO(x)); out = {"hojas": wb.sheetnames}
     for ws in wb:
@@ -59,14 +59,29 @@ def celdas(x):
                 if c.value is None and not c.has_style: continue
                 out[(ws.title, c.coordinate)] = (c.value, c.number_format, c.font.b, c.font.color.rgb if c.font.color else None, c.fill.fgColor.rgb, c.alignment.horizontal)
     return out
-a = celdas(libro.generar(open(crudo, "rb").read(), None, None, neg, nit, ahora)["xlsx"])
+a = celdas(libro.generar(open(crudo, "rb").read(), open(ext, "rb").read() if ext else None, None, neg, nit, ahora)["xlsx"])
 b = celdas(open(pyo, "rb").read())
 d = [str(k) for k in sorted(set(a) | set(b), key=str) if a.get(k) != b.get(k)]
 print(json.dumps({"celdas": len(a), "distintas": len(d), "ejemplos": d[:5]}))
 `;
-p = python(["-c", COMPARAR, path.join(APP, "web", "pruebas", "datos", "crudo_v1.json"), path.join(tmp, "pyodide.xlsx"), NEG, NIT, AHORA]);
-const cmp = p.status === 0 ? JSON.parse(p.stdout.trim().split("\n").at(-1)) : { distintas: -1, ejemplos: [p.stderr.slice(-300)] };
+const comparar = (ext = "") => {
+  const q = python(["-c", COMPARAR, path.join(APP, "web", "pruebas", "datos", "crudo_v1.json"), ext, path.join(tmp, "pyodide.xlsx"), NEG, NIT, AHORA]);
+  return q.status === 0 ? JSON.parse(q.stdout.trim().split("\n").at(-1)) : { distintas: -1, ejemplos: [q.stderr.slice(-300)] };
+};
+let cmp = comparar();
 chk(cmp.distintas === 0, `R1/R5: crudo_v1.json → ${cmp.celdas} celdas, ${cmp.distintas} distintas frente a CPython ${JSON.stringify(cmp.ejemplos)}`);
+
+// T8 · R2: crudo + el extracto sintético de probar_libro.py (generar.py) → mismo Excel y mismo resumen que CPython.
+const rutaExt = path.join(tmp, "extracto.xlsx");
+p = python(["-c", "import sys; sys.path.insert(0, 'web/pruebas/datos'); from generar import extracto_xlsx; open(sys.argv[1], 'wb').write(extracto_xlsx())", rutaExt]);
+const ext = await fs.readFile(rutaExt);
+const rx = await motor.generar({ tipo: "generar", crudo, extracto: ext, negocio: NEG, nit: NIT });
+await fs.writeFile(path.join(tmp, "pyodide.xlsx"), new Uint8Array(rx.xlsx));
+cmp = comparar(rutaExt);
+chk(rx.tipo === "listo" && cmp.distintas === 0, `R2: crudo + extracto → ${cmp.celdas} celdas, ${cmp.distintas} distintas frente a CPython ${JSON.stringify(cmp.ejemplos)}`);
+const res = rx.extracto ?? {};
+chk(res.nuevas === 6 && res.ya_estaban === 0 && Number.isInteger(res.por_revisar) && JSON.stringify(res.dias_creados) === '["2026-09-18","2026-09-30"]',
+    `R2: el resumen del extracto llega a la página: ${JSON.stringify(res)}`);
 await fs.rm(tmp, { recursive: true, force: true });
 
 // S2: entradas malas → error en español, sin traza ni rutas; el motor sigue sirviendo después.
@@ -82,6 +97,7 @@ const casos = {
   "crudo no es archivo": [{ crudo: "texto" }, /no llegó como archivo/],
   "crudo > 20 MB (tope en JS)": [{ crudo: new ArrayBuffer(20 * 2 ** 20 + 1) }, /más de 20 MB/],
   "extracto > 5 MB (tope en JS)": [{ crudo: crudo, extracto: new ArrayBuffer(5 * 2 ** 20 + 1) }, /más de 5 MB/],
+  "extracto que no es .xlsx": [{ crudo: crudo, extracto: enc("hola, no soy un excel") }, /^El extracto no sirve/],
   "memoria > 1 MB (tope en JS)": [{ crudo: crudo, memoria: new ArrayBuffer(2 ** 20 + 1) }, /más de 1 MB/],
   "JSON roto": [{ crudo: enc("{no es json") }, /./],
   "versión 2": [{ crudo: enc({ ...j, version: 2 }) }, /versi/i],
