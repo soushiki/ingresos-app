@@ -20,7 +20,7 @@ from excel_export import construir_excel
 from parser_module.contable.documentos import PARSERS, _base as _base_doc, aplicar_fecha_carpeta, MEDIOS_CANON, medio_canonico
 from parser_module.contable import Clasificador, Motor, construir as construir_asientos, leer_texto, libro_a_excel, MARCA, completar_desde_cierre
 from parser_module.contable.asientos import CATALOGO, CFG as CFG_ASIENTOS, estado_de, casillas_efectivas, CASILLA_DESC
-from parser_module.contable import referencia, extracto as extr
+from parser_module.contable import referencia, extracto as extr, libro
 from parser_module.contable import reclasificar as reclas
 from parser_module.contable import soporte, soporte_db, soporte_excel, proveedores as provs, recortes, relectura, faltantes
 from parser_module.contable.exportar import crudo as crudo_json, leer_crudo, CrudoInvalido
@@ -198,7 +198,7 @@ MOTOR = Motor.desde_archivos(str(DATOS / "clasificacion.json"))
 def _cont_cfg() -> dict:
     try: c = json.loads(RUTA_CONT.read_text(encoding="utf8"))
     except (FileNotFoundError, json.JSONDecodeError): c = {}
-    return {"puente_ingreso": CFG_ASIENTOS["puente_ingreso"], "puente_gasto": CFG_ASIENTOS["puente_gasto"], **c}
+    return libro.cfg(c)
 
 
 def _leer_libro() -> dict:
@@ -460,29 +460,7 @@ def _leer_ext_mem() -> dict:
     return m
 
 
-def _facturas_cerca(lib: dict, tocados: dict, fecha: str, ventana: int) -> list:
-    "ADR-015: documentos de los dias a +-ventana de `fecha` (el libro, con los dias en proceso encima)."
-    d0 = extr._dia(fecha)
-    if d0 is None: return []
-    out = []
-    for f, d in {**lib, **tocados}.items():
-        d1 = extr._dia(f)
-        if d1 is not None and abs((d1 - d0).days) <= ventana: out += d.get("documentos", [])
-    return out
-
-
-def _facturas_usadas(lib: dict, tocados: dict, fecha: str) -> set:
-    "FIX-3: factura_ids ya enlazadas o asignadas por lineas del extracto de OTROS dias."
-    return {x["factura_id"] for f, d in {**lib, **tocados}.items() if f != fecha for x in d.get("extracto", []) if x.get("factura_id")}
-
-
-def _recalcular_dia(lib: dict, fecha: str, reglas: dict, mem: dict, cfg: dict) -> dict:
-    "Reclasifica el extracto del dia con la memoria y las facturas cercanas, lo reconstruye y lo deja en `lib`."
-    dia = lib[fecha]
-    ext = extr.clasificar(dia["extracto"], reglas, mem, _facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"]), _facturas_usadas(lib, {}, fecha))
-    r = construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), ext)
-    lib[fecha] = _dia(fecha, r, dia.get("banco", {}), dia.get("cierre"), ext)
-    return lib[fecha]
+_recalcular_dia = libro.recalcular_dia   # ADR-026: el cálculo vive en libro.py
 
 
 @app.get("/api/contable/extracto/revision")
@@ -564,8 +542,8 @@ def cont_ext_asignar(fecha, clave):
         if ln is None: return jsonify(error="No existe esa línea del extracto"), 404
         if fid == "ninguna": ln["asignada"] = {"ninguna": True}
         elif fid:
-            if fid not in {d.get("id") for d in _facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"])}: return jsonify(error="Factura desconocida"), 400
-            if fid in _facturas_usadas(lib, {}, fecha): return jsonify(error="Esa factura ya está enlazada a otra línea"), 400
+            if fid not in {d.get("id") for d in libro.facturas_cerca(lib, {}, fecha, reglas["ventana_factura_dias"])}: return jsonify(error="Factura desconocida"), 400
+            if fid in libro.facturas_usadas(lib, {}, fecha): return jsonify(error="Esa factura ya está enlazada a otra línea"), 400
             ln["asignada"] = {"factura_id": fid}
         else: ln["asignada"] = {"cuenta": cuenta}
         recordar = ""
@@ -631,26 +609,11 @@ def cont_extracto():
     imp = f"{ahora.replace('-', '').replace(':', '').replace('T', '')}-{sha[:8]}-{secrets.token_hex(2)}"
     with LOCK:
         mem, lib, cfg = _leer_ext_mem(), _leer_libro(), _cont_cfg()
-        nuevas, ya, tocados = 0, 0, {}
-        lib_antes = set(lib)
-        for ln in lineas:
-            dia = tocados.get(ln["fecha"]) or copy.deepcopy(lib.get(ln["fecha"])) or dict(fecha=ln["fecha"], documentos=[], banco={}, cierre={})
-            tocados[ln["fecha"]] = dia
-            if any(x.get("clave") == ln["clave"] for x in dia.get("extracto", [])): ya += 1; continue
-            dia.setdefault("extracto", []).append(dict(ln, imp=imp)); nuevas += 1
-        nuevos_dias = {}
-        for fecha, dia in tocados.items():
-            if not any(x.get("imp") == imp for x in dia.get("extracto", [])): continue   # nada nuevo: el día queda como estaba
-            dia["extracto"] = extr.clasificar(dia["extracto"], reglas, mem["memoria"], _facturas_cerca(lib, tocados, fecha, reglas["ventana_factura_dias"]), _facturas_usadas(lib, tocados, fecha))
-            r = construir_asientos(fecha, dia.get("documentos", []), dia.get("banco", {}), cfg, dia.get("cierre"), dia["extracto"])
-            nuevos_dias[fecha] = {**dia, "documentos": r["documentos"], "cruces": r["cruces"], "filas": r["filas"], "pendientes": r["pendientes"],
-                                  "debito": r["debito"], "credito": r["credito"], "diferencia": r["diferencia"], "guardado": ahora}
-        if nuevos_dias:
-            lib.update(nuevos_dias); _guardar_libro(lib)
-        mem["importaciones"][imp] = dict(archivo=os.path.basename(f.filename or "")[:200], sha256=sha, fecha=ahora, nuevas=nuevas, ya_estaban=ya, dias_creados=sorted(f for f in nuevos_dias if f not in lib_antes))
+        lib, res = libro.aplicar_extracto(lib, lineas, reglas, mem["memoria"], cfg, imp, ahora)
+        if res["dias"]: _guardar_libro(lib)
+        mem["importaciones"][imp] = dict(archivo=os.path.basename(f.filename or "")[:200], sha256=sha, fecha=ahora, nuevas=res["nuevas"], ya_estaban=res["ya_estaban"], dias_creados=res["dias_creados"])
         tmp = RUTA_EXT_MEM.with_suffix(".tmp"); tmp.write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf8"); tmp.replace(RUTA_EXT_MEM)
-    revisar = sum(1 for d in nuevos_dias.values() for x in d["extracto"] if x.get("imp") == imp and x.get("destino") == "revisar")
-    return jsonify(ok=True, imp=imp, nuevas=nuevas, ya_estaban=ya, por_revisar=revisar, dias=sorted(nuevos_dias))
+    return jsonify(ok=True, imp=imp, nuevas=res["nuevas"], ya_estaban=res["ya_estaban"], por_revisar=res["por_revisar"], dias=res["dias"])
 
 
 @app.get("/api/contable/libro")
@@ -678,10 +641,7 @@ def cont_confirmar():
     return jsonify(ok=True, dias=len(lib), diferencia=r["diferencia"])
 
 
-def _dia(fecha: str, r: dict, banco: dict, cierre, extracto: list | None = None) -> dict:
-    """extracto: las líneas guardadas del día (ADR-012); `r` ya debe venir calculado con ellas. Un día sin extracto no gana la clave."""
-    return dict(fecha=fecha, documentos=r["documentos"], banco=banco, cierre=cierre or {}, cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"], debito=r["debito"], credito=r["credito"],
-                diferencia=r["diferencia"], guardado=datetime.now().isoformat(timespec="seconds"), **({"extracto": extracto} if extracto else {}))
+_dia = libro.dia
 
 
 def _conservar_revisados(previos: list, nuevos: list) -> list:
@@ -843,17 +803,15 @@ def cont_importar():
             fecha = d["fecha"]; previo = lib.get(fecha)
             if previo is not None and leido(previo) == leido(d): inf["iguales"].append(fecha); continue
             ext = (previo or {}).get("extracto")   # ADR-012: el crudo no trae el extracto; el del día se conserva
-            try: r = construir_asientos(fecha, copy.deepcopy(d["documentos"]), d["banco"], cfg, d["cierre"], ext)
+            try: nuevo = libro.dia_desde_crudo(d, cfg, ext)
             except Exception as e:  # noqa: BLE001  un documento que el cálculo no entiende: el día no entra y se dice por qué
                 inf["invalidos"].append(dict(fecha=fecha, motivo=f"no se pudo calcular: {str(e)[:120]}")); continue
             if previo is not None:
-                b = _bloqueos(fecha, r["documentos"])
+                b = _bloqueos(fecha, nuevo["documentos"])
                 if b: inf["bloqueados"].append(dict(fecha=fecha, motivos=b)); continue
                 if fecha not in reemplazar:
                     inf["conflictos"].append(dict(fecha=fecha, papeles_actuales=len(previo.get("documentos", [])), papeles_archivo=len(d["documentos"]))); continue
-            lib[fecha] = dict(fecha=fecha, documentos=r["documentos"], banco=d["banco"], cierre=d["cierre"], cruces=r["cruces"], filas=r["filas"], pendientes=r["pendientes"],
-                              debito=r["debito"], credito=r["credito"], diferencia=r["diferencia"], guardado=d["guardado"] or datetime.now().isoformat(timespec="seconds"),
-                              importado=datetime.now().isoformat(timespec="seconds"), **({"extracto": ext} if ext else {}))
+            lib[fecha] = nuevo
             inf["reemplazados" if previo is not None else "nuevos"].append(fecha); cambio = True
         if cambio: _guardar_libro(lib)
     return jsonify(ok=True, **inf)
@@ -871,14 +829,7 @@ def cont_borrar(fecha):
 @app.get("/api/contable/excel")
 def cont_excel():
     d, h = request.args.get("desde", ""), request.args.get("hasta", "")
-    lib = {k: v for k, v in _leer_libro().items() if (not d or k >= d) and (not h or k <= h)}
-    c = _cont_cfg()
-    rs = {k: construir_asientos(k, v.get("documentos", []), v.get("banco", {}), c, v.get("cierre"), v.get("extracto")) for k, v in lib.items()}   # R9/ADR-002: filas y DATOS OCR del mismo cálculo
-    dias, datos = {k: r["filas"] for k, r in rs.items()}, {k: r["datos"] for k, r in rs.items()}
-    cambios = [f"{k}: cambió desde que se confirmó ({lib[k].get('guardado', 's/f')}): guardado débito {lib[k].get('debito', 0):,} · crédito {lib[k].get('credito', 0):,}; "
-               f"hoy débito {r['debito']:,} · crédito {r['credito']:,}. Revisa el día o vuelve a confirmarlo".replace(",", ".")
-               for k, r in sorted(rs.items()) if (lib[k].get("debito"), lib[k].get("credito")) != (r["debito"], r["credito"])]   # FIX-6: se recalcula con la config de hoy
-    return send_file(io.BytesIO(libro_a_excel(dias, c.get("negocio", ""), c.get("nit", ""), datos, cambios)), mimetype=XLSX, as_attachment=True,
+    return send_file(io.BytesIO(libro.excel(_leer_libro(), _cont_cfg(), d, h)), mimetype=XLSX, as_attachment=True,
                      download_name=f"reporte_contable_{datetime.now():%Y%m%d}.xlsx")
 
 
