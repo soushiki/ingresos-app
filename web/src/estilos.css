@@ -1,0 +1,111 @@
+/* T6 · modo contador web. Solo hoja propia: la CSP (S4) no deja estilos en línea ni fuentes externas. */
+:root {
+  --fondo: #f6f7f9;
+  --tarjeta: #ffffff;
+  --texto: #1d2329;
+  --suave: #5b6670;
+  --borde: #d5dbe1;
+  --acento: #1f6f50;
+  --acento-texto: #ffffff;
+  --error-fondo: #fdecec;
+  --error-borde: #c0392b;
+  --listo-fondo: #e8f5ee;
+  --listo-borde: #1f6f50;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14181c;
+    --tarjeta: #1d2328;
+    --texto: #e6eaee;
+    --suave: #9aa6b1;
+    --borde: #36404a;
+    --acento: #3fae82;
+    --acento-texto: #0d1512;
+    --error-fondo: #3a1f1f;
+    --error-borde: #e06b5f;
+    --listo-fondo: #17302a;
+    --listo-borde: #3fae82;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 640px; margin: 0 auto; padding: 32px 24px; }
+h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.sub { margin: 0 0 24px; color: var(--suave); }
+
+fieldset {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--tarjeta);
+}
+legend { padding: 0 6px; font-weight: 600; }
+label { display: block; margin: 0 0 12px; font-size: .95rem; }
+input[type="text"], input[type="file"] {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: var(--fondo);
+  color: var(--texto);
+  font: inherit;
+}
+.nota, .archivo { margin: 0; color: var(--suave); font-size: .875rem; overflow-wrap: anywhere; }
+
+button, .boton {
+  display: inline-block;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--acento);
+  color: var(--acento-texto);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible, .boton:focus-visible, input:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+section { margin-top: 20px; padding: 14px 16px; border-radius: 8px; }
+#estado { border: 1px dashed var(--borde); }
+#paso { margin: 0; }
+.error { background: var(--error-fondo); border-left: 4px solid var(--error-borde); }
+.listo { background: var(--listo-fondo); border-left: 4px solid var(--listo-borde); }
+.error p, .listo p { margin: 0 0 8px; overflow-wrap: anywhere; }
+details summary { cursor: pointer; color: var(--suave); }
+pre { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+#invalidos { margin-top: 12px; }
+#invalidos ul { margin: 0; padding-left: 20px; font-size: .9rem; }
+
+footer { margin-top: 32px; color: var(--suave); font-size: .8rem; }
+[hidden] { display: none !important; }
+
+/* Tableta (vertical u horizontal baja). */
+@media (max-width: 900px), (max-height: 700px) {
+  main { padding: 24px 20px; }
+}
+/* Teléfono: botones a todo el ancho y menos aire vertical. */
+@media (max-width: 600px), (max-height: 500px) {
+  main { padding: 16px; }
+  h1 { font-size: 1.35rem; }
+  .sub { margin-bottom: 16px; }
+  fieldset { padding: 12px; }
+  button, .boton { width: 100%; text-align: center; }
+}
+/* Teléfono horizontal: dos columnas para no hacer scroll en el formulario. */
+@media (max-height: 500px) and (min-width: 600px) {
+  main { max-width: none; }
+  form { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  form button { grid-column: 1 / -1; }
+}

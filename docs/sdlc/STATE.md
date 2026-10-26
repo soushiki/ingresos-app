@@ -6,7 +6,7 @@ size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por 
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
 next: 5-implement
-current task: T6 (página: `index.html` + `app.js` + `estilos.css`)
+current task: T7 (deploy borrador en Netlify; el usuario prueba con el crudo de sept.)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
@@ -52,3 +52,4 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 5-implement | T3 PASS: `libro.generar` + `EntradaInvalida` (topes 20/5/1 MB, negocio/NIT sin fórmula, memoria validada, `ahora` inyectado); `probar_libro.py` 0 celdas distintas vs app (crudo y crudo + extracto) + 31 ataques; `web/pruebas/datos/crudo_v1.json` sintético fijo (R5); suite verde → T4
 2026-10-26 | 5-implement | T4 PASS: `herramientas/web_build.py` + `web/web.lock` (Pyodide 314.0.7 npm tgz, openpyxl 3.1.5, et_xmlfile 2.0.0, sha256) → `web/dist/` 13,2 MB con nucleo.zip por lista blanca, manifiesto, _headers S4; `probar_web.py` verde (40 chequeos, núcleo del zip en intérprete limpio = Excel del repo) → T5
 2026-10-26 | 5-implement | T5 PASS: `web/src/motor.worker.js` (manifiesto → Pyodide/wheels/nucleo.zip con sha256, puente fijo, topes en JS, una generación a la vez) + `web/pruebas/contrato.mjs` en Node: 0 celdas distintas vs CPython, 15 casos S2; JSON hondo mataba Pyodide → tope 64 niveles en el Worker → T6
+2026-10-26 | 5-implement | T6 PASS: `web/src/{index.html,app.js,estilos.css}`: crudo → Excel (5 hojas) en el navegador del panel con las cabeceras reales; Red solo GET al mismo origen; error en español con detalle plegado; negocio/NIT en localStorage; @media teléfono/tableta → T7
