@@ -1,16 +1,16 @@
 # SDLC state
 
-project: ingresos_app · próximo ciclo por elegir
-goal: —
-size: —
-exposed: no  # app Flask local en 127.0.0.1
-regulated: —
-next: 0-triage
-current task: —  (entre ciclos; M-26 cerrado en v1.9.0)
+project: ingresos_app · Modo contador web (Pyodide, todo local)
+goal: una página estática en Netlify (URL fija por versión) donde el contador sube el crudo de la captura (ADR-004) y el extracto del banco (sin Vendty), y su navegador arma y descarga el Excel del libro con el mismo núcleo contable, sin que ningún dato salga de su PC
+size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por tag, test de compatibilidad del crudo); sin lógica contable nueva
+exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
+regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
+next: 1-research
+current task: —  (triage confirmado; sigue 1-research ligera: spike Pyodide)
 
 ## Stages
-- [ ] 0-triage
-- [ ] 1-research
+- [x] 0-triage
+- [ ] 1-research  (ligera: spike núcleo + openpyxl en Pyodide con un crudo real)
 - [ ] 2-requirements
 - [ ] 3-design
 - [ ] 4-plan
@@ -37,3 +37,5 @@ current task: —  (entre ciclos; M-26 cerrado en v1.9.0)
 2026-10-26 | 8-maintain | smoke v1.9.0 PASS (usuario + captura): 85334 y 85375 recuperados con número correcto, «dudosos» con motivo «Número recuperado…», sin «Falta 85334»; 85340 (486.990) va «dudoso». Nuevos: M-29 cola de fotos (cerrado, f688232), M-30 textos de ④ (XS, abierto)
 2026-10-26 | 7-release | v1.9.1 preparada (M-29, M-30, M-31, M-32): suite verde, 127.0.0.1, sin migración; VERSION + CHANGELOG; commit local → esperando OK para push main + tag
 2026-10-26 | 7-release | v1.9.1 publicada: push main + tag (e6a0a7a..7183832); la hoja de M-18 se sacó del historial antes del push (sin versionar, como los otros PDF del contador; rama local backup/antes-sacar-hoja-m18 la conserva) → next 0-triage
+2026-10-26 | 0-triage | borrador modo contador web: meta (página Netlify, núcleo en Pyodide, crudo + extracto → Excel, todo local), M, exposed yes (estático), regulated yes; alternativa barata: tú exportas el Excel en ② y se lo mandas (ya funciona hoy) → esperando confirmación + 3 preguntas
+2026-10-26 | 0-triage | confirmado por el usuario: meta y tamaño M; (1) el Excel = el mismo libro que sale hoy de ②, el documento soporte se queda en la app de captura; (2) el contador no corrige cuentas en la página, solo en el Excel si quiere; (3) Vendty fuera hasta tener un ejemplo de factura y la API pedida a soporte → next 1-research
