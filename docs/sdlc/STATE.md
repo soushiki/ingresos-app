@@ -5,8 +5,8 @@ goal: la app decide la cuenta PUC de cada papel por su origen (comanda, cierre, 
 size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas por origen, mapa a subcuentas PUC, recálculo de días guardados; evidencia ya existe (cuadro + inconsistencias)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
-next: 5-implement
-current task: It. 3 → T12 (por_confirmar_pdf.py: PDF de los 8 puntos + alias)
+next: 6-test
+current task: It. 3 completa (T9–T12) → 6-test
 
 ## Stages
 - [x] 0-triage
@@ -70,3 +70,6 @@ current task: It. 3 → T12 (por_confirmar_pdf.py: PDF de los 8 puntos + alias)
 2026-10-25 | 5-implement | T11 navegador probado por el usuario en la copia de sept. (localhost:5061) → commit T11; sigue T12
 2026-10-25 | 5-implement | T11 navegador (puerto 5070): todo funciona; arreglos: duplicados fuera del resumen (sept. 35 cambios + 4 copias), montos sin partir en teléfono; hallazgo: Aplicar cambia ingresos de 09-01/09-17/09-20 (+882.874) al rehacer con reglas nuevas → decisión del usuario
 2026-10-25 | 5-implement | pedido del usuario: la vista previa de «Reclasificar mes» lista los días cuyo débito o ingresos cambian al rehacer (sept.: 09-01, 09-17, 09-20) con antes → después; +5 checks probar_reclasificar; probado en el navegador (escritorio y teléfono); suite verde
+2026-10-25 | 5-implement | docs/consulta-contador-reclasificar-sept.pdf: 3 preguntas al contador (ajuste al cierre 01/09 109.728 y 20/09 472.500; pago propinas/domicilios según cierre; 2 gastos que cambian de cuenta) → no aplicar «Reclasificar mes» de sept. hasta su respuesta
+2026-10-25 | 5-implement | respuesta del contador aplicada al libro real: ajuste al cierre a ingreso (01/09 109.728, 20/09 472.500), pago propinas/domicilios según cierre, gaseosa para salsa 14050501 (a mano), transporte de pan 51355001; «Reclasificar mes» sept. (21 días) + 20/09 rehecho con reglas v1.3.0; sept. D = C = 62.056.359, ingresos 47.969.484; respaldos libro.backup-antes-reclasificar-sept.json y libro.antes-v1.8.0.json
+2026-10-25 | 5-implement | T12 por_confirmar_pdf.py → docs/por-confirmar-contador.pdf (8 decisiones + 5 alias, filas del manual e ítems del libro por punto); It. 3 completa → next 6-test
