@@ -248,7 +248,12 @@ async function procesar(){if(ctl)return;ctl=new AbortController();botones();cons
   renderFotos();renderDocs();renderChips();recalcular()}
  const seguir=!ctl.signal.aborted&&dias.flatMap(d=>d.fotos).some(f=>f.estado==="pendiente");ctl=null;if(seguir)return procesar();
  $("msg").textContent="Listo. Revisa los papeles (amarillo = dudoso), el cruce con el cierre y los asientos.";botones()}
-function repartir(f,nuevos){const origen=dias.find(d=>d.id===f.dia)||dia(),c={};nuevos.forEach(d=>d.fecha&&(c[d.fecha]=(c[d.fecha]||0)+1));
+// año mal leído (2025 por 2026, M-12): si solo cambia el año y con el año del día abierto queda a ≤ 31 días, se usa ese año
+function anioDelDia(fe,base){if(!fe||!base||fe.slice(0,4)===base.slice(0,4))return fe;const g=base.slice(0,4)+fe.slice(4);
+ return Math.abs(new Date(g)-new Date(base))<=31*864e5?g:fe}
+function repartir(f,nuevos){const origen=dias.find(d=>d.id===f.dia)||dia(),c={};
+ nuevos.forEach(d=>{const g=anioDelDia(d.fecha,origen.fecha);if(g!==d.fecha){d.avisos=[...(d.avisos||[]),`Año corregido: ${fmtF(d.fecha)} → ${fmtF(g)} (el día abierto es de ${g.slice(0,4)})`];d.fecha=g}});
+ nuevos.forEach(d=>d.fecha&&(c[d.fecha]=(c[d.fecha]||0)+1));
  const top=(Object.entries(c).sort((a,b)=>b[1]-a[1])[0]||[])[0];if(!origen.fecha&&top)origen.fecha=top;let movidos={};
  // un papel sin fecha va con la fecha más común de su propia foto (cada escaneo trae una sola fecha), no con el día abierto
  nuevos.forEach(d=>{const x={...nuevoDoc(d.tipo),...d,foto:f.id};let dest=origen;const fe=d.fecha||top;
