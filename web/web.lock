@@ -1,0 +1,27 @@
+{
+  "nota": "S5 / ADR-027: dependencias del modo contador web, fijadas con sha256. Las baja herramientas/web_build.py a web/cache/ y las verifica en cada build. Cambiar una versión = cambiar url y sha256 juntos (y npm integrity de Pyodide).",
+  "pyodide": {
+    "version": "314.0.7",
+    "url": "https://registry.npmjs.org/pyodide/-/pyodide-314.0.7.tgz",
+    "archivo": "pyodide-314.0.7.tgz",
+    "sha256": "66b7949e5a0cba2250b586d7e368bf12fb482800748d182c4618254b685ffaa0",
+    "npm_integrity": "sha512-0YvXxEhfEdpLfb/XkM2BFAeMROq0iMUX2bzzH9pOttyMcWkwq+HbE5uyuGD82LN7y2q+SNvi/6V5JEsOlD2R1A==",
+    "servir": ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"]
+  },
+  "wheels": [
+    {
+      "nombre": "openpyxl",
+      "version": "3.1.5",
+      "archivo": "openpyxl-3.1.5-py2.py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl",
+      "sha256": "5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2"
+    },
+    {
+      "nombre": "et_xmlfile",
+      "version": "2.0.0",
+      "archivo": "et_xmlfile-2.0.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl",
+      "sha256": "7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa"
+    }
+  ]
+}

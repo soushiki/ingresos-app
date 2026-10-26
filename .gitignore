@@ -22,3 +22,7 @@ docs/sdlc/01f-cifras-rappi.md
 docs/sdlc/01g-cifras-extracto.md
 docs/sdlc/01h-app-vs-manual-sept.md
 indra_venv/
+
+# modo contador web: dependencias bajadas (web.lock) y sitio armado (web_build.py)
+web/cache/
+web/dist/

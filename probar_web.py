@@ -1,0 +1,149 @@
+"""T4 · fitness del sitio del contador (ADR-027, ADR-028, S1, S4, S5): lock, lista blanca, cabeceras, sin URLs remotas,
+y el núcleo del zip corre solo (intérprete limpio, sin el repo ni site-packages). Arma web/dist/ en una carpeta temporal
+(baja las dependencias a web/cache/ la primera vez)."""
+import io, json, pathlib, shutil, subprocess, sys, tempfile, zipfile
+from openpyxl import load_workbook
+sys.path.insert(0, str(pathlib.Path(__file__).parent / "herramientas"))
+import web_build as wb   # noqa: E402
+from parser_module.contable import libro   # noqa: E402
+
+fallos = []
+def chk(cond, msg):
+    print(("✓ " if cond else "✗ ") + msg)
+    if not cond: fallos.append(msg)
+
+def rechaza(fn, *texto):
+    "El build se niega con BuildError y el mensaje nombra la regla."
+    try:
+        fn()
+    except wb.BuildError as e:
+        return all(t in str(e) for t in texto)
+    return False
+
+AQUI = pathlib.Path(__file__).parent
+CRUDO = (AQUI / "web" / "pruebas" / "datos" / "crudo_v1.json").read_bytes()
+NEG, NIT, AHORA = "Restaurante de Prueba SAS", "900.123.456-7", "2026-10-26T09:30:00"
+VER = "9.9.9"
+tmp = pathlib.Path(tempfile.mkdtemp(prefix="probar_web_"))
+try:
+    # --- S5: lock fijado y verificado ---
+    lock = wb.leer_lock()
+    chk(lock["pyodide"]["version"] == "314.0.7" and {w["nombre"]: w["version"] for w in lock["wheels"]} == {"openpyxl": "3.1.5", "et_xmlfile": "2.0.0"},
+        "S5: web.lock fija Pyodide 314.0.7, openpyxl 3.1.5, et_xmlfile 2.0.0")
+    chk(all(len(d["sha256"]) == 64 and d["url"].startswith("https://") for d in wb.dependencias(lock)), "S5: cada dependencia trae url https y sha256")
+    rutas = wb.bajar(lock)
+    chk(all(wb.sha256(rutas[d["archivo"]].read_bytes()) == d["sha256"] for d in wb.dependencias(lock)), "S5: web/cache/ coincide con web.lock")
+    cache_mala = tmp / "cache_mala"
+    shutil.copytree(wb.CACHE, cache_mala)
+    w = cache_mala / lock["wheels"][1]["archivo"]
+    b = w.read_bytes()   # el último byte de un zip ya suele ser 0: se invierte uno del medio
+    w.write_bytes(b[:100] + bytes([b[100] ^ 1]) + b[101:])
+    chk(rechaza(lambda: wb.bajar(lock, cache_mala), "S5", "sha256", lock["wheels"][1]["archivo"]), "S5: un byte cambiado en un wheel detiene el build")
+
+    # --- build completo en temporal ---
+    dist = tmp / "dist"
+    r = wb.armar(VER, dist=dist, src=tmp / "sin_src")
+    arch = r["archivos"]
+    py = f"pyodide/{lock['pyodide']['version']}/"
+    chk(sorted(a[len(py):] for a in arch if a.startswith(py)) == sorted(lock["pyodide"]["servir"]),
+        f"S5: /{py} trae solo lo que carga el navegador ({len(lock['pyodide']['servir'])} archivos)")
+    chk(sorted(a for a in arch if a.startswith("py/")) == sorted("py/" + w["archivo"] for w in lock["wheels"]), "S5: /py/ = los wheels del lock")
+    chk(all(arch[f"py/{w['archivo']}"] == w["sha256"] for w in lock["wheels"]), "S5: los wheels servidos son los del lock")
+    propios = [a for a in arch if not a.startswith(("py/", "pyodide/"))]
+    chk(sorted(propios) == sorted(["_headers", "index.html", f"v{VER}/manifiesto.json", f"v{VER}/nucleo.zip"]), f"ADR-027: dist = raíz + /v{VER}/: {propios}")
+
+    # --- ADR-028: lista blanca exacta ---
+    nz = (dist / f"v{VER}/nucleo.zip").read_bytes()
+    with zipfile.ZipFile(io.BytesIO(nz)) as z:
+        nombres = z.namelist()
+        vacios = {n: z.read(n) for n in wb.VACIOS}
+    chk(sorted(nombres) == sorted(wb.LISTA_BLANCA), "ADR-028: nucleo.zip = exactamente la lista blanca")
+    chk(all(v == b"" for v in vacios.values()), "ADR-028: los dos __init__.py van vacíos (sin clasificador ni parser OCR)")
+    chk(not any(wb.PROHIBIDO.search(n) for n in nombres), "S1: ningún nombre prohibido en nucleo.zip")
+    chk(wb.nucleo_zip() == nz, "ADR-027: nucleo.zip determinista (mismo código → mismos bytes)")
+    man = json.loads((dist / f"v{VER}/manifiesto.json").read_text(encoding="utf8"))
+    chk(man == {"version": VER, "pyodide": "314.0.7", "wheels": [w["archivo"] for w in lock["wheels"]], "nucleo_sha256": wb.sha256(nz)},
+        "ADR-027: manifiesto con versión, Pyodide, wheels y sha256 del núcleo")
+    for malo in ["parser_module/contable/terceros_cuentas.json", "parser_module/contable/modelo_manual.json", "datos/libro.json",
+                 "parser_module/contable/contable.json", "datos/cierres.db"]:
+        chk(rechaza(lambda: wb.nucleo_zip(lista=wb.LISTA_BLANCA + [malo]), "ADR-028", malo), f"S1: {malo} en la lista detiene el build")
+
+    # --- web/src: nombres prohibidos y salidas ---
+    casos = {"a.js": 'fetch("https://evil.example/x")', "b.js": "importScripts('http://cdn/x.js')", "c.js": "el.innerHTML = nombre",
+             "d.js": "eval (codigo)", "e.js": "new Function('return 1')", "f.js": "py.loadPackage('micropip')",
+             "g.html": '<script src="https://cdn.jsdelivr.net/pyodide.js"></script>'}
+    for nombre, texto in casos.items():
+        s = tmp / f"src_{nombre}"
+        s.mkdir()
+        (s / nombre).write_text(texto, encoding="utf8")
+        chk(rechaza(lambda: wb.armar(VER, dist=tmp / "dist_x", src=s), "ADR-028", nombre), f"ADR-028: web/src/{nombre} «{texto[:30]}» detiene el build")
+    s = tmp / "src_terceros"
+    (s / "datos").mkdir(parents=True)
+    (s / "datos" / "x.json").write_text("{}", encoding="utf8")
+    chk(rechaza(lambda: wb.armar(VER, dist=tmp / "dist_x", src=s), "S1", "datos/x.json"), "S1: web/src/datos/ detiene el build")
+    s = tmp / "src_ok"
+    s.mkdir()
+    (s / "app.js").write_text('import { loadPyodide } from "/pyodide/314.0.7/pyodide.mjs";\nel.textContent = "hola";\n', encoding="utf8")
+    r2 = wb.armar(VER, dist=tmp / "dist_ok", src=s)
+    chk(f"v{VER}/app.js" in r2["archivos"], "web/src/ limpio se copia a /vX.Y.Z/")
+    chk(rechaza(lambda: wb.armar("1.10", dist=tmp / "dist_x"), "ADR-027"), "ADR-027: versión que no es X.Y.Z detiene el build")
+
+    # --- sin URLs remotas ni ejecución dinámica en lo propio del sitio ---
+    sucios = [a for a in propios if pathlib.Path(a).suffix in wb.CODIGO and wb.SALIDA.search((dist / a).read_text(encoding="utf8"))]
+    chk(not sucios, f"S3: sin http(s)://, micropip, innerHTML, eval ni new Function en lo propio: {sucios}")
+    with zipfile.ZipFile(io.BytesIO(nz)) as z:
+        sucios = [n for n in z.namelist() if n.endswith(".py") and wb.SALIDA.search(z.read(n).decode("utf8"))]
+    chk(not sucios, f"S3: el núcleo Python no trae URLs ni eval: {sucios}")
+
+    # --- S4: cabeceras ---
+    S4 = ("default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' blob: data:; "
+          "style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+    bloques, actual = {}, None
+    for linea in (dist / "_headers").read_text(encoding="utf8").splitlines():
+        if linea and not linea[0].isspace():
+            actual = bloques.setdefault(linea.strip(), {})
+        elif linea.strip():
+            n, _, v = linea.strip().partition(":")
+            actual[n.strip()] = v.strip()
+    raiz = bloques.get("/*", {})
+    chk(raiz.get("Content-Security-Policy") == S4, "S4: la CSP de /* es exactamente la de S4")
+    spike = (AQUI / "spikes" / "pyodide" / "csp" / "_headers").read_text(encoding="utf8")
+    chk(f"Content-Security-Policy: {S4}" in spike, "S4: la misma CSP que pasó el spike T1 en Chrome/Edge")
+    chk(raiz.get("X-Content-Type-Options") == "nosniff" and raiz.get("Referrer-Policy") == "no-referrer" and raiz.get("Permissions-Policy") == "",
+        "S4: nosniff, no-referrer, Permissions-Policy vacía")
+    chk("Cache-Control" not in raiz, "ADR-027: la raíz sin caché larga (Netlify junta reglas: Cache-Control nunca en /*)")
+    rutas_inm = {k for k, v in bloques.items() if v.get("Cache-Control") == wb.INMUTABLE}
+    chk(rutas_inm == {"/pyodide/314.0.7/*", "/py/*", f"/v{VER}/*"}, f"ADR-027: immutable solo en rutas versionadas: {sorted(rutas_inm)}")
+    idx = (dist / "index.html").read_text(encoding="utf8")
+    chk(f'href="v{VER}/"' in idx and "<script" not in idx and "style=" not in idx, "ADR-027: índice raíz lista la versión, sin script ni estilo en línea")
+
+    # --- ADR-028: el núcleo del zip corre solo (como en Pyodide: zip desempacado + wheels, sin repo ni site-packages) ---
+    nucleo_dir = tmp / "nucleo"
+    with zipfile.ZipFile(io.BytesIO(nz)) as z:
+        z.extractall(nucleo_dir)
+    (tmp / "crudo.json").write_bytes(CRUDO)
+    codigo = ("import sys, json; sys.path[:0] = json.loads(sys.argv[1])\n"
+              "from parser_module.contable import libro\n"
+              "assert libro.__file__.startswith(sys.argv[2]), libro.__file__\n"
+              "import openpyxl; assert '.whl' in openpyxl.__file__, openpyxl.__file__\n"
+              f"g = libro.generar(open(sys.argv[3], 'rb').read(), None, None, {NEG!r}, {NIT!r}, {AHORA!r})\n"
+              "open(sys.argv[4], 'wb').write(g['xlsx'])\n"
+              "print(json.dumps(sorted(m for m in sys.modules if m.startswith('parser_module'))))")
+    ruta_py = [str(nucleo_dir)] + [str(dist / "py" / w["archivo"]) for w in lock["wheels"]]
+    p = subprocess.run([sys.executable, "-I", "-S", "-c", codigo, json.dumps(ruta_py), str(nucleo_dir), str(tmp / "crudo.json"), str(tmp / "zip.xlsx")],
+                       capture_output=True, text=True, timeout=120)
+    chk(p.returncode == 0, "ADR-028: libro.generar corre con solo nucleo.zip + wheels (intérprete limpio)" + ("" if p.returncode == 0 else f"\n{p.stderr[-800:]}"))
+    if p.returncode == 0:
+        cargados = json.loads(p.stdout.strip().splitlines()[-1])
+        chk(not any(m.endswith(("clasificar", "parser", "soporte", "soporte_db")) for m in cargados), f"ADR-028: no carga el clasificador ni el parser OCR ({len(cargados)} módulos)")
+        def valores(b):
+            libro_x = load_workbook(io.BytesIO(b))
+            return {(ws.title, c.coordinate): (c.value, c.number_format) for ws in libro_x for f in ws.iter_rows() for c in f if c.value is not None}
+        ref = libro.generar(CRUDO, None, None, NEG, NIT, AHORA)["xlsx"]
+        a, b = valores((tmp / "zip.xlsx").read_bytes()), valores(ref)
+        chk(a == b, f"R1: el Excel del zip = el del repo ({len(a)} celdas, {sum(a.get(k) != b.get(k) for k in set(a) | set(b))} distintas)")
+finally:
+    shutil.rmtree(tmp, ignore_errors=True)
+
+print(f"\n{'OK' if not fallos else f'{len(fallos)} FALLOS'}")
+sys.exit(1 if fallos else 0)
