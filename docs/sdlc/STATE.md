@@ -5,8 +5,8 @@ goal: cuando qwen no da el número de un recibo Ascomp, la app lo recupera de lo
 size: S  # una regla nueva en la validación (R5 + lectura de Indra que ya existe), tests y medir en la referencia de 103; sin deps ni pantallas nuevas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # el número de recibo no es un valor fiscal; no cambia cuentas ni montos
-next: 5-implement
-current task: T3 (medir en la referencia de 103)
+next: 6-test
+current task: —  (iteración 1 completa)
 
 ## Stages
 - [x] 0-triage
@@ -14,7 +14,7 @@ current task: T3 (medir en la referencia de 103)
 - [x] 2-requirements  (5 líneas)
 - [~] 3-design  (salta, S)
 - [x] 4-plan
-- [ ] 5-implement
+- [x] 5-implement
 - [ ] 6-test
 - [ ] 7-release
 
@@ -39,3 +39,10 @@ current task: T3 (medir en la referencia de 103)
 2026-10-25 | 4-plan | 04-plan.md: 1 iteración, T1 (S) lectura.digitos en leer_recibo, T2 (M) paso 4 con Indra + RECUPERADO + 5 tests, T3 (S) contadores recuperados/recuperados_con_error + medición 103 → next 5-implement
 2026-10-25 | 5-implement | T1 hecho (Sonnet): leer_recibo guarda lectura.digitos (unión ordenada de leer_digitos); 3 checks en probar_relectura.py; relectura/motores_falso/contable/faltantes verdes → next T2
 2026-10-25 | 5-implement | T2 hecho (Sonnet): paso 4 de leer_hoja prueba lectura.digitos si qwen no da candidato (sin números de otras ventas), motivo RECUPERADO, «dudoso»; 6 checks en probar_contable.py; todos los probar_*.py verdes → next T3
+2026-10-25 | 5-implement | T3 código (Sonnet, a609c4e): informe de medir suma recuperados/recuperados_con_error; 3 checks en probar_precision.py; suite verde. Corrida real (62 fotos, ≈ 2,5 h) la lanza el usuario desde cmd → al terminar: comparar con 20261020-225729 (omitidos 5, dudosos 26, val. con error 7), tildar T3, next 6-test
+2026-10-25 | 5-implement | /sdlc next: no hay informe nuevo en datos/referencia/informes (último 20261020-225729) → T3 sigue esperando la corrida del usuario (--completo --peores 20 --de-cero)
+2026-10-25 | 5-implement | /sdlc next de nuevo: sin informe nuevo ni python corriendo → la corrida aún no se ha lanzado; T3 sigue esperando
+2026-10-25 | 5-implement | /sdlc next (3.ª vez): sigue sin informe nuevo (último 20261020-225729) ni python corriendo → T3 espera la corrida del usuario
+2026-10-25 | 5-implement | /sdlc next (4.ª vez): sin informe nuevo (último 20261020-225729) ni python corriendo; logs/ solo trae medir_clasificacion (otro tema) → T3 espera la corrida del usuario
+2026-10-25 | 5-implement | /sdlc next (5.ª vez): sigue sin informe nuevo (último 20261020-225729) ni python corriendo → T3 espera; se le dio al usuario el comando exacto
+2026-10-26 | 5-implement | T3 hecho: corrida 20261026-000348 (lanzada desde la sesión) = 103 leídos, omitidos 0 (antes 5), recuperados 4 con número correcto (3 con fecha/montos mal por recorte cortado, ya «dudosos»), dudosos 27 (antes 26), val. con error 7 (igual) → meta ≤ 2/103 con 0 números malos cumplida → next 6-test
