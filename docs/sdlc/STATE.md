@@ -6,7 +6,7 @@ size: S  # una regla nueva en la validación (R5 + lectura de Indra que ya exist
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # el número de recibo no es un valor fiscal; no cambia cuentas ni montos
 next: 5-implement
-current task: T2 (paso 4 de leer_hoja con los números de Indra)
+current task: T3 (medir en la referencia de 103)
 
 ## Stages
 - [x] 0-triage
@@ -38,3 +38,4 @@ current task: T2 (paso 4 de leer_hoja con los números de Indra)
 2026-10-25 | 2-requirements | aprobado por el usuario tal cual (motivo «Número recuperado por el segundo lector…») → next 4-plan
 2026-10-25 | 4-plan | 04-plan.md: 1 iteración, T1 (S) lectura.digitos en leer_recibo, T2 (M) paso 4 con Indra + RECUPERADO + 5 tests, T3 (S) contadores recuperados/recuperados_con_error + medición 103 → next 5-implement
 2026-10-25 | 5-implement | T1 hecho (Sonnet): leer_recibo guarda lectura.digitos (unión ordenada de leer_digitos); 3 checks en probar_relectura.py; relectura/motores_falso/contable/faltantes verdes → next T2
+2026-10-25 | 5-implement | T2 hecho (Sonnet): paso 4 de leer_hoja prueba lectura.digitos si qwen no da candidato (sin números de otras ventas), motivo RECUPERADO, «dudoso»; 6 checks en probar_contable.py; todos los probar_*.py verdes → next T3

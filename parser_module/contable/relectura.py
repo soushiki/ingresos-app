@@ -17,6 +17,7 @@ from . import recortes
 # variantes: orden de las pasadas, medido en T9 (20 fotos con más dudosos, 107 recibos; recibos enteros bien: V0 59, y lo que cada
 # una suma a lo ya cubierto: V4 +9, V3 +4, V1 +1, V2 +0). V4 (Real-ESRGAN) nunca va sola; sin ejecutable se salta y entra V2.
 CERCANO = "Número corregido por cercanía al nombre de la foto (se leyó {}): revísalo con la foto"   # R5 · ADR-011
+RECUPERADO = "Número recuperado por el segundo lector (Indra leyó {}): revísalo con la foto"   # M-26 · R2a
 CONFIG = {"max_relecturas": 3, "umbral_laplaciano": 100.0, "variantes": ["V0", "V4", "V3", "V1", "V2"]}
 
 
@@ -140,20 +141,25 @@ def _leidos(d) -> set:
     return {x for x in out if x.isdigit()}
 
 
-def _cercano(d, falta) -> int | None:
-    """R5 · ADR-011: el único faltante igual a lo leído, o si no el único a 1 cifra (mismo largo); 0 o ≥ 2 → None."""
-    dist = lambda x, f: sum(a != b for a, b in zip(x, str(f))) if len(x) == len(str(f)) else 9
+def _dist(x: str, f) -> int:
+    return sum(a != b for a, b in zip(x, str(f))) if len(x) == len(str(f)) else 9
+
+
+def _cercano(d, falta, leidos=None) -> int | None:
+    """R5 · ADR-011: el único faltante igual a lo leído, o si no el único a 1 cifra (mismo largo); 0 o ≥ 2 → None.
+    `leidos` (M-26) reemplaza lo que leyó el OCR por otro conjunto de cadenas (los números del segundo lector)."""
+    leidos = _leidos(d) if leidos is None else leidos
     for tope in (0, 1):
-        c = {f for f in falta for x in _leidos(d) if dist(x, f) <= tope}
+        c = {f for f in falta for x in leidos if _dist(x, f) <= tope}
         if c: return c.pop() if len(c) == 1 else None
     return None
 
 
-def _por_cercania(d, n: int):
+def _por_cercania(d, n: int, motivo: str = CERCANO):
     """R5: se pone el número, se quitan los motivos del número viejo y queda «dudoso» con la nota para ④."""
     viejo = str(d.get("numero") or "")
     d["motivos"] = [m for m in (d.get("motivos") or []) if m != "Falta el número de recibo"
-                    and not (viejo.isdigit() and m.startswith(f"El recibo {int(viejo)} no está"))] + [CERCANO.format(viejo or "sin número")]
+                    and not (viejo.isdigit() and m.startswith(f"El recibo {int(viejo)} no está"))] + [motivo.format(viejo or "sin número")]
     d["numero"] = str(n); d["estado"] = "dudoso"
 
 
@@ -202,7 +208,13 @@ def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=
                 grupos[i] = (docs, f"\n{MARCA}\n".join(t for _, t in nuevos)); falta = faltantes(todos(), esperados)
     for d in [d for d in todos() if _es_comanda(d) and not _con_numero(d, esperados)] if falta else []:
         n = _cercano(d, falta)
-        if n is not None: _por_cercania(d, n); falta = faltantes(todos(), esperados)
+        if n is not None: _por_cercania(d, n); falta = faltantes(todos(), esperados); continue
+        usados = _nums(todos())   # M-26 · R2a: qwen no dio candidato → los números del segundo lector (sin los de otras ventas de la foto)
+        vistos = {str(x) for x in (d.get("lectura") or {}).get("digitos") or [] if x not in usados}
+        n = _cercano(d, falta, vistos) if vistos else None
+        if n is not None:
+            cuadran = sorted(int(x) for x in vistos if _dist(x, n) <= 1)
+            _por_cercania(d, n, RECUPERADO.replace("{}", ", ".join(map(str, cuadran)))); falta = faltantes(todos(), esperados)
     ventas = [d for d in todos() if d["tipo"] == "venta"]
     for d in ventas:
         c = cruces(d, ventas)

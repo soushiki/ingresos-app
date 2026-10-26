@@ -337,4 +337,34 @@ _fx = dict(f, id="dif19", valor=10000, cuenta="51350501", avisos=[], items=[dict
 _rd19 = construir("2026-09-12", [_fx])
 chk(any(x["id"] == "dif19" and x["cuenta"] == _CFG["puente_gasto"] and x["valor"] == 1000 and x["aviso"] == _DIF for x in _rd19["datos"]) and _rd19["debito"] == _rd19["credito"],
     "ADR-019: diferencia sin puente")
+
+# M-26 T2 · R2a: el número que qwen no arregla lo puede recuperar el segundo lector (lectura.digitos)
+from PIL import Image as _Im
+from parser_module.contable.relectura import leer_hoja as _lh, RECUPERADO as _REC
+def _rec(numero, mesa="M20", total=113000):
+    return (f"SU RESTAURANTE\nRECIBO #: {numero}\nFecha de Venta: 16/09/2026 5:19:54 p. m.\nMesa: {mesa}\nMesero: YORLIN\n"
+            f"SUBTOTAL CONSUMO | ${total:,}\n**TOTAL CONSUMO>> | ${total}\nDESCUENTO | $\n*TOTAL A PAGAR> | ${total:,}\n"
+            f"PROPINA | $\nPAGADO | ${total:,}\nPAGA CON CREDITO | ${total:,}\nCAMBIO | $\n")
+class _Mo:
+    nombre = "falso"
+    def __init__(self, *t): self.t = t
+    def __call__(self, img):
+        return self.t[next(i for i in range(3) if img.width in (200 + 1000 * i, round((200 + 1000 * i) * 1.5), 200 + 1000 * i - 2 * round((200 + 1000 * i) * 0.03)))]
+def _hoja(textos, nombre, dig, **kw):
+    return _lh([_Im.new("RGB", (200 + 1000 * i, 400), "white") for i in range(len(textos))], _Mo(*textos), categoria="comandas", nombre=nombre,
+               umbral=0, tope_s=1e9, leer_digitos=(None if dig is None else (lambda im: dig)), **kw)
+h = _hoja([_rec(85627), _rec(85138, "M3", 50000)], "85627 al 628.jpg", {85628, 51500}); d = h["documentos"][1]
+chk(d["numero"] == "85628" and d["estado"] == "dudoso" and d["motivos"][-1] == _REC.format("85628") and h["falta"] == [] and h["avisos"] == [],
+    "R2a: Indra ve el faltante → asignado, dudoso con RECUPERADO")
+h = _hoja([_rec(85627), _rec(85138, "M3", 50000)], "85627 al 629.jpg", {85628, 85629})
+chk(h["documentos"][1]["numero"] == "85138" and h["falta"] == [85628, 85629], "R2a: Indra ve dos faltantes posibles → sin asignar")
+h = _hoja([_rec(85628), _rec(85138, "M3", 50000)], "85628 al 630.jpg", {85628})
+chk(h["documentos"][1]["numero"] == "85138" and h["falta"] == [85629, 85630], "R2a: número ya tomado por otra venta de la foto → sin asignar")
+h = _hoja([_rec(85627), _rec(85628, "M3", 50000)], "85627 al 628.jpg", {85629})
+chk(all(d["estado"] == "validado" for d in h["documentos"]) and h["falta"] == [], "R2a: sin faltantes → sin cambios")
+h = _hoja([_rec(85627), _rec(85138, "M3", 50000)], "85627 al 628.jpg", {85628}, completa=False)
+chk(h["documentos"][1]["numero"] == "85138" and h["falta"] == [], "R2a: completa=False → sin cambios")
+h = _hoja([_rec(85627), _rec(85138, "M3", 50000)], "85627 al 628.jpg", None)
+chk(h["documentos"][1]["numero"] == "85138" and h["falta"] == [85628], "R2a: sin lectura.digitos → igual que hoy")
+
 print("\n" + ("TODO OK" if ok else "HAY FALLOS"))
