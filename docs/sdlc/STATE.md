@@ -5,13 +5,13 @@ goal: una página estática en Netlify (URL fija por versión) donde el contador
 size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por tag, test de compatibilidad del crudo); sin lógica contable nueva
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
-next: 1-research
-current task: —  (triage confirmado; sigue 1-research ligera: spike Pyodide)
+next: 2-requirements
+current task: —  (spike PASS; sigue 2-requirements)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
 - [x] 0-triage
-- [ ] 1-research  (ligera: spike núcleo + openpyxl en Pyodide con un crudo real)
+- [x] 1-research  (spike PASS: Excel idéntico en Pyodide)
 - [ ] 2-requirements
 - [ ] 3-design
 - [ ] 4-plan
@@ -41,3 +41,4 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 0-triage | borrador modo contador web: meta (página Netlify, núcleo en Pyodide, crudo + extracto → Excel, todo local), M, exposed yes (estático), regulated yes; alternativa barata: tú exportas el Excel en ② y se lo mandas (ya funciona hoy) → esperando confirmación + 3 preguntas
 2026-10-26 | 0-triage | confirmado por el usuario: meta y tamaño M; (1) el Excel = el mismo libro que sale hoy de ②, el documento soporte se queda en la app de captura; (2) el contador no corrige cuentas en la página, solo en el Excel si quiere; (3) Vendty fuera hasta tener un ejemplo de factura y la API pedida a soporte → next 1-research
 2026-10-26 | 0-triage | usuario: el modo contador web es prioridad; terminarlo primero para que el contador lo pruebe con crudos ya producidos (sept.)
+2026-10-26 | 1-research | spike PASS: núcleo tal cual en Pyodide 314.0.7 + openpyxl local; crudo sept. → Excel idéntico a CPython (25.902 celdas, 0 dif.), extracto igual; carga 1 s + cálculo 2,1 s, 14 MB; falta probar CSP/Worker en navegador → 01-research.md, spikes/pyodide/ → next 2-requirements
