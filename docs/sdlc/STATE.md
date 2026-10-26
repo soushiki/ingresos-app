@@ -5,16 +5,16 @@ goal: una página estática en Netlify (URL fija por versión) donde el contador
 size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por tag, test de compatibilidad del crudo); sin lógica contable nueva
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
-next: 2-requirements
-current task: —  (spike PASS; sigue 2-requirements)
+next: 5-implement
+current task: T2 (`libro.py` compartido)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
 - [x] 0-triage
 - [x] 1-research  (spike PASS: Excel idéntico en Pyodide)
-- [ ] 2-requirements
-- [ ] 3-design
-- [ ] 4-plan
+- [x] 2-requirements
+- [x] 3-design
+- [x] 4-plan
 - [ ] 5-implement
 - [ ] 6-test
 - [ ] 7-release
@@ -42,3 +42,9 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 0-triage | confirmado por el usuario: meta y tamaño M; (1) el Excel = el mismo libro que sale hoy de ②, el documento soporte se queda en la app de captura; (2) el contador no corrige cuentas en la página, solo en el Excel si quiere; (3) Vendty fuera hasta tener un ejemplo de factura y la API pedida a soporte → next 1-research
 2026-10-26 | 0-triage | usuario: el modo contador web es prioridad; terminarlo primero para que el contador lo pruebe con crudos ya producidos (sept.)
 2026-10-26 | 1-research | spike PASS: núcleo tal cual en Pyodide 314.0.7 + openpyxl local; crudo sept. → Excel idéntico a CPython (25.902 celdas, 0 dif.), extracto igual; carga 1 s + cálculo 2,1 s, 14 MB; falta probar CSP/Worker en navegador → 01-research.md, spikes/pyodide/ → next 2-requirements
+2026-10-26 | 2-requirements | borrador 02: R1–R6 Must (crudo→Excel idéntico, extracto, nada sale, negocio/NIT, crudo v1, URL por versión), R7–R8 Should, R9 Could; S1–S6; 3 preguntas → esperando aprobación (gate)
+2026-10-26 | 2-requirements | aprobado por el usuario con Q1–Q3 recomendadas (NIT en la página, memoria extracto = Should, alertas fuera) → next 3-design
+2026-10-26 | 3-design | borrador 03 + ADR-026 (libro.py compartido app/página), ADR-027 (subcarpeta /vX.Y.Z/ inmutable, deploy CLI desde el PC), ADR-028 (lista blanca, Worker, CSP); riesgo 1 = spike T1 CSP en Chrome → esperando aprobación (gate)
+2026-10-26 | 3-design | aprobado por el usuario (03 + ADR-026/027/028 aceptados) → next 4-plan
+2026-10-26 | 4-plan | 04-plan: 3 iteraciones, 14 tareas, ≈ 15 h; It. 1 (T1–T7, ≈ 6 h) termina en URL borrador con el Excel de sept. para el contador → next 5-implement (T1)
+2026-10-26 | 5-implement | T1 PASS: Pyodide 314.0.7 en Worker módulo + openpyxl con la CSP exacta de S4 en Chrome 156, Edge 156 y el panel; eval/fetch externo bloqueados en el Worker; ADR-028 sin cambios (solo nota favicon) → T2
