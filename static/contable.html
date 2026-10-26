@@ -249,9 +249,10 @@ async function procesar(){if(ctl)return;ctl=new AbortController();botones();cons
  const seguir=!ctl.signal.aborted&&dias.flatMap(d=>d.fotos).some(f=>f.estado==="pendiente");ctl=null;if(seguir)return procesar();
  $("msg").textContent="Listo. Revisa los papeles (amarillo = dudoso), el cruce con el cierre y los asientos.";botones()}
 function repartir(f,nuevos){const origen=dias.find(d=>d.id===f.dia)||dia(),c={};nuevos.forEach(d=>d.fecha&&(c[d.fecha]=(c[d.fecha]||0)+1));
- if(!origen.fecha){const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];if(top)origen.fecha=top[0]}let movidos={};
- nuevos.forEach(d=>{const x={...nuevoDoc(d.tipo),...d,foto:f.id};let dest=origen;
-  if(d.fecha&&origen.fecha&&d.fecha!==origen.fecha){dest=dias.find(y=>y.fecha===d.fecha);if(!dest){dest=nuevoDiaObj(d.fecha);dias.push(dest)}movidos[d.fecha]=(movidos[d.fecha]||0)+1}dest.docs.push(x)});
+ const top=(Object.entries(c).sort((a,b)=>b[1]-a[1])[0]||[])[0];if(!origen.fecha&&top)origen.fecha=top;let movidos={};
+ // un papel sin fecha va con la fecha más común de su propia foto (cada escaneo trae una sola fecha), no con el día abierto
+ nuevos.forEach(d=>{const x={...nuevoDoc(d.tipo),...d,foto:f.id};let dest=origen;const fe=d.fecha||top;
+  if(fe&&origen.fecha&&fe!==origen.fecha){dest=dias.find(y=>y.fecha===fe);if(!dest){dest=nuevoDiaObj(fe);dias.push(dest)}movidos[fe]=(movidos[fe]||0)+1}dest.docs.push(x)});
  if(origen===dia())$("dfecha").value=fmtF(origen.fecha);
  const m=Object.entries(movidos);if(m.length)toast("Algunos papeles pasaron al día que traen escrito: "+m.map(([k,v])=>`${fmtF(k)} (${v})`).join(", "),5500)}
 function renderFotos(){$("fotos").innerHTML=fotos.map(f=>`<span class="fo ${f.estado==="error"?"e":""}" ${f.estado==="error"?`data-retry="${f.id}" title="${esc(f.error)} — clic para reintentar"`:`title="${f.fuente==="texto"?"leído del texto del PDF":f.fuente==="ocr"?"leído con el OCR":""}"`}>${f.pdf?"📄":"📷"} ${esc(f.nombre)} ${f.estado==="leyendo"?"⏳":f.estado==="listo"?"✓":f.estado==="error"?"✗ reintentar":"· en cola"}${f.estado==="listo"&&!f.pdf?` <b data-rot="${f.id}" title="Girar 90° y volver a leer" style="cursor:pointer">↻</b>`:""}</span>`).join("")}
