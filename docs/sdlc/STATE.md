@@ -5,7 +5,7 @@ goal: cuando qwen no da el número de un recibo Ascomp, la app lo recupera de lo
 size: S  # una regla nueva en la validación (R5 + lectura de Indra que ya existe), tests y medir en la referencia de 103; sin deps ni pantallas nuevas
 exposed: no  # app Flask local en 127.0.0.1
 regulated: no  # el número de recibo no es un valor fiscal; no cambia cuentas ni montos
-next: 7-release  (falta push + tag v1.9.0; luego 8-maintain)
+next: 8-maintain
 current task: —  (iteración 1 completa)
 
 ## Stages
@@ -16,7 +16,7 @@ current task: —  (iteración 1 completa)
 - [x] 4-plan
 - [x] 5-implement
 - [x] 6-test
-- [~] 7-release  (v1.9.0 commit local; push pendiente)
+- [x] 7-release
 
 ## Ciclos anteriores
 - Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0, medio de pago v1.5.0, extracto bancario v1.6.0, Indra OCR v1.7.0, cuenta PUC v1.8.0 → `archive/<ciclo>/`.
@@ -48,3 +48,4 @@ current task: —  (iteración 1 completa)
 2026-10-26 | 5-implement | T3 hecho: corrida 20261026-000348 (lanzada desde la sesión) = 103 leídos, omitidos 0 (antes 5), recuperados 4 con número correcto (3 con fecha/montos mal por recorte cortado, ya «dudosos»), dudosos 27 (antes 26), val. con error 7 (igual) → meta ≤ 2/103 con 0 números malos cumplida → next 6-test
 2026-10-26 | 6-test | PASS: 27/27 probar_*.py verdes; R2a cubierto; R2b omitidos 5→0, 4 recuperados con número correcto (contador con_error=3 por otros campos de recortes cortados, consumo coincide), val. con error 7→7 (85520↔85433, año 2025 de M-12); 06-test-report.md; smoke de 4 pasos para el usuario → next 7-release
 2026-10-26 | 7-release | v1.9.0 preparada: suite 26/26, debug off, 127.0.0.1, sin migración; VERSION + CHANGELOG + 07-release.md (runbook de cuenta-puc + health check/rollback/línea base 1.9.0); montos reales quitados de 06; commit local → esperando OK para push main + tag
+2026-10-26 | 7-release | v1.9.0 publicada: push main + tag (6c48a03..1bb6b52); falta smoke de 06 (usuario) → next 8-maintain
