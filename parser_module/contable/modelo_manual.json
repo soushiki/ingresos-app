@@ -1315,6 +1315,11 @@
    "fuente": "septiembre fila 419"
   },
   {
+   "texto": "domcilios domi popa",
+   "cuenta": "28150501",
+   "fuente": "septiembre fila 394"
+  },
+  {
    "texto": "domiciliario oct",
    "cuenta": "28150502",
    "fuente": "octubre fila 230"
@@ -1815,7 +1820,7 @@
    "fuente": "septiembre fila 586"
   },
   {
-   "texto": "saldo robo mercado",
+   "texto": "saldo robo",
    "cuenta": "13452501",
    "fuente": "septiembre fila 424"
   },
@@ -1913,11 +1918,6 @@
    "texto": "transporte desechables",
    "cuenta": "51355001",
    "fuente": "septiembre fila 495"
-  },
-  {
-   "texto": "transporte mercado",
-   "cuenta": "51355001",
-   "fuente": "septiembre fila 47"
   },
   {
    "texto": "transporte oct",

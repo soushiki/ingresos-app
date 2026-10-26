@@ -16,7 +16,7 @@ Descripcion:
 Firma: ____________"""
 FOTO_PAPELES = "\n=== DOCUMENTO ===\n".join([
     GASTO.format(n=220, v="26,000", d="transportes de compras luis carmona"), "RECIBO DE CAJA MENOR\nVALOR: 26.000",
-    GASTO.format(n=217, v="86,000", d="pago a domicilio diego blanco"), "RECIBO DE CAJA MENOR\nVALOR: 86.000\ncobro domicilio",
+    GASTO.format(n=217, v="86,000", d="pago a domicilio pedro perez"), "RECIBO DE CAJA MENOR\nVALOR: 86.000\ncobro domicilio",
     GASTO.format(n=216, v="2,800", d="PAQUETE DE PILAS 3A"), "RECIBO DE CAJA MENOR\n2.800",
     """Transf
 Sebastian Hernandez De la Espriella

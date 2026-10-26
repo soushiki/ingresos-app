@@ -5,8 +5,8 @@ goal: la app decide la cuenta PUC de cada papel por su origen (comanda, cierre, 
 size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas por origen, mapa a subcuentas PUC, recálculo de días guardados; evidencia ya existe (cuadro + inconsistencias)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
-next: 6-test
-current task: It. 3 completa (T9–T12) → 6-test
+next: 7-release
+current task: 7-release v1.8.0 commit hecho → esperando OK para tag + push
 
 ## Stages
 - [x] 0-triage
@@ -14,8 +14,8 @@ current task: It. 3 completa (T9–T12) → 6-test
 - [x] 2-requirements
 - [x] 3-design
 - [x] 4-plan  (+ plan B ADR-023: T5a–T5c)
-- [ ] 5-implement
-- [ ] 6-test
+- [x] 5-implement
+- [x] 6-test
 - [ ] 7-release
 - [~] 8-maintain
 
@@ -24,6 +24,7 @@ current task: It. 3 completa (T9–T12) → 6-test
 - Siguen en su sitio: `01b`, `01c`, `01d`, `01e`, `01f`, `01g` (ignorados), `08-maintenance.md`, `adr/`.
 
 ## Pendientes
+- Contador (no bloquea): contestar `docs/por-confirmar-contador.pdf` (8 decisiones + 5 alias; la 4 ya tiene la mitad del recibo de agua). Al llegar: editar `por_confirmar.json` («estado»: «confirmado», cuenta/alias) y «Reclasificar mes» de cada mes ya guardado (la vista previa muestra lo que cambia).
 - Usuario: smoke de v1.6.0 (`archive/extracto/06-test-report.md`), avisar al contador del recálculo de sept. 1–23 y de las cuentas «por confirmar»; borrar la rama local `respaldo/antes-limpieza-v1.6.0` cuando ya no haga falta.
 - Usuario: re-subir fotos Rappi de sept. (runbook en `archive/rappi/07-release.md`), actualizar los PC a v1.6.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
 - Nuevo (2026-10-20): el POS es Ascomp; pasa a Vendty el mes que viene (≈ nov. 2026, aún no instalado), así que todo lo de hoy es Ascomp y M-25 sigue igual. Antes del cambio: preguntar a Ascomp (ascompos@hotmail.com, 3108094441, WhatsApp +57 320 4451364; tiene login en nube.ascomp-pos.com) si se pueden exportar las ventas pasadas a Excel/CSV; su web no documenta informes ni formato del recibo. Cuando arranque: fecha exacta, una foto de un recibo Vendty y pedir a Vendty la documentación de su «Api de integración» (sí existe, está en su web) y si el plan la incluye; con API o export Excel/CSV, posible ciclo «importar ventas Vendty» (S–M) en vez de OCR para los días nuevos. Abecé DIAN (feb. 2025): el tiquete POS es documento equivalente que la DIAN valida; persona natural no responsable de IVA/INC no está obligada salvo > 3.500 UVT → preguntar al contador por qué se pasó a POS electrónico (afecta M-18).
@@ -74,3 +75,7 @@ current task: It. 3 completa (T9–T12) → 6-test
 2026-10-25 | 5-implement | respuesta del contador aplicada al libro real: ajuste al cierre a ingreso (01/09 109.728, 20/09 472.500), pago propinas/domicilios según cierre, gaseosa para salsa 14050501 (a mano), transporte de pan 51355001; «Reclasificar mes» sept. (21 días) + 20/09 rehecho con reglas v1.3.0; sept. D = C = 62.056.359, ingresos 47.969.484; respaldos libro.backup-antes-reclasificar-sept.json y libro.antes-v1.8.0.json
 2026-10-25 | 5-implement | T12 por_confirmar_pdf.py → docs/por-confirmar-contador.pdf (8 decisiones + 5 alias, filas del manual e ítems del libro por punto); It. 3 completa → next 6-test
 2026-10-25 | 8-maintain | decisión 4 (usuario): recibo de agua = cobro del acueducto → 51352501; FRASES por palabra completa (recibo/servicio/factura de agua, proveedor Aguas de Cartagena → 51352501; «agua» sola → 14050502); FRASES_PROVEEDOR solo empresas de servicios; por_confirmar.json «respuesta»; +10 checks probar_motor; sept.: 1 cambio (Agua fría 7.200 → 14050502), sin cambio de totales
+2026-10-25 | 8-maintain | aplicado al libro real (pedido del usuario): 10/09 «Agua fría» 7.200 51352501 → 14050502; solo cambia 2026-09-10; sept. cuadra; respaldo datos/libro.backup-antes-agua-fria.json
+2026-10-25 | 6-test | It. 3 (T9–T12 + decisión 4): suite 26/26 verde; R6 (probar_motor T9), R7 (probar_reclasificar: huella, manual intacto, idempotente, sept. 0,19 s), R10 (PDF) cubiertos; revisión sin bugs de cuenta, 1 nota (aprender item numérico sin documento enseña «0») → 08; smoke del navegador ya hecho en T11 → PASA, next 7-release (v1.8.0)
+2026-10-25 | 7-release | v1.8.0: suite 26/26, debug off, 127.0.0.1; VERSION + CHANGELOG + 07-release.md listos sin commit; PRE-FLIGHT FALLA: modelo_manual.json (en git desde T2, sin publicar) trae 4 personas en proveedores + 1 en vecinos (N5) → 08; sin tag ni push hasta decidir
+2026-10-25 | 7-release | limpieza (pedido del usuario): minar_manual.py detecta personas por nombre de pila → 4 terceros + 1 vecino a terceros_cuentas.json; N1 igual 67,2/87,3; ejemplos.py nombre inventado; filter-branch origin/main..main (32 commits, solo modelo_manual.json; respaldo/antes-limpieza-v1.8.0 local); suite 26/26; commit v1.8.0; tag + push esperan OK

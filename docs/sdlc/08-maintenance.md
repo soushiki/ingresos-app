@@ -97,3 +97,11 @@ número (T8b/M-11). Y paga en revisión: 58 de 107 dudosos, 35 de ellos bien le�
 - **Tiempo agotado** en 4 de 9: el tope por recibo corta las relecturas (V4 ≈ 5,5 s + qwen ≈ 5,4 s por pasada).
 - Sumas reales en 3 (85366: qwen leyó mal un ítem, 185.000 vs. 150.000; 85483; 85485/486: descuento mal leído) → dudosos bien puestos.
 - Omitidos (17 iguales antes y después): no los toca releer; vienen del corte o del número → siguiente ciclo (M-11 / 01d).
+
+## Notas de 6-test M-27 It. 3 (2026-10-25)
+- [ ] `POST /api/contable/aprender` con `item` numérico sin `documento` enseña «0», «1»…: devolver 400 (la UI siempre manda `documento`; no pasa hoy)
+- [ ] Vista previa de «Reclasificar mes»: si FIX-2 rehízo los ítems de un papel, «antes» se toma por índice y puede mostrar la cuenta de otro ítem (solo el texto)
+
+## Notas de 7-release v1.8.0 (2026-10-25)
+- [x] (v1.8.0: nombre de pila sin marca de empresa → persona; historial reescrito) **Bloqueaba el push**: `modelo_manual.json` tiene 4 terceros persona en `proveedores` (domiciliario, servicios, anticipos) y 1 nombre en un texto de `vecinos`. `personas()` de `minar_manual.py` solo los detecta por las cuentas 5105/31/25/1330 o por «reporta», así que estos se le pasan. Arreglo: sacar a `terceros_cuentas.json` los proveedores sin marca de empresa que estén en una lista local de personas, quitar de `vecinos` y `bigramas` los tokens de esos nombres, volver a minar y reescribir el historial sin publicar (v1.7.0..HEAD).
+- [x] (v1.8.0: «pedro perez») `ejemplos.py:19` publicó en v1.7.0 el nombre de un domiciliario («pago a domicilio …»): cambiarlo por un nombre inventado. No hace falta reescribir lo ya publicado, salvo que el usuario lo pida.

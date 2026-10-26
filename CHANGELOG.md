@@ -2,12 +2,35 @@
 
 ## [Sin publicar]
 
+## [1.8.0] — 2026-10-25
+Cuenta PUC por origen e ítem (M-27): cada papel recibe su cuenta por lo que es (comanda, cierre, gasto, extracto) y por lo que trae cada ítem. Una factura con ítems de varias cuentas se reparte. Lo que no se puede decidir va a la cuenta puente y a ④ Revisión.
+
+### Clasificación
+- Motor por capas (`clasificar.py`): origen → enseñado → frases/léxico → minado del manual y proveedor → vecino parecido → puente. Cada ítem trae su capa y su motivo. Venta, Rappi y cierre van a 41401501 («origen: comanda»).
+- `herramientas/minar_manual.py` aprende del Excel manual (jun–oct) y deja `modelo_manual.json`: palabras, bigramas, proveedores y vecinos, con la fila de donde salió cada uno. No guarda valores ni fechas. Los terceros que son personas van a `terceros_cuentas.json`, que es local y no se versiona: los de nómina, capital, socios y anticipos, y cualquier tercero con un nombre de pila y sin marca de empresa.
+- `por_confirmar.json`: alias de cuentas, las 8 decisiones del contador marcadas «por confirmar» y los umbrales. Al final del motor, `puc_valida` revisa cada código contra el PUC. La decisión 4 ya está contestada: el recibo de agua del acueducto va a 51352501 y el «agua» que se compra va a 14050502.
+- Medido con jun–ago contra sept–oct: 67,2 % de acierto por ítem y 87,3 % de precisión en lo que el motor decide (N1, ADR-025).
+
+### Papeles y DATOS OCR
+- `items_de(doc)`: si los ítems de una factura cuadran con el total (±1 %), se usan los ítems; si no, va un solo ítem con el detalle y el proveedor. Los papeles viejos conservan su cuenta a mano.
+- DATOS OCR pone una fila por (papel, cuenta). Una diferencia de más del 1 % entre los ítems y el total va a la puente, y queda en revisión. Una diferencia de 1 % o menos se suma al ítem mayor. Cada papel da N débitos y 1 crédito.
+- Si la cuenta se puso a mano, se respeta. Los ítems que están en la puente se reclasifican en cada pasada.
+
+### Interfaz
+- Tarjeta del papel: «Cuenta por ítem». Al cambiar la cuenta de un ítem, ese ítem queda manual y se aprende para el siguiente igual. El proveedor solo se aprende si todos sus ítems van a la misma cuenta.
+- Botón «Reclasificar mes» (`POST /api/contable/reclasificar`): primero muestra la vista previa (antes → después, y los días cuyo débito o ingresos cambian). Aplicar solo funciona si la huella no cambió (si cambió, responde 409). Se hace en 1 escritura, no toca lo manual y queda un rastro `reclasificaciones[]` por día.
+- `docs/por-confirmar-contador.pdf` (lo genera `por_confirmar_pdf.py`): las 8 decisiones y los 5 alias, con las filas del manual y los ítems del libro que afecta cada punto.
+
 ### Excel
 - Cada mes trae ahora la hoja «BALANCE x CTA <MES>» antes de su «MOVIMIENTOS», con la forma del Excel manual: todas las cuentas del plan, saldo inicial, débito, crédito y saldo final, y el resumen por clase. Son fórmulas sobre MOVIMIENTOS (por la celda de cada fila, no por la columna entera). El saldo inicial sale del mes anterior si está en el mismo archivo; el primer mes va en 0, con una nota. Una fila de control muestra la diferencia con MOVIMIENTOS, que debe dar 0.
 - Los códigos de cuenta se revisan contra el PUC (puc.com.co; copia local en `parser_module/contable/puc_cuentas.json`). Una cuenta o subcuenta que no existe sale en AVISOS. Los nombres del PUC se usan cuando un código no está en el plan.
 
 ### Extracto
 - El extracto se lee de todas las hojas del archivo que tengan Fecha, Descripción, Referencia y Valor, y no solo de «Hoja 1»: la hoja «MOVIMIENTOS» trae el mes completo y la «Hoja 1» de septiembre llega solo al 23. Una línea que está en las dos hojas entra una sola vez, con la clave de «Hoja 1», así que un extracto importado antes sigue reconocido («ya estaban»).
+
+### Datos
+- Sin migración de soporte.db. VERSION_RESPALDO sigue en 1.6.0. «Reclasificar mes» hace su propio respaldo único, `datos/libro.antes-v1.8.0.json`, la primera vez que aplica.
+- Archivos nuevos en git: `modelo_manual.json`, `por_confirmar.json`, `terceros_cuentas.example.json`. Archivo local: `terceros_cuentas.json`; si falta, se usa el `.example`.
 
 ## [1.7.0] — 2026-10-24
 Indra OCR: un lector local nuevo lee los números de los recibos y endereza las fotos torcidas o de lado. Si Indra no está, todo funciona con Tesseract como en 1.6.0, y la pantalla lo avisa.

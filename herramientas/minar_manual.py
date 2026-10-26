@@ -58,11 +58,29 @@ NOMINA = set("""nomina sueldo sueldos salario salarios quincena turno turnos pri
  aporte aportes inicial capital adelanto anticipo prestamo pagos pago""".split())
 
 
+# nombres de pila comunes: un tercero con uno de estos y sin marca de empresa es una persona (domiciliario, arriendo…), aunque su cuenta sea de gasto
+NOMBRES = set("""adriana alejandra alejandro alberto alexander alexandra alfonso alvaro ana andrea andres angela antonio arturo beatriz camilo carlos
+ carmen carolina catalina cesar claudia cristian daniel daniela david diana diego edgar eduardo elena eliana elkin enrique esteban fabian felipe
+ fernando francisco gabriel german gloria gonzalo guillermo gustavo hector hernan hugo ivan jaime javier jairo jesus jhon jhonny jhonatan john
+ johana jorge jose juan julian juliana julio karen katherine laura leidy leonardo liliana lina lorena luis luisa manuel marcela marco margarita
+ maria mario marta martha mauricio miguel milena monica nancy natalia nelson nestor nicolas norma olga oscar pablo patricia paola paula pedro
+ rafael ramiro raul ricardo roberto rodrigo rosa ruben sandra santiago sebastian sergio sofia sonia stella teresa tatiana valentina victor
+ viviana wilmer wilson william yamile yesenia yolanda yorly""".split())
+EMPRESA = re.compile(r"\b(s\.?a\.?s?\.?|sas|ltda|e\.?u\.?|cia|comercializadora|distribuidora|desechables|supertienda|megatiendas|tienda|alimentos|"
+                     r"grupo|soluciones|marketing|carnes|carnicos|aguas|gas|hogar|express|colombia|ferreteria|drogueria|panaderia|servicios|inversiones)\b")
+
+
+def es_persona(tercero: str) -> bool:
+    t = " ".join(norm(tercero).split())
+    return not EMPRESA.search(t) and bool(set(re.findall(r"[a-z]{3,}", t)) & NOMBRES)
+
+
 def personas(filas: list[dict]) -> set[str]:
-    """tokens de nombres de personas: terceros de nómina/capital/socios, quien «reporta», y las palabras de la descripción de esas filas
-    que no son de nómina ni aparecen en filas de otras cuentas («nomina yorly» → yorly)."""
-    p, en_persona, en_otras = set(), set(), set()
+    """tokens de nombres de personas: terceros de nómina/capital/socios o con nombre de pila, quien «reporta», los nombres de pila, y las
+    palabras de la descripción de esas filas que no son de nómina ni aparecen en filas de otras cuentas («nomina yorly» → yorly)."""
+    p, en_persona, en_otras = set(NOMBRES), set(), set()
     for x in filas:
+        if es_persona(x["tercero"]): p.update(re.findall(r"[a-z]{3,}", norm(x["tercero"])))
         if x["codigo"].startswith(CUENTAS_PERSONA):
             p.update(re.findall(r"[a-z]{3,}", norm(x["tercero"]))); en_persona.update(toks(x["desc"]))
         elif not x["codigo"].startswith(NO_GASTO): en_otras.update(toks(x["desc"]))   # el pago por banco repite el nombre
