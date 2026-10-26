@@ -99,6 +99,8 @@ def leer_recibo(recorte, motor, ctx=None, max_relecturas=None, limite_s=None, *,
         pasadas=pasadas, nitidez=round(nit["laplaciano"], 1), tenengrad=round(nit["tenengrad"], 1), borrosa=borrosa,
         segundos=round(reloj() - t0, 2),
         candidatos={k: [dict(valor=c["doc"].get(k), variante=c["variante"], motor=nombre_motor) for c in cands] for k in CAMPOS})
+    leidos = sorted(set().union(*(c["dig"] for c in cands if c["dig"] is not None)))   # M-26: lo que vio el segundo lector (todas las pasadas)
+    if leidos: doc["lectura"]["digitos"] = leidos
     if carpeta is not None: doc["recorte"] = recortes.guardar(recorte, carpeta)
     return doc
 

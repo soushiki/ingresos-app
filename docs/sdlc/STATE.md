@@ -1,15 +1,22 @@
 # SDLC state
 
-project: ingresos_app · (sin ciclo abierto: elegir el próximo)
-goal: —
-size: —
+project: ingresos_app · Recuperar número con Indra (M-26)
+goal: cuando qwen no da el número de un recibo Ascomp, la app lo recupera de los números que Indra lee en el recorte (el que cae en el rango que da el nombre de la foto, R5), lo marca «número recuperado» para revisar, y baja los omitidos de 5/103 a ≤ 2/103 sin números equivocados
+size: S  # una regla nueva en la validación (R5 + lectura de Indra que ya existe), tests y medir en la referencia de 103; sin deps ni pantallas nuevas
 exposed: no  # app Flask local en 127.0.0.1
-regulated: yes  # cuentas PUC y renta: decisiones del contador
-next: 0-triage
-current task: v1.8.0 publicada y M-27 cerrado; elegir ciclo (M-26 recomendado, o M-18)
+regulated: no  # el número de recibo no es un valor fiscal; no cambia cuentas ni montos
+next: 5-implement
+current task: T2 (paso 4 de leer_hoja con los números de Indra)
 
 ## Stages
-- [ ] 0-triage
+- [x] 0-triage
+- [~] 1-research  (salta, S)
+- [x] 2-requirements  (5 líneas)
+- [~] 3-design  (salta, S)
+- [x] 4-plan
+- [ ] 5-implement
+- [ ] 6-test
+- [ ] 7-release
 
 ## Ciclos anteriores
 - Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0, medio de pago v1.5.0, extracto bancario v1.6.0, Indra OCR v1.7.0, cuenta PUC v1.8.0 → `archive/<ciclo>/`.
@@ -25,3 +32,9 @@ current task: v1.8.0 publicada y M-27 cerrado; elegir ciclo (M-26 recomendado, o
 ## Log
 (log del ciclo #7 cuenta PUC → archive/cuenta-puc/STATE.md)
 2026-10-25 | 8-maintain | M-27 cerrado (v1.8.0); ciclo → archive/cuenta-puc/ (01–04, 06, 07, STATE; 01–03 no estaban en git); 08 al día (2 notas abiertas de It. 3); chequeo mensual 2026-11-17; próximo ciclo por elegir (M-26 recomendado o M-18)
+2026-10-25 | 0-triage | M-26 borrador: meta (número desde Indra + R5, marcado «recuperado», omitidos ≤ 2/103, 0 números malos), S, exposed no, regulated no; alternativa barata: seguir anotando a mano los «Falta N» (≈ 5 por 100 recibos); ojo: Vendty ≈ nov. puede volver innecesario el OCR de recibos nuevos → esperando confirmación
+2026-10-25 | 0-triage | confirmado por el usuario: meta y tamaño S; defaults: número recuperado cuenta y va a ④ marcado «número recuperado»; hecho = ≤ 2/103 omitidos con 0 números malos; solo motores locales, sin deps nuevas → next 2-requirements
+2026-10-25 | 2-requirements | borrador S (5 líneas) en 02-requirements.md: R1 números de Indra cuentan en el paso R5 de cercanía (candidato único, «dudoso» con motivo), R2 tests + medir ≤ 2/103 con 0 malos → esperando aprobación
+2026-10-25 | 2-requirements | aprobado por el usuario tal cual (motivo «Número recuperado por el segundo lector…») → next 4-plan
+2026-10-25 | 4-plan | 04-plan.md: 1 iteración, T1 (S) lectura.digitos en leer_recibo, T2 (M) paso 4 con Indra + RECUPERADO + 5 tests, T3 (S) contadores recuperados/recuperados_con_error + medición 103 → next 5-implement
+2026-10-25 | 5-implement | T1 hecho (Sonnet): leer_recibo guarda lectura.digitos (unión ordenada de leer_digitos); 3 checks en probar_relectura.py; relectura/motores_falso/contable/faltantes verdes → next T2
