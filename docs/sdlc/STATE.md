@@ -34,3 +34,4 @@ current task: —  (entre ciclos; M-26 cerrado en v1.9.0)
 (log del ciclo #8 recuperar número → archive/recuperar-numero/STATE.md)
 2026-10-26 | 8-maintain | M-26 cerrado (v1.9.0); ciclo → archive/recuperar-numero/ (02, 04, 06, 07, STATE); 08 al día (resumen v1.9.0, fila M-26 cerrada); falta smoke del usuario; próximo ciclo por elegir (M-18 tras confirmar con el contador, o Vendty cuando llegue)
 2026-10-26 | 8-maintain | smoke v1.9.0 PASS (usuario + captura): 85334 y 85375 recuperados con número correcto, «dudosos» con motivo «Número recuperado…», sin «Falta 85334»; 85340 (486.990) va «dudoso». Nuevos: M-29 cola de fotos (cerrado, f688232), M-30 textos de ④ (XS, abierto)
+2026-10-26 | 7-release | v1.9.1 preparada (M-29, M-30, M-31, M-32): suite verde, 127.0.0.1, sin migración; VERSION + CHANGELOG; commit local → esperando OK para push main + tag

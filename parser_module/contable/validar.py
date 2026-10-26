@@ -139,12 +139,12 @@ def notas_digitos(doc: dict, ctx: dict | None) -> list:
 
 
 def _digitos(doc: dict, vistos, esperados=None) -> list:
-    """R3b · «dudoso» solo si Tesseract lee OTRO número con contexto: el número de recibo no aparece pero sí otro número del nombre
+    """R3b · «dudoso» solo si el segundo lector (Indra) lee OTRO número con contexto: el número de recibo no aparece pero sí otro número del nombre
     de la foto (R5). No verlo es solo nota (notas_digitos). vistos=None → se salta."""
     n = _num(doc)
     if vistos is None or not n or n in vistos: return []
     otros = sorted(set(esperados or ()) & set(vistos) - {n})
-    return [f"Tesseract lee el recibo {otros[0]} y no el {n} en la imagen"] if otros else []
+    return [f"El segundo lector lee el recibo {otros[0]} y no el {n} en la imagen"] if otros else []
 
 
 def _carta(doc: dict, precios) -> list:

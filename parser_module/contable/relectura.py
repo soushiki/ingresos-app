@@ -161,6 +161,7 @@ def _por_cercania(d, n: int, motivo: str = CERCANO):
     d["motivos"] = [m for m in (d.get("motivos") or []) if m != "Falta el número de recibo"
                     and not (viejo.isdigit() and m.startswith(f"El recibo {int(viejo)} no está"))] + [motivo.format(viejo or "sin número")]
     d["numero"] = str(n); d["estado"] = "dudoso"
+    if "avisos" in d: d["avisos"] = [a for a in d["avisos"] if a != "No se leyó el número de recibo"]   # M-30: ya tiene número
 
 
 def leer_hoja(trozos, motor, categoria="", nombre="", *, completa=True, carpeta=None, separar=None, factor_tope=3.0,

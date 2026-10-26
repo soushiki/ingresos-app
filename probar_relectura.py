@@ -239,7 +239,7 @@ chk(r["estado"] == "validado" and len(r["notas"]) == 3 and "Sin confirmar" in r[
 r = leer_recibo(img, Motor(doc()), leer_digitos=lambda im: {85560, 51500, 60000}, **P)
 chk(r["estado"] == "validado" and r["notas"] == [], "R3b: todo visto → sin notas")
 r = leer_recibo(img, Motor(doc()), ctx=dict(esperados=[85560, 85561]), leer_digitos=lambda im: {85561, 51500, 60000}, **P)
-chk(r["estado"] == "dudoso" and any("Tesseract lee" in x for x in r["motivos"]), "R3b: Tesseract lee otro número del nombre → dudoso")
+chk(r["estado"] == "dudoso" and any("segundo lector lee" in x for x in r["motivos"]), "R3b: el segundo lector lee otro número del nombre → dudoso")
 r = leer_recibo(img, Motor(doc()), leer_digitos=lambda im: None, **P)
 chk(r["estado"] == "validado", "Tesseract ausente (None) → no falla ni cambia nada")
 # M-26 T1 · lo que leyó el segundo lector queda en doc["lectura"]["digitos"] (unión ordenada de todas las pasadas)

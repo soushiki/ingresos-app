@@ -356,6 +356,9 @@ def _hoja(textos, nombre, dig, **kw):
 h = _hoja([_rec(85627), _rec(85138, "M3", 50000)], "85627 al 628.jpg", {85628, 51500}); d = h["documentos"][1]
 chk(d["numero"] == "85628" and d["estado"] == "dudoso" and d["motivos"][-1] == _REC.format("85628") and h["falta"] == [] and h["avisos"] == [],
     "R2a: Indra ve el faltante → asignado, dudoso con RECUPERADO")
+h = _hoja([_rec(85627), _rec(85138, "M3", 50000).replace("RECIBO #: 85138\n", "")], "85627 al 628.jpg", {85628}); d = h["documentos"][1]
+chk(d["numero"] == "85628" and "No se leyó el número de recibo" not in d.get("avisos", []),
+    "M-30: recuperado → sin el aviso «No se leyó el número de recibo»")
 h = _hoja([_rec(85627), _rec(85138, "M3", 50000)], "85627 al 629.jpg", {85628, 85629})
 chk(h["documentos"][1]["numero"] == "85138" and h["falta"] == [85628, 85629], "R2a: Indra ve dos faltantes posibles → sin asignar")
 h = _hoja([_rec(85628), _rec(85138, "M3", 50000)], "85628 al 630.jpg", {85628})

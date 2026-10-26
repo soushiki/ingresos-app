@@ -2,6 +2,18 @@
 
 ## [Sin publicar]
 
+## [1.9.1] — 2026-10-26
+Arreglos del smoke de v1.9.0 en ① Libro contable y en los textos de ④ Revisión.
+
+### ① Libro contable
+- M-29: si una foto se sube mientras otra se está leyendo, se lee sola al terminar la primera. Antes quedaba «en cola» hasta pulsar Leer. «Detener» sigue dejando la cola quieta.
+- M-31: un papel sin fecha leída va al día de las demás de su misma foto (cada escaneo trae una sola fecha), no al día que estaba abierto.
+- M-32: si la fecha leída solo difiere en el año (2025 por 2026) y con el año del día abierto queda a ≤ 31 días, se usa ese año. El papel lleva el aviso «Año corregido…» y ya no se abre un día 2025 aparte.
+
+### ④ Revisión
+- M-30: un recibo con número recuperado ya no muestra también «No se leyó el número de recibo».
+- M-30: el motivo R3b dice «El segundo lector lee el recibo…» en vez de «Tesseract lee…» (desde v1.7.0 es Indra).
+
 ## [1.9.0] — 2026-10-26
 Recuperar número con Indra (M-26): cuando qwen no da el número de un recibo Ascomp, la app lo toma de los números que Indra leyó en el recorte.
 
