@@ -2,6 +2,18 @@
 
 ## [Sin publicar]
 
+## [1.9.0] — 2026-10-26
+Recuperar número con Indra (M-26): cuando qwen no da el número de un recibo Ascomp, la app lo toma de los números que Indra leyó en el recorte.
+
+### Lectura
+- `leer_recibo` guarda en `lectura.digitos` la unión ordenada de los números que vio el segundo lector (Indra) en las variantes del recorte.
+- Paso 4 de `leer_hoja`: si qwen no da candidato para un faltante, se prueban los números de `lectura.digitos`. Se asigna solo si hay un candidato único dentro del rango que da el nombre de la foto y no es el número de otra venta de la misma foto. qwen siempre gana.
+- La venta recuperada va a ④ como «dudosa» con el motivo «Número recuperado por el segundo lector (Indra leyó …)».
+
+### Medición
+- El informe de `medir_precision.py` suma `recuperados` y `recuperados_con_error`.
+- Referencia de 103 recibos de sept. (informe 20261026-000348 frente a 20261020-225729): omitidos 5 → 0, recuperados 4 con el número correcto, validados con error 7 → 7, dudosos 26 → 27.
+
 ## [1.8.0] — 2026-10-25
 Cuenta PUC por origen e ítem (M-27): cada papel recibe su cuenta por lo que es (comanda, cierre, gasto, extracto) y por lo que trae cada ítem. Una factura con ítems de varias cuentas se reparte. Lo que no se puede decidir va a la cuenta puente y a ④ Revisión.
 
