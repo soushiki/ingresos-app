@@ -195,7 +195,8 @@ def main():
                                        detectar=motores.detectar_giro)
         inf = ejecutar(a.mes, Path(a.fotos), motor, leer, refrescar=a.refrescar, variante="completo", muestra=a.muestra, semilla=a.semilla,
                        peores=a.peores, leer_texto=parsear, reanudar=not a.de_cero)
-        print(f"completo {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}")
+        print(f"completo {inf['mes']}: {inf['total']} recibos · omitidos {inf['omitidos']} · dudosos {inf['dudosos']} · validados con error {inf['validados_con_error']}"
+              f" · recuperados {inf['recuperados']} (con error {inf['recuperados_con_error']})")
         for c, x in inf["por_campo"].items(): print(f"  {c:10s} {x['ok']:4d} ok {x['mal']:4d} mal  {'' if x['acierto'] is None else format(x['acierto'], '.1%')}")
         print("omitidos por causa:", inf["por_causa"], "· suma", sum(inf["por_causa"].values()), "de", inf["omitidos"])
         print("informe:", inf["archivo"]); return

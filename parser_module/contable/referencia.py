@@ -11,6 +11,8 @@ from . import recortes
 # campos que se comparan contra la referencia (los que mueven asientos)
 CAMPOS = ("fecha", "consumo", "propina", "domicilio", "descuento", "cortesia", "efectivo", "tarjeta", "transf", "credito", "medio")
 
+RECUPERADO_INICIO = "Número recuperado por el segundo lector"   # principio del motivo relectura.RECUPERADO (M-26)
+
 
 def huella(ruta) -> str:
     """sha256 del archivo (o «» si no existe): sirve para probar que medir no tocó el libro."""
@@ -93,6 +95,7 @@ def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto, hechas=None, al_leer=
     campos = {c: {"ok": 0, "mal": 0} for c in CAMPOS}
     omitidos, dudosos, con_error, errores_lectura, detalle = [], [], [], [], []
     todas, omitidos_detalle, por_causa = {}, [], {"tipo": 0, "corte": 0, "número": 0}
+    recuperados, rec_error = [], []
     for i, ((foto, pagina), recs) in enumerate(por_foto.items(), 1):
         clave = foto if pagina == 1 else f"{foto}#{pagina}"
         try:
@@ -117,12 +120,16 @@ def medir(ref: dict, carpeta_fotos, leer_hoja, leer_texto, hechas=None, al_leer=
             malos = [c for c in CAMPOS if _valor(got, c) != _valor(esp, c)]
             for c in CAMPOS: campos[c]["mal" if c in malos else "ok"] += 1
             dudoso = estado_de(got) == "dudoso"   # por estado, no por avisos: «Foto borrosa» en un validado no es dudoso
+            if any(str(m).startswith(RECUPERADO_INICIO) for m in got.get("motivos") or []):   # M-26 · R2b
+                recuperados.append(n)
+                if malos: rec_error.append(n)
             if dudoso: dudosos.append(n)
             elif malos: con_error.append(n)
             if malos: detalle.append({"numero": n, "dudoso": dudoso, "campos": {c: {"esperado": _valor(esp, c), "leido": _valor(got, c)} for c in malos}})
     total = len(ref["documentos"]); leidos_n = total - len(omitidos)
     return {"mes": ref.get("mes"), "fecha_informe": datetime.now().isoformat(timespec="seconds"), "variante": "V0", "total": total,
             "leidos": leidos_n, "omitidos": len(omitidos), "omitidos_numeros": omitidos, "omitidos_detalle": omitidos_detalle, "por_causa": por_causa, "piezas": todas, "dudosos": len(dudosos), "dudosos_numeros": dudosos,
+            "recuperados": len(recuperados), "recuperados_numeros": recuperados, "recuperados_con_error": len(rec_error), "recuperados_con_error_numeros": rec_error,
             "validados_con_error": len(con_error), "validados_con_error_numeros": con_error,
             "por_campo": {c: {**v, "acierto": round(v["ok"] / (v["ok"] + v["mal"]), 4) if v["ok"] + v["mal"] else None} for c, v in campos.items()},
             "errores_lectura": errores_lectura, "detalle": detalle}

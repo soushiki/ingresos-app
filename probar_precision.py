@@ -132,4 +132,11 @@ inf5 = medir(ref2, d, lambda r, p: "t", lambda t, c: [_doc(100, 50000)])
 chk(inf5["omitidos"] == 2 and sum(inf5["por_causa"].values()) == inf5["omitidos"], "medir: suma de por_causa = omitidos")
 chk([x["numero"] for x in inf5["omitidos_detalle"]] == ["101", "102"] and all(x["causa"] in ("tipo", "corte", "número") for x in inf5["omitidos_detalle"]), "medir: omitidos_detalle con causa por número")
 chk(list(inf5["piezas"]) == ["h1.jpg"] and inf5["piezas"]["h1.jpg"][0]["numero"] == "100", "medir: guarda piezas por foto (tipo, número, texto)")
+# M-26 · R2b: recuperados y recuperados_con_error
+from parser_module.contable.relectura import RECUPERADO
+rec = lambda d: {**d, "estado": "dudoso", "motivos": [RECUPERADO.replace("{}", "100")]}
+inf6 = medir(ref2, d, lambda r, p: "t", lambda t, c: [rec(_doc(100, 50000)), rec(_doc(101, 3000)), _doc(102, 1)])
+chk(inf6["recuperados"] == 2 and inf6["recuperados_numeros"] == ["100", "101"], "medir: recuperados = ventas con el motivo RECUPERADO")
+chk(inf6["recuperados_con_error"] == 1 and inf6["recuperados_con_error_numeros"] == ["101"], "medir: recuperados_con_error = recuperados con algún campo distinto")
+chk(inf5["recuperados"] == 0 and inf5["recuperados_con_error"] == 0, "medir: sin motivo RECUPERADO → 0 y 0")
 print("\n" + ("TODO OK" if not fallos else f"{len(fallos)} FALLOS")); sys.exit(1 if fallos else 0)

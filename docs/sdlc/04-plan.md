@@ -20,7 +20,7 @@
   sin asignar; número ya tomado por otra venta de la foto → sin asignar; sin faltantes o `completa=False` → sin cambios; sin
   `lectura.digitos` → igual que hoy; `probar_contable.py`, `probar_relectura.py`, `probar_faltantes.py` verdes
   — files: `parser_module/contable/relectura.py`, `probar_contable.py` — model: Sonnet — hecho: paso 4 prueba lectura.digitos (sin los números ya usados en la foto) tras qwen con _cercano(d, falta, leidos); RECUPERADO y _por_cercania(d, n, motivo); 6 checks R2a en probar_contable.py
-- [ ] T3 (S) Medir en la referencia de 103 — R2b — el informe de `referencia.medir` suma `recuperados` (ventas con el motivo
+- [ ] T3 (S) — código hecho; falta corrida real (contadores `recuperados`/`recuperados_con_error` en `referencia.medir` + línea «completo» + 3 checks en `probar_precision.py`; corrida: 62 fotos ≈ 2,5 h, la corre el usuario desde su cmd) — Medir en la referencia de 103 — R2b — el informe de `referencia.medir` suma `recuperados` (ventas con el motivo
   RECUPERADO) y `recuperados_con_error` (de esas, las que tienen algún campo distinto a la referencia del número asignado: un número
   malo se ve como total/ítems de otro recibo); `medir_precision.py` los imprime en la línea «completo». Correr la medición completa de
   sept. (reanudable, una línea por foto; si pasa de ~30 min la corre el usuario desde su cmd con el comando que se le dé).
