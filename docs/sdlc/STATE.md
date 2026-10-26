@@ -6,7 +6,7 @@ size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por 
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
 next: 5-implement
-current task: T3 (`libro.generar` + `EntradaInvalida` + `probar_libro.py`)
+current task: T4 (`web_build.py` mínimo + `web.lock` + `probar_web.py`)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
@@ -49,3 +49,4 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 4-plan | 04-plan: 3 iteraciones, 14 tareas, ≈ 15 h; It. 1 (T1–T7, ≈ 6 h) termina en URL borrador con el Excel de sept. para el contador → next 5-implement (T1)
 2026-10-26 | 5-implement | T1 PASS: Pyodide 314.0.7 en Worker módulo + openpyxl con la CSP exacta de S4 en Chrome 156, Edge 156 y el panel; eval/fetch externo bloqueados en el Worker; ADR-028 sin cambios (solo nota favicon) → T2
 2026-10-26 | 5-implement | T2 PASS: `parser_module/contable/libro.py` (cfg, dia, dia_desde_crudo, desde_crudo, facturas_cerca/usadas, recalcular_dia, aplicar_extracto, excel); app.py lo llama (−63 líneas); suite completa idéntica antes/después → T3
+2026-10-26 | 5-implement | T3 PASS: `libro.generar` + `EntradaInvalida` (topes 20/5/1 MB, negocio/NIT sin fórmula, memoria validada, `ahora` inyectado); `probar_libro.py` 0 celdas distintas vs app (crudo y crudo + extracto) + 31 ataques; `web/pruebas/datos/crudo_v1.json` sintético fijo (R5); suite verde → T4
