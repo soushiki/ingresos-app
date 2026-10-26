@@ -23,7 +23,6 @@ current task: —  (entre ciclos; M-26 cerrado en v1.9.0)
 - Siguen en su sitio: `01b`…`01h` (ignorados), `08-maintenance.md`, `adr/`.
 
 ## Pendientes
-- Usuario: smoke de v1.9.0 (4 pasos en `archive/recuperar-numero/06-test-report.md`, ≈ 5 min).
 - Contador (no bloquea): contestar `docs/por-confirmar-contador.pdf` (8 decisiones + 5 alias; la 4 ya tiene la mitad del recibo de agua). Al llegar: editar `por_confirmar.json` («estado»: «confirmado», cuenta/alias) y «Reclasificar mes» de cada mes ya guardado.
 - Usuario: smoke de v1.6.0 (`archive/extracto/06-test-report.md`), avisar al contador del recálculo de sept. 1–23 y de las cuentas «por confirmar»; borrar la rama local `respaldo/antes-limpieza-v1.6.0` cuando ya no haga falta.
 - Usuario: re-subir fotos Rappi de sept. (`archive/rappi/07-release.md`), actualizar los PC a v1.9.0, smoke de v1.3.x y v1.5.0 (pasos 1–3 en `archive/medio-de-pago/07-release.md`).
@@ -34,3 +33,4 @@ current task: —  (entre ciclos; M-26 cerrado en v1.9.0)
 ## Log
 (log del ciclo #8 recuperar número → archive/recuperar-numero/STATE.md)
 2026-10-26 | 8-maintain | M-26 cerrado (v1.9.0); ciclo → archive/recuperar-numero/ (02, 04, 06, 07, STATE); 08 al día (resumen v1.9.0, fila M-26 cerrada); falta smoke del usuario; próximo ciclo por elegir (M-18 tras confirmar con el contador, o Vendty cuando llegue)
+2026-10-26 | 8-maintain | smoke v1.9.0 PASS (usuario + captura): 85334 y 85375 recuperados con número correcto, «dudosos» con motivo «Número recuperado…», sin «Falta 85334»; 85340 (486.990) va «dudoso». Nuevos: M-29 cola de fotos (cerrado, f688232), M-30 textos de ④ (XS, abierto)
