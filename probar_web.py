@@ -1,7 +1,7 @@
 """T4 · fitness del sitio del contador (ADR-027, ADR-028, S1, S4, S5): lock, lista blanca, cabeceras, sin URLs remotas,
 y el núcleo del zip corre solo (intérprete limpio, sin el repo ni site-packages). Arma web/dist/ en una carpeta temporal
 (baja las dependencias a web/cache/ la primera vez)."""
-import io, json, pathlib, shutil, subprocess, sys, tempfile, zipfile
+import io, json, pathlib, re, shutil, subprocess, sys, tempfile, time, zipfile
 from openpyxl import load_workbook
 sys.path.insert(0, str(pathlib.Path(__file__).parent / "herramientas"))
 import web_build as wb   # noqa: E402
@@ -142,6 +142,28 @@ try:
         ref = libro.generar(CRUDO, None, None, NEG, NIT, AHORA)["xlsx"]
         a, b = valores((tmp / "zip.xlsx").read_bytes()), valores(ref)
         chk(a == b, f"R1: el Excel del zip = el del repo ({len(a)} celdas, {sum(a.get(k) != b.get(k) for k in set(a) | set(b))} distintas)")
+
+    # --- T9 · S2/S4: archivos de ataque (web/pruebas/ataques/) → mensaje en español, rápido, sin traza; la página no los ejecuta ---
+    sys.path.insert(0, str(AQUI / "web" / "pruebas" / "ataques"))
+    from ataques import CASOS, NOMBRE_SCRIPT   # noqa: E402
+    for nombre, (datos, esperado, _) in CASOS.items():
+        t0 = time.perf_counter()
+        try:
+            libro.generar(datos, None, None, NEG, NIT, AHORA); m = "SIN ERROR"
+        except libro.EntradaInvalida as e: m = str(e)
+        except Exception as e: m = f"OTRA EXCEPCIÓN {type(e).__name__}"   # noqa: BLE001
+        seg = time.perf_counter() - t0
+        chk(esperado in m and seg < 2 and not any(x in m for x in ("Traceback", ".py", "\\")), f"S2 {nombre} ({len(datos):,} B) → «{m}» en {seg:.2f} s")
+    js = (AQUI / "web" / "src" / "app.js").read_text(encoding="utf8")
+    usos = [l.strip() for l in js.splitlines() if re.search(r"\bfe?\.name\b", l)]
+    chk(usos and all("textContent" in l or l.startswith("return error(") for l in usos), f"S2: el nombre del archivo solo entra con textContent ({len(usos)} usos)")
+    chk(all("name" not in l for l in js.splitlines() if "postMessage" in l), "S2: el nombre del archivo no viaja al Worker")
+    envio = js[js.index('form.addEventListener("submit"'):]
+    chk(envio.index("f.size > TOPE_CRUDO") < envio.index("arrayBuffer()"), "S2: el tope de 20 MB se mira antes de leer el archivo (25 MB no llega a memoria)")
+    wk = (AQUI / "web" / "src" / "motor.worker.js").read_text(encoding="utf8")
+    topes = {k: int(n) * 2 ** 20 for k, n in re.findall(r"(crudo|extracto|memoria): \[(\d+) \* MB", wk)}
+    chk(topes == {"crudo": libro.MAX_CRUDO, "extracto": libro.MAX_EXTRACTO, "memoria": libro.MAX_MEMORIA}, f"S2: los topes del Worker = los de libro.generar {topes}")
+    chk("<" in NOMBRE_SCRIPT and (AQUI / "web" / "pruebas" / "ataques" / "CHECKLIST.md").exists(), "S4: checklist en navegador (nombre con <script>) en web/pruebas/ataques/CHECKLIST.md")
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

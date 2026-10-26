@@ -6,7 +6,7 @@ size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por 
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
 next: 5-implement
-current task: T9 (It. 2: ataques en navegador)
+current task: T10 (It. 2: versión publicada inmutable)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
@@ -57,3 +57,4 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 5-implement | T7 PASS: usuario comparó sept. real en la URL borrador = Excel de ②; It. 1 completa → next 6-test
 2026-10-26 | 6-test | It. 1 PASS: 29/29 probar_*.py + contrato.mjs verdes; revisión código/seguridad sin defectos; ataque nuevo (fórmulas en el crudo → 0 activas) en probar_libro.py; cabeceras en vivo = S4; carga N/A (estático) → 06-test-report.md → next 5-implement (T8)
 2026-10-26 | 5-implement | T8 PASS: extracto en la página (selector opcional, tope 5 MB, «Quitar», crudo se conserva si el extracto no sirve, resumen nuevas/por revisar/días creados); contrato.mjs: crudo + extracto → 0 celdas distintas Pyodide vs CPython; panel OK, solo mismo origen → T9
+2026-10-26 | 5-implement | T9 PASS: `web/pruebas/ataques/` (ataques.py + CHECKLIST.md): no-crudo, .exe renombrado, anidado 10⁵, 25 MB, nombre con <script>/<img onerror> → mensaje en español en ≤ 1,5 s, 0 alertas, 0 nodos nuevos, motor sigue; probar_web.py +9 chequeos (textContent, tope antes de leer, topes Worker = libro) → T10
