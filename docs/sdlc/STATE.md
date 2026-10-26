@@ -5,8 +5,8 @@ goal: la app decide la cuenta PUC de cada papel por su origen (comanda, cierre, 
 size: M  # cambia el clasificador (una cuenta por papel → por ítem), reglas por origen, mapa a subcuentas PUC, recálculo de días guardados; evidencia ya existe (cuadro + inconsistencias)
 exposed: no  # app Flask local en 127.0.0.1
 regulated: yes  # la cuenta PUC va a los libros y a la renta; las 8 decisiones de «Qué decidir» son del contador
-next: 7-release
-current task: 7-release v1.8.0 commit hecho → esperando OK para tag + push
+next: 8-maintain
+current task: v1.8.0 publicada → 8-maintain (cerrar M-27, archivar ciclo)
 
 ## Stages
 - [x] 0-triage
@@ -16,7 +16,7 @@ current task: 7-release v1.8.0 commit hecho → esperando OK para tag + push
 - [x] 4-plan  (+ plan B ADR-023: T5a–T5c)
 - [x] 5-implement
 - [x] 6-test
-- [ ] 7-release
+- [x] 7-release
 - [~] 8-maintain
 
 ## Ciclos anteriores
@@ -79,3 +79,4 @@ current task: 7-release v1.8.0 commit hecho → esperando OK para tag + push
 2026-10-25 | 6-test | It. 3 (T9–T12 + decisión 4): suite 26/26 verde; R6 (probar_motor T9), R7 (probar_reclasificar: huella, manual intacto, idempotente, sept. 0,19 s), R10 (PDF) cubiertos; revisión sin bugs de cuenta, 1 nota (aprender item numérico sin documento enseña «0») → 08; smoke del navegador ya hecho en T11 → PASA, next 7-release (v1.8.0)
 2026-10-25 | 7-release | v1.8.0: suite 26/26, debug off, 127.0.0.1; VERSION + CHANGELOG + 07-release.md listos sin commit; PRE-FLIGHT FALLA: modelo_manual.json (en git desde T2, sin publicar) trae 4 personas en proveedores + 1 en vecinos (N5) → 08; sin tag ni push hasta decidir
 2026-10-25 | 7-release | limpieza (pedido del usuario): minar_manual.py detecta personas por nombre de pila → 4 terceros + 1 vecino a terceros_cuentas.json; N1 igual 67,2/87,3; ejemplos.py nombre inventado; filter-branch origin/main..main (32 commits, solo modelo_manual.json; respaldo/antes-limpieza-v1.8.0 local); suite 26/26; commit v1.8.0; tag + push esperan OK
+2026-10-25 | 7-release | v1.8.0 publicada: push main + tag (550c5ad..6c48a03); respaldo/antes-limpieza-v1.8.0 solo local → next 8-maintain
