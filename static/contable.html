@@ -246,7 +246,8 @@ async function procesar(){if(ctl)return;ctl=new AbortController();botones();cons
    if(!j.ok){f.estado="error";f.error=j.error}else{f.estado="listo";f.fuente=j.fuente;f.texto=j.texto;repartir(f,j.documentos)}}
   catch(e){f.estado=e.name==="AbortError"?"pendiente":"error";f.error=String(e)}
   renderFotos();renderDocs();renderChips();recalcular()}
- ctl=null;$("msg").textContent="Listo. Revisa los papeles (amarillo = dudoso), el cruce con el cierre y los asientos.";botones()}
+ const seguir=!ctl.signal.aborted&&dias.flatMap(d=>d.fotos).some(f=>f.estado==="pendiente");ctl=null;if(seguir)return procesar();
+ $("msg").textContent="Listo. Revisa los papeles (amarillo = dudoso), el cruce con el cierre y los asientos.";botones()}
 function repartir(f,nuevos){const origen=dias.find(d=>d.id===f.dia)||dia(),c={};nuevos.forEach(d=>d.fecha&&(c[d.fecha]=(c[d.fecha]||0)+1));
  if(!origen.fecha){const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];if(top)origen.fecha=top[0]}let movidos={};
  nuevos.forEach(d=>{const x={...nuevoDoc(d.tipo),...d,foto:f.id};let dest=origen;

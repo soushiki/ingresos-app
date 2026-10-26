@@ -86,6 +86,7 @@ Antes = V0 (una pasada, como la app antes del ciclo; informe `20261018-040428`).
 | Validados con error (≤ 1 %) | 11/90 = 12,2 % | **3/89 = 3,4 %** ✗ (los 3 ya estaban antes: 85339, 85448, 85520) |
 | Dudosos (van a ④ Revisión) | 20 | 58 (35 con todos los campos bien: falsa alarma) |
 | Acierto por campo | fecha 91,1 · consumo 92,2 · propina 92,2 · descuento 90,0 · efectivo 91,1 · medio 93,3 | fecha 91,0 · consumo 93,3 · propina 94,4 · descuento 91,0 · efectivo 94,4 · medio 96,6 |
+| 2026-10-26 | bug | M-29: en ① Libro contable, una foto que se sube mientras otra se está leyendo queda «en cola» y no se lee sola: `procesar()` sale si ya hay lectura (`if(ctl)return`) y al terminar no vuelve a mirar la cola; el mensaje dice «Leyendo 1 de 1». Visto en el smoke de v1.9.0. Hoy: al salir «Listo», pulsar Leer otra vez. Fix: al terminar, si quedan pendientes y no se canceló, volver a llamar a `procesar()` | XS | cerrado 2026-10-26: al terminar, `procesar()` vuelve a leer si quedan fotos «en cola» y no se pulsó Detener; probado en el navegador con lectura simulada (2 fotos subidas por separado → se leen las 2; Detener deja la cola quieta) |
 
 Lectura: el bucle hace lo que prometía en lo **silencioso** (8 de 11 errores que pasaban como buenos ahora van a revisión,
 ninguno nuevo), pero no lo cumple en **omitidos**: un recibo que falta no lo arregla releer, falta en el corte o en el
