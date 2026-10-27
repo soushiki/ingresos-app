@@ -112,3 +112,7 @@ número (T8b/M-11). Y paga en revisión: 58 de 107 dudosos, 35 de ellos bien le�
 ## Notas de 7-release v1.8.0 (2026-10-25)
 - [x] (v1.8.0: nombre de pila sin marca de empresa → persona; historial reescrito) **Bloqueaba el push**: `modelo_manual.json` tiene 4 terceros persona en `proveedores` (domiciliario, servicios, anticipos) y 1 nombre en un texto de `vecinos`. `personas()` de `minar_manual.py` solo los detecta por las cuentas 5105/31/25/1330 o por «reporta», así que estos se le pasan. Arreglo: sacar a `terceros_cuentas.json` los proveedores sin marca de empresa que estén en una lista local de personas, quitar de `vecinos` y `bigramas` los tokens de esos nombres, volver a minar y reescribir el historial sin publicar (v1.7.0..HEAD).
 - [x] (v1.8.0: «pedro perez») `ejemplos.py:19` publicó en v1.7.0 el nombre de un domiciliario («pago a domicilio …»): cambiarlo por un nombre inventado. No hace falta reescribir lo ya publicado, salvo que el usuario lo pida.
+
+## Notas de 6-test modo contador web It. 2 (2026-10-26)
+- [ ] `web_deploy.url_de`: si netlify no imprime JSON, traza en vez de mensaje (el deploy ya salió; solo se pierde la URL impresa)
+- [ ] `web_build.verificar_publicadas`: `KeyError` en vez de `BuildError` si el lock (editado a mano) no lista `manifiesto.json`

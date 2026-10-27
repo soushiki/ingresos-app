@@ -2,6 +2,22 @@
 
 ## [Sin publicar]
 
+## [1.10.0] — 2026-10-27
+Modo contador web: una página estática (Netlify, una URL fija por versión `/v1.10.0/`) donde el contador sube el crudo y, si quiere, el extracto Bancolombia, y su navegador arma y descarga el mismo Excel del libro que sale de ②. Todo corre en su PC (Pyodide); nada se sube ni se guarda en un servidor.
+
+### Núcleo compartido
+- `parser_module/contable/libro.py` (ADR-026): `desde_crudo`, `aplicar_extracto`, `excel` y `generar` salen de `app.py`; la app y la página usan el mismo código. Respuestas de la app iguales antes y después.
+- `libro.generar` valida la entrada: topes (crudo 20 MB, extracto 5 MB, memoria 1 MB), negocio/NIT sin fórmulas, errores en español (`EntradaInvalida`).
+
+### Página (`web/`)
+- Worker con Pyodide 314.0.7, openpyxl 3.1.5 y et_xmlfile 2.0.0 auto-alojados y verificados por sha256 (`web/web.lock`); CSP estricta, sin red fuera del mismo origen (ADR-028).
+- Crudo → Excel (5 hojas); extracto opcional con resumen (nuevas, por revisar, días creados); un extracto que no sirve no quita el crudo. Negocio/NIT se recuerdan en el navegador.
+- Archivos hostiles (no-crudo, .exe renombrado, JSON anidado, 25 MB, nombre con `<script>`) → mensaje en español, sin ejecutar nada.
+
+### Publicar
+- `herramientas/web_build.py` arma `web/dist/`; `--publicar` congela la versión en `web/publicadas/` + `publicadas.lock`, y el build se niega si una versión publicada cambia un byte (ADR-027).
+- `herramientas/web_deploy.py`: pruebas (`probar_libro.py`, `probar_web.py`, `contrato.mjs` con el crudo v1 en cada versión publicada) → borrador → `--prod` solo si está congelada, con checklist de la cuenta y «si» escrito.
+
 ## [1.9.1] — 2026-10-26
 Arreglos del smoke de v1.9.0 en ① Libro contable y en los textos de ④ Revisión.
 
