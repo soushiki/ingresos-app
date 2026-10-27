@@ -1,0 +1,2 @@
+# ADR-027: las versiones publicadas se guardan byte a byte (sin conversión de fin de línea) o su sha256 dejaría de coincidir
+web/publicadas/** -text

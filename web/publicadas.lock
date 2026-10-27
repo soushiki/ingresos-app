@@ -1,0 +1,4 @@
+{
+  "nota": "ADR-027: sha256 de cada archivo de web/publicadas/vX.Y.Z/. Lo escribe web_build.py --publicar; nunca a mano.",
+  "versiones": {}
+}

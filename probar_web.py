@@ -42,7 +42,8 @@ try:
 
     # --- build completo en temporal ---
     dist = tmp / "dist"
-    r = wb.armar(VER, dist=dist, src=tmp / "sin_src")
+    SIN_PUB = dict(pub=tmp / "sin_pub", plock=tmp / "sin_pub.lock")
+    r = wb.armar(VER, dist=dist, src=tmp / "sin_src", **SIN_PUB)
     arch = r["archivos"]
     py = f"pyodide/{lock['pyodide']['version']}/"
     chk(sorted(a[len(py):] for a in arch if a.startswith(py)) == sorted(lock["pyodide"]["servir"]),
@@ -116,6 +117,47 @@ try:
     chk(rutas_inm == {"/pyodide/314.0.7/*", "/py/*", f"/v{VER}/*"}, f"ADR-027: immutable solo en rutas versionadas: {sorted(rutas_inm)}")
     idx = (dist / "index.html").read_text(encoding="utf8")
     chk(f'href="v{VER}/"' in idx and "<script" not in idx and "style=" not in idx, "ADR-027: índice raíz lista la versión, sin script ni estilo en línea")
+
+    # --- T10 · ADR-027/R6: versiones publicadas inmutables ---
+    chk(isinstance(wb.verificar_publicadas(), dict), f"ADR-027: web/publicadas/ del repo = publicadas.lock ({len(wb.leer_publicadas())} versiones)")
+    VIEJA, pub, plock = "9.9.8", tmp / "pub", tmp / "pub.lock"
+    T10 = dict(pub=pub, plock=plock)
+    s = tmp / "src_v1"
+    s.mkdir()
+    (s / "app.js").write_text("el.textContent = 'v vieja';\n", encoding="utf8")
+    wb.armar(VIEJA, dist=tmp / "dist_v1", src=s, **T10)
+    sellos = wb.publicar(VIEJA, dist=tmp / "dist_v1", **T10)
+    chk(sorted(sellos) == ["app.js", "manifiesto.json", "nucleo.zip"] and wb.leer_publicadas(plock) == {VIEJA: sellos},
+        f"ADR-027: --publicar copia /v{VIEJA}/ y guarda su sha256 en el lock")
+    chk(rechaza(lambda: wb.publicar(VIEJA, dist=tmp / "dist_v1", **T10), "ADR-027", "ya está publicada"), "ADR-027: publicar la misma versión dos veces se niega")
+    (s / "app.js").write_text("el.textContent = 'v nueva';\n", encoding="utf8")
+    d2 = tmp / "dist_v2"
+    r3 = wb.armar(VER, dist=d2, src=s, **T10)
+    chk(all(r3["archivos"][f"v{VIEJA}/{k}"] == h for k, h in sellos.items()) and (d2 / f"v{VER}/app.js").read_text(encoding="utf8").endswith("nueva';\n"),
+        f"ADR-027: el build trae v{VIEJA} intacta (web/src nuevo solo entra en v{VER})")
+    idx = (d2 / "index.html").read_text(encoding="utf8")
+    chk(r3["versiones"] == [VER, VIEJA] and idx.index(f'href="v{VER}/"') < idx.index(f'href="v{VIEJA}/"'), "ADR-027: el índice lista todas, la última arriba")
+    chk(f"/v{VIEJA}/*\n  Cache-Control: {wb.INMUTABLE}" in (d2 / "_headers").read_text(encoding="utf8"), f"ADR-027: /v{VIEJA}/* también immutable")
+    r4 = wb.armar(VIEJA, dist=tmp / "dist_v3", src=s, **T10)
+    chk(r4["publicada"] and all(r4["archivos"][f"v{VIEJA}/{k}"] == h for k, h in sellos.items()), f"ADR-027: armar v{VIEJA} otra vez usa la copia publicada, no web/src")
+    nz_pub = pub / f"v{VIEJA}" / "nucleo.zip"
+    original = nz_pub.read_bytes()
+    nz_pub.write_bytes(original[:50] + bytes([original[50] ^ 1]) + original[51:])
+    chk(rechaza(lambda: wb.armar(VER, dist=tmp / "dist_x", src=s, **T10), "ADR-027", f"v{VIEJA} cambió", "nucleo.zip", "tag nuevo"),
+        "ADR-027: cambiar 1 byte de una versión publicada detiene el build")
+    nz_pub.write_bytes(original)
+    (pub / f"v{VIEJA}" / "extra.js").write_text("x", encoding="utf8")
+    chk(rechaza(lambda: wb.armar(VER, dist=tmp / "dist_x", src=s, **T10), "ADR-027", "extra.js"), "ADR-027: un archivo de más en una publicada detiene el build")
+    (pub / f"v{VIEJA}" / "extra.js").unlink()
+    (pub / f"v{VIEJA}" / "app.js").rename(tmp / "app.js.bak")
+    chk(rechaza(lambda: wb.armar(VER, dist=tmp / "dist_x", src=s, **T10), "ADR-027", "app.js"), "ADR-027: un archivo borrado de una publicada detiene el build")
+    (tmp / "app.js.bak").rename(pub / f"v{VIEJA}" / "app.js")
+    shutil.copytree(pub / f"v{VIEJA}", pub / "v9.9.7")
+    chk(rechaza(lambda: wb.armar(VER, dist=tmp / "dist_x", src=s, **T10), "ADR-027", "v9.9.7", "no está en publicadas.lock"), "ADR-027: una carpeta copiada a mano detiene el build")
+    shutil.rmtree(pub / "v9.9.7")
+    otro = json.loads(json.dumps(lock)); otro["pyodide"]["version"] = "0.0.1"
+    chk(rechaza(lambda: wb.verificar_publicadas(pub, plock, otro), "ADR-027", "Pyodide 314.0.7"), "ADR-027: web.lock sin el Pyodide de una publicada detiene el build")
+    chk(isinstance(wb.verificar_publicadas(pub, plock), dict), "ADR-027: restaurada, la publicada vuelve a pasar")
 
     # --- ADR-028: el núcleo del zip corre solo (como en Pyodide: zip desempacado + wheels, sin repo ni site-packages) ---
     nucleo_dir = tmp / "nucleo"

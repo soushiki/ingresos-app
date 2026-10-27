@@ -31,6 +31,20 @@ const { crearMotor } = await import(pathToFileURL(path.join(dirV, "motor.worker.
 const motor = crearMotor({ base: pathToFileURL(dirV + path.sep), leer, indice: (u) => fileURLToPath(u), ahora: AHORA });
 
 const crudo = await fs.readFile(path.join(APP, "web", "pruebas", "datos", "crudo_v1.json"));
+
+// T10 · R5/ADR-027: cada versión publicada de dist/ sigue leyendo crudo v1 con su propio motor (su Excel puede diferir del
+// núcleo actual si la lógica cambió después: aquí solo se exige que genere y que lea dentro de web/dist/).
+const otras = (await fs.readdir(path.join(APP, "web", "dist"))).filter((d) => /^v\d+\.\d+\.\d+$/.test(d) && d !== `v${version}`);
+for (const d of otras) {
+  const dir = path.join(APP, "web", "dist", d), antes = leidos.length;
+  const m = (await import(pathToFileURL(path.join(dir, "motor.worker.js")).href))
+    .crearMotor({ base: pathToFileURL(dir + path.sep), leer, indice: (u) => fileURLToPath(u), ahora: AHORA });
+  const ro = await m.generar({ tipo: "generar", crudo, negocio: NEG, nit: NIT }).catch((e) => ({ tipo: "error", mensaje: e.message }));
+  const suyas = leidos.slice(antes);
+  chk(ro.tipo === "listo" && ro.xlsx?.byteLength > 0 && ro.nucleo === d.slice(1) && suyas.length > 0 && suyas.every((u) => u.startsWith(DIST)),
+      `R5 publicada ${d}: crudo_v1.json → Excel (${ro.xlsx?.byteLength ?? ro.mensaje}), ${suyas.length} lecturas dentro de web/dist/`);
+}
+chk(true, `R5: ${otras.length} versiones publicadas además de v${version}`);
 const pasos = [];
 const t0 = performance.now();
 const r = await motor.generar({ tipo: "generar", crudo: crudo.buffer.slice(crudo.byteOffset, crudo.byteOffset + crudo.byteLength), negocio: NEG, nit: NIT },

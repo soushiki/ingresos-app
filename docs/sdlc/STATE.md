@@ -6,7 +6,7 @@ size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por 
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
 next: 5-implement
-current task: T10 (It. 2: versión publicada inmutable)
+current task: T11 (It. 2: web_deploy.py)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
@@ -58,3 +58,4 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 6-test | It. 1 PASS: 29/29 probar_*.py + contrato.mjs verdes; revisión código/seguridad sin defectos; ataque nuevo (fórmulas en el crudo → 0 activas) en probar_libro.py; cabeceras en vivo = S4; carga N/A (estático) → 06-test-report.md → next 5-implement (T8)
 2026-10-26 | 5-implement | T8 PASS: extracto en la página (selector opcional, tope 5 MB, «Quitar», crudo se conserva si el extracto no sirve, resumen nuevas/por revisar/días creados); contrato.mjs: crudo + extracto → 0 celdas distintas Pyodide vs CPython; panel OK, solo mismo origen → T9
 2026-10-26 | 5-implement | T9 PASS: `web/pruebas/ataques/` (ataques.py + CHECKLIST.md): no-crudo, .exe renombrado, anidado 10⁵, 25 MB, nombre con <script>/<img onerror> → mensaje en español en ≤ 1,5 s, 0 alertas, 0 nodos nuevos, motor sigue; probar_web.py +9 chequeos (textContent, tope antes de leer, topes Worker = libro) → T10
+2026-10-26 | 5-implement | T10 PASS: web/publicadas/ + publicadas.lock (vacío: aún no hay versión publicada), `web_build.py --publicar`, build copia las publicadas y se niega si cambia 1 byte / sobra / falta / carpeta a mano / web.lock sin su Pyodide; índice y _headers con todas; contrato.mjs corre crudo v1 en cada /v*/ de dist; .gitattributes -text en publicadas (autocrlf); probar_web.py 61 ✓. Ojo: «el motor sigue generando» de contrato.mjs falló 1 de 4 corridas (compara bytes de 2 xlsx) → T11
