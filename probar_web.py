@@ -206,6 +206,33 @@ try:
     topes = {k: int(n) * 2 ** 20 for k, n in re.findall(r"(crudo|extracto|memoria): \[(\d+) \* MB", wk)}
     chk(topes == {"crudo": libro.MAX_CRUDO, "extracto": libro.MAX_EXTRACTO, "memoria": libro.MAX_MEMORIA}, f"S2: los topes del Worker = los de libro.generar {topes}")
     chk("<" in NOMBRE_SCRIPT and (AQUI / "web" / "pruebas" / "ataques" / "CHECKLIST.md").exists(), "S4: checklist en navegador (nombre con <script>) en web/pruebas/ataques/CHECKLIST.md")
+
+    # --- T11: web_deploy.py (sin red: ejecutar y preguntar falsos) ---
+    import contextlib, types, web_deploy as wd
+    def deploy(falla=None, respuesta="si", publicadas=("@",)):
+        "Corre main con un ejecutar falso; devuelve (código, comandos)."
+        cmds = []
+        def ejecutar(cmd):
+            cmds.append(cmd)
+            out = '{"deploy_url": "https://borrador--x.netlify.app", "url": "https://x.netlify.app"}'
+            return types.SimpleNamespace(returncode=1 if falla and falla in cmd[-1] else 0, stdout=out, stderr="")
+        ver = (AQUI / "VERSION").read_text(encoding="utf8").strip()
+        pub = {ver: {}} if publicadas else {}
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = wd.main([], ejecutar=ejecutar, preguntar=lambda _: respuesta, publicadas=pub)
+        return rc, cmds
+    es_deploy = lambda c: "deploy" in c and any("netlify" in x for x in c)
+    for roto in ("probar_libro.py", "probar_web.py", "contrato.mjs"):
+        rc, cmds = deploy(falla=roto)
+        chk(rc == 1 and not any(es_deploy(c) for c in cmds), f"T11: con {roto} roto web_deploy no despliega")
+    rc, cmds = deploy(respuesta="no")
+    chk(rc == 0 and [c[-1] for c in cmds if es_deploy(c)] == ["--json"], "T11: todo verde + «no» → solo borrador, sin --prod")
+    rc, cmds = deploy(publicadas=())
+    chk(rc == 0 and [c[-1] for c in cmds if es_deploy(c)] == ["--json"], "ADR-027: versión sin publicar → solo borrador, ni pregunta --prod")
+    rc, cmds = deploy()
+    chk(rc == 0 and [c[-1] for c in cmds if es_deploy(c)] == ["--json", "--prod"], "T11: publicada + «si» → borrador y luego --prod")
+    chk(all("--auth" not in c and not any("TOKEN" in x for x in c) for c in cmds) and wd.NETLIFY.count("@") == 1,
+        "S4: sin token en argumentos; netlify-cli con versión fijada")
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

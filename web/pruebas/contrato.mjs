@@ -128,7 +128,8 @@ for (const [nombre, [msg, re]] of Object.entries(casos)) {
   chk(e && re.test(e.mensaje) && limpio, `S2 ${nombre} → «${e?.mensaje}»${e?.detalle ? ` (detalle: ${e.detalle})` : ""}`);
 }
 const otra = await motor.generar({ tipo: "generar", crudo, negocio: NEG, nit: NIT });
-chk(otra.tipo === "listo" && otra.xlsx.byteLength === r.xlsx.byteLength, "después de los errores el motor sigue generando (sin recargar Pyodide)");
+// docProps/core.xml lleva la hora del reloj: el deflate puede variar unos bytes entre dos corridas (falló 1 de 4 en T10).
+chk(otra.tipo === "listo" && Math.abs(otra.xlsx.byteLength - r.xlsx.byteLength) < 64, "después de los errores el motor sigue generando (sin recargar Pyodide)");
 
 // Una generación a la vez.
 const [g1, g2] = await Promise.allSettled([motor.generar({ crudo, negocio: NEG, nit: NIT }), motor.generar({ crudo, negocio: NEG, nit: NIT })]);

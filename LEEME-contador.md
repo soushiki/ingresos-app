@@ -68,6 +68,20 @@ La app lee mejor cuanto más grande y nítida llega la foto. Esto vale para las 
 - **Sin cortar el pie:** que se vea el canto de abajo del último recibo, con un poco de fondo alrededor.
 - De frente y derecha, con luz pareja, sin flash ni sombra de la mano.
 
+## 8. Libro en la página web (sin instalar nada)
+Si solo necesitas el **Excel del libro**, no hace falta instalar la app: el negocio te manda un enlace del tipo
+`https://libro-contable-web.netlify.app/v1.9.1/`. Ábrelo en Chrome o Edge, elige el `ingresos_crudo_….json` (y, si quieres,
+el extracto del banco `.xlsx`), escribe nombre y NIT del negocio y pulsa **Generar Excel**. Todo se calcula en tu navegador:
+los archivos **no se suben** a ningún servidor. Cada versión tiene su propio enlace y nunca cambia; la primera vez tarda unos
+segundos en cargar.
+
+### Para el negocio: publicar la página (cada versión nueva, ≈ 10 min)
+1. Una vez: `npx netlify-cli@27.12.0 login` (el token queda en tu PC, nunca en el repo).
+2. `python herramientas/web_deploy.py`: corre las pruebas (si una falla, **no** despliega), sube un **borrador** y muestra su URL.
+3. Prueba el borrador con un crudo real. Si está bien: `python herramientas/web_build.py --publicar` (congela la versión) y
+   vuelve a correr `web_deploy.py`; antes de producción revisa en app.netlify.com: 2FA activa, *Snippet injection* vacío,
+   analítica apagada, sin Forms/Functions/Identity. Escribe «si» y queda en producción.
+
 ## Si algo falla
 | Lo que ves | Qué hacer |
 |---|---|
