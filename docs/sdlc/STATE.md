@@ -5,8 +5,8 @@ goal: una página estática en Netlify (URL fija por versión) donde el contador
 size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por tag, test de compatibilidad del crudo); sin lógica contable nueva
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
-next: 7-release
-current task: v1.10.0 congelada (web/publicadas + lock), push main + tag; falta --prod con checklist S4
+next: 8-maintain  # It. 3 (T12–T14) tras el primer uso del contador
+current task: — (v1.10.0 en producción; pasar la URL al contador y esperar su primer uso)
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
@@ -15,9 +15,9 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 - [x] 2-requirements
 - [x] 3-design
 - [x] 4-plan
-- [ ] 5-implement
-- [ ] 6-test
-- [ ] 7-release
+- [x] 5-implement
+- [x] 6-test
+- [x] 7-release
 
 ## Ciclos anteriores
 - Documento soporte, precisión OCR v1.1.0, recibos omitidos v1.2.0, cierre de caja v1.3.0 + v1.3.1, Rappi v1.4.0, medio de pago v1.5.0, extracto bancario v1.6.0, Indra OCR v1.7.0, cuenta PUC v1.8.0, recuperar número v1.9.0 → `archive/<ciclo>/`.
@@ -63,3 +63,4 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 6-test | It. 2 PASS: 30/30 probar_*.py + contrato.mjs verdes; revisión código/seguridad 183e005..b87c762 sin defectos (2 notas menores → 08); R2/R5/R6/S2/S4 cubiertos; carga N/A; sin DEBT; smoke del usuario (deploy borrador + extracto real de sept. vs ②) pendiente → 06-test-report.md → next 7-release
 2026-10-27 | 7-release | v1.10.0 preparada: VERSION + CHANGELOG, 07-release.md (runbook página + app); pre-flight 29/29 probar_*.py + contrato.mjs verdes, secretos (grep historial + dist) limpios, _headers = S4 sin CORS; esperando OK para borrador → smoke → --publicar → push + tag → --prod
 2026-10-27 | 7-release | smoke PASS (crudo real sept. + extracto: página = CPython, 24892 celdas); v1.10.0 congelada con --publicar; push main + tag v1.10.0; falta --prod
+2026-10-27 | 7-release | v1.10.0 en producción: https://libro-contable-web.netlify.app/v1.10.0/ (checklist S4 OK, cabeceras y archivos en vivo = publicadas) → next 8-maintain; It. 3 tras el primer uso del contador
