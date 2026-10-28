@@ -6,7 +6,7 @@ size: M  # entrega nueva (núcleo en Pyodide, página estática, despliegue por 
 exposed: yes  # sitio web público (estático, sin backend): CSP, dependencias de CDN fijadas, archivos subidos = no confiables
 regulated: yes  # genera asientos PUC para los libros y la renta (misma lógica que la app)
 next: 7-release
-current task: v1.10.0 preparada (commit local); faltan, con OK del usuario: borrador + smoke, --publicar, push + tag, --prod (07 §Runbook pasos 3–6); It. 3 = Shoulds tras el primer uso del contador
+current task: v1.10.0 congelada (web/publicadas + lock), push main + tag; falta --prod con checklist S4
 priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M-19/Marcador.** Meta práctica: que el contador lo pruebe pronto con crudos ya producidos (sept. 2026 del libro actual) y vea cómo funciona; cortar alcance si hace falta para llegar ahí rápido.
 
 ## Stages
@@ -62,3 +62,4 @@ priority: **PRIORIDAD (usuario 2026-10-26): terminar este ciclo antes que M-18/M
 2026-10-26 | 5-implement | T11 PASS: herramientas/web_deploy.py (probar_libro + probar_web + contrato.mjs → borrador Netlify → --prod solo si publicada + checklist S4 + «si»); con una prueba rota no despliega (probar_web.py, ejecutar falso); flake de contrato.mjs arreglado; LEEME §8; It. 2 completa → next 6-test
 2026-10-26 | 6-test | It. 2 PASS: 30/30 probar_*.py + contrato.mjs verdes; revisión código/seguridad 183e005..b87c762 sin defectos (2 notas menores → 08); R2/R5/R6/S2/S4 cubiertos; carga N/A; sin DEBT; smoke del usuario (deploy borrador + extracto real de sept. vs ②) pendiente → 06-test-report.md → next 7-release
 2026-10-27 | 7-release | v1.10.0 preparada: VERSION + CHANGELOG, 07-release.md (runbook página + app); pre-flight 29/29 probar_*.py + contrato.mjs verdes, secretos (grep historial + dist) limpios, _headers = S4 sin CORS; esperando OK para borrador → smoke → --publicar → push + tag → --prod
+2026-10-27 | 7-release | smoke PASS (crudo real sept. + extracto: página = CPython, 24892 celdas); v1.10.0 congelada con --publicar; push main + tag v1.10.0; falta --prod

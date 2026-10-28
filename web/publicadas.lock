@@ -1,4 +1,13 @@
 {
   "nota": "ADR-027: sha256 de cada archivo de web/publicadas/vX.Y.Z/. Lo escribe web_build.py --publicar; nunca a mano.",
-  "versiones": {}
+  "versiones": {
+    "1.10.0": {
+      "app.js": "7aebf26661c4faa54ce8e799b47e8c5d70fa27b21f4b032a3ca5e4c512fed032",
+      "estilos.css": "0a82f9d24f2169b98681339478fe3245dd68fe5e3a0eacab6be22b6a25a4ffa1",
+      "index.html": "d3dac1e893b662711352b06c350b0c190775d8857cd619136bc769be2449ed03",
+      "manifiesto.json": "36334b1d5eed7fea90efe710f91f3ca538daeafe24aff86ac4c2ae4e45f741f5",
+      "motor.worker.js": "e5461affff2675234e8b8778187aef77451bb535e91fd581322c2aee6320e5f5",
+      "nucleo.zip": "b3519f39cc26b5b74be0f9816019c5e9a5d5e5427c57d0c682e61ec09f42f866"
+    }
+  }
 }

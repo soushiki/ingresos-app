@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Libro contable · contador</title>
+  <!-- ADR-028: sin icono propio el navegador pide /favicon.ico (404); data: no sale a la red y la CSP lo permite (img-src). -->
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="estilos.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Libro contable</h1>
+      <p class="sub">Suba el crudo que le mandaron (y, si quiere, el extracto del banco) y descargue el Excel del libro. Todo se calcula en este navegador: ningún archivo sale de su PC.</p>
+    </header>
+
+    <form id="form" novalidate>
+      <fieldset>
+        <legend>Encabezado del Excel</legend>
+        <label>Negocio
+          <input id="negocio" name="negocio" type="text" maxlength="120" autocomplete="organization" placeholder="Restaurante Ejemplo SAS">
+        </label>
+        <label>NIT
+          <input id="nit" name="nit" type="text" maxlength="20" inputmode="numeric" autocomplete="off" placeholder="900.123.456-7">
+        </label>
+        <p class="nota" id="nota-memoria">Se recuerdan en este navegador.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Archivos</legend>
+        <label>Crudo de la captura (.json, hasta 20 MB)
+          <input id="crudo" name="crudo" type="file" accept=".json,application/json">
+        </label>
+        <p class="archivo" id="archivo" hidden></p>
+        <label>Extracto del banco (.xlsx, opcional, hasta 5 MB)
+          <input id="extracto" name="extracto" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        </label>
+        <p class="archivo" id="archivo-extracto" hidden><span id="archivo-extracto-nombre"></span>
+          <button id="quitar-extracto" class="secundario" type="button">Quitar</button></p>
+      </fieldset>
+
+      <button id="generar" type="submit" disabled>Generar Excel</button>
+    </form>
+
+    <section id="estado" aria-live="polite" hidden>
+      <p id="paso"></p>
+    </section>
+
+    <section id="error" class="error" role="alert" hidden>
+      <p id="error-mensaje"></p>
+      <details id="error-plegado" hidden>
+        <summary>Detalle técnico</summary>
+        <pre id="error-detalle"></pre>
+      </details>
+    </section>
+
+    <section id="listo" class="listo" hidden>
+      <p id="listo-texto"></p>
+      <p id="resumen-extracto" hidden></p>
+      <a id="descarga" class="boton" href="#" download>Descargar de nuevo</a>
+      <div id="invalidos" hidden>
+        <p>Días que no entraron al libro:</p>
+        <ul id="invalidos-lista"></ul>
+      </div>
+    </section>
+
+    <footer>
+      <p>Página <span id="v-pagina">—</span> · núcleo <span id="v-nucleo">—</span></p>
+    </footer>
+  </main>
+</body>
+</html>
